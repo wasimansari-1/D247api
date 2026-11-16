@@ -347,23 +347,71 @@ class D247SyncEngine {
       if (res && res.success && res.data) {
         const raw = res.data;
 
-        // Parse dealt cards e.g. "ADD,7SS,10DD,1,1,1" or "6CC|ACC|10CC|1|1|1"
+        // Determine Authentic Game Deal Type (Cards vs Dice vs Roulette vs Balls)
+        const sLower = (slug || '').toLowerCase();
+        let dealType = 'cards';
+        if (sLower.includes('sicbo') || sLower.includes('dice') || sLower.includes('7up')) {
+          dealType = 'dice';
+        } else if (sLower.includes('roulette')) {
+          dealType = 'roulette';
+        } else if (sLower.includes('ballbyball') || sLower.includes('superover')) {
+          dealType = 'cricket_ball';
+        } else if (sLower.includes('goal')) {
+          dealType = 'football';
+        }
+
         const rawCardStr = raw.card || '';
         const cardStrings = rawCardStr.replace(/\|/g, ',').split(',').map(s => s.trim()).filter(Boolean);
-        const parsedCards = cardStrings.map(code => {
-          if (code === '1' || code === '?') {
-            return { code: '1', rank: '?', suit: 'hidden', isHidden: true, color: 'slate' };
-          }
-          let rank = code.slice(0, -2);
-          let suitCode = code.slice(-2);
-          let suit = '♠';
-          let color = 'black';
-          if (suitCode === 'HH') { suit = '♥'; color = 'red'; }
-          else if (suitCode === 'DD') { suit = '♦'; color = 'red'; }
-          else if (suitCode === 'CC') { suit = '♣'; color = 'black'; }
-          else if (suitCode === 'SS') { suit = '♠'; color = 'black'; }
-          return { code, rank, suit, color, isHidden: false };
-        });
+
+        let parsedItems = [];
+        if (dealType === 'dice') {
+          // Authentic 3D Dice faces 1 to 6
+          parsedItems = cardStrings.map(code => {
+            const isHidden = code === '1' || code === '?' || !code;
+            const val = isHidden ? '?' : parseInt(code) || code;
+            return { type: 'dice', val, isHidden };
+          });
+        } else if (dealType === 'roulette') {
+          // Authentic Roulette ball pocket 0-36
+          const RED_NUMS = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
+          parsedItems = cardStrings.map(code => {
+            const num = parseInt(code);
+            const isHidden = code === '1' || code === '?' || isNaN(num);
+            let color = 'green';
+            if (!isNaN(num) && num !== 0) {
+              color = RED_NUMS.includes(num) ? 'red' : 'black';
+            }
+            return { type: 'roulette', number: isHidden ? '?' : num, color, isHidden };
+          });
+        } else if (dealType === 'cricket_ball') {
+          // Cricket ball outcome (1, 2, 4, 6, W, etc.)
+          parsedItems = cardStrings.map(code => {
+            const isHidden = code === '1' || code === '?' || !code;
+            return { type: 'cricket_ball', outcome: isHidden ? '?' : code, isHidden };
+          });
+        } else if (dealType === 'football') {
+          // Football outcome
+          parsedItems = cardStrings.map(code => {
+            const isHidden = code === '1' || code === '?' || !code;
+            return { type: 'football', outcome: isHidden ? '?' : code, isHidden };
+          });
+        } else {
+          // Authentic Playing cards with ranks and suits
+          parsedItems = cardStrings.map(code => {
+            if (code === '1' || code === '?') {
+              return { type: 'cards', code: '1', rank: '?', suit: 'hidden', isHidden: true, color: 'slate' };
+            }
+            let rank = code.slice(0, -2);
+            let suitCode = code.slice(-2);
+            let suit = '♠';
+            let color = 'black';
+            if (suitCode === 'HH') { suit = '♥'; color = 'red'; }
+            else if (suitCode === 'DD') { suit = '♦'; color = 'red'; }
+            else if (suitCode === 'CC') { suit = '♣'; color = 'black'; }
+            else if (suitCode === 'SS') { suit = '♠'; color = 'black'; }
+            return { type: 'cards', code, rank, suit, color, isHidden: false };
+          });
+        }
 
         // Parse live betting runners & odds
         const rawRunners = raw.sub || (raw.t2 && raw.t2[0] ? raw.t2[0].section : []);
@@ -396,12 +444,14 @@ class D247SyncEngine {
 
         return {
           gameType: raw.gtype || slug,
+          dealType: dealType,
           roundId: String(raw.mid || Date.now()),
           timer: raw.lt !== undefined ? raw.lt : 0,
           totalTimer: raw.ft || 20,
           status: raw.lt === 0 ? 'SUSPENDED' : 'OPEN',
           rawCards: rawCardStr,
-          cards: parsedCards,
+          cards: parsedItems,
+          dealItems: parsedItems,
           runners: runners,
           updatedAt: new Date().toLocaleTimeString()
         };

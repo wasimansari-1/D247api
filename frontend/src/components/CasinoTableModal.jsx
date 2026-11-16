@@ -66,6 +66,43 @@ export default function CasinoTableModal({ table, onClose }) {
   const getWinnerBadge = (winnerName) => {
     const w = (winnerName || '').trim();
     const lower = w.toLowerCase();
+
+    // 1. Roulette Results (Numbers 0 to 36)
+    if (/^\d{1,2}$/.test(w)) {
+      const num = parseInt(w);
+      const RED_NUMS = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
+      if (num === 0) {
+        return { letter: '0', bg: 'bg-emerald-600 text-white border border-emerald-400 font-mono', title: '0 (Green)' };
+      }
+      const isRed = RED_NUMS.includes(num);
+      return {
+        letter: String(num),
+        bg: isRed ? 'bg-red-600 text-white font-mono' : 'bg-slate-950 text-white border border-slate-700 font-mono',
+        title: `Number ${num} (${isRed ? 'Red' : 'Black'})`
+      };
+    }
+
+    // 2. Sic Bo / Dice Results (e.g. "1,2,4" or "4,4,6")
+    if (w.includes(',')) {
+      const parts = w.split(',').map(n => parseInt(n.trim())).filter(n => !isNaN(n));
+      const sum = parts.reduce((a, b) => a + b, 0);
+      return {
+        letter: String(sum || w),
+        bg: 'bg-amber-600 text-slate-950 font-black border border-amber-300',
+        title: `Dice: ${w} (Total: ${sum})`
+      };
+    }
+
+    // 3. Cricket Ball by Ball (e.g. "1 Run", "6 Run", "Wicket")
+    if (lower.includes('run') || lower.includes('wicket')) {
+      if (lower.includes('wicket') || lower.includes('w')) {
+        return { letter: 'W', bg: 'bg-red-700 text-white font-black', title: 'Wicket' };
+      }
+      const match = w.match(/\d+/);
+      const runs = match ? match[0] : '•';
+      const bg = runs === '6' ? 'bg-emerald-600 text-white' : runs === '4' ? 'bg-sky-600 text-white' : 'bg-slate-700 text-slate-200';
+      return { letter: runs, bg: `${bg} font-black font-mono`, title: w };
+    }
     
     if (lower.includes('daga') || lower.includes('teja')) {
       return { letter: 'D', bg: 'bg-emerald-700 text-white', title: w };
@@ -253,12 +290,101 @@ export default function CasinoTableModal({ table, onClose }) {
 
               <div className="text-center mb-2">
                 <span className="text-xs uppercase font-extrabold tracking-wider text-emerald-200 bg-emerald-950/60 px-3 py-1 rounded-full border border-emerald-500/30">
-                  DEALT CARDS IN PLAY
+                  {roundData?.dealType === 'dice' ? '🎲 DICE IN PLAY'
+                    : roundData?.dealType === 'roulette' ? '🎡 ROULETTE WHEEL & BALL'
+                    : roundData?.dealType === 'cricket_ball' ? '🏏 CRICKET BALL IN PLAY'
+                    : roundData?.dealType === 'football' ? '⚽ FOOTBALL / GOAL IN PLAY'
+                    : '🃏 DEALT CARDS IN PLAY'}
                 </span>
               </div>
 
-              {/* Helper for rendering single playing card */}
+              {/* Dynamic Dealt Items (Cards, 3D Dice, Roulette Ball, Cricket Ball, Football) */}
               {(() => {
+                const dealType = roundData?.dealType || (
+                  (table.slug || '').includes('sicbo') ? 'dice'
+                  : (table.slug || '').includes('roulette') ? 'roulette'
+                  : (table.slug || '').includes('ballbyball') ? 'cricket_ball'
+                  : (table.slug || '').includes('goal') ? 'football'
+                  : 'cards'
+                );
+
+                // 1. 3D Dice (Sic Bo, 7 Up 7 Down)
+                if (dealType === 'dice') {
+                  const pips = { 1: '⚀', 2: '⚁', 3: '⚂', 4: '⚃', 5: '⚄', 6: '⚅' };
+                  const items = roundData?.cards || [{ val: '?' }, { val: '?' }, { val: '?' }];
+                  return (
+                    <div className="flex justify-center items-center gap-4 my-3 min-h-[80px]">
+                      {items.map((d, i) => (
+                        <div key={i} className="flex flex-col items-center">
+                          <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center text-4xl shadow-2xl transition-transform hover:scale-105 border-2 ${
+                            d?.isHidden 
+                              ? 'bg-gradient-to-br from-amber-950 to-slate-950 border-amber-500/40 text-amber-400' 
+                              : 'bg-white border-slate-300 text-red-600 shadow-amber-500/20'
+                          }`}>
+                            {d?.isHidden ? '🎲' : (pips[d?.val] || d?.val)}
+                          </div>
+                          <span className="text-[10px] text-amber-300 font-bold mt-1">Die {i + 1}</span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                }
+
+                // 2. Roulette Wheel Pocket & Ball
+                if (dealType === 'roulette') {
+                  const items = roundData?.cards || [{ number: '?' }];
+                  const r = items[0] || { number: '?' };
+                  return (
+                    <div className="flex justify-center items-center gap-4 my-3 min-h-[80px]">
+                      <div className="flex flex-col items-center">
+                        <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full flex flex-col items-center justify-center font-black text-xl sm:text-2xl shadow-2xl border-4 ${
+                          r?.isHidden 
+                            ? 'bg-gradient-to-br from-emerald-950 to-slate-950 border-emerald-500/50 text-emerald-400'
+                            : r?.color === 'green'
+                              ? 'bg-emerald-600 border-yellow-400 text-white shadow-emerald-500/40'
+                              : r?.color === 'red'
+                                ? 'bg-red-600 border-yellow-400 text-white shadow-red-500/40'
+                                : 'bg-slate-950 border-yellow-400 text-white shadow-slate-900/60'
+                        }`}>
+                          {r?.isHidden ? (
+                            <span className="text-xl animate-spin">⚪</span>
+                          ) : (
+                            <>
+                              <span className="font-mono leading-none">{r?.number}</span>
+                              <span className="text-[8px] uppercase tracking-wider font-extrabold text-yellow-300 mt-0.5">
+                                {r?.color}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                        <span className="text-[10px] text-yellow-300 font-bold mt-1">Winning Pocket & Ball</span>
+                      </div>
+                    </div>
+                  );
+                }
+
+                // 3. Cricket Ball (Ball by Ball / Super Over)
+                if (dealType === 'cricket_ball') {
+                  const items = roundData?.cards || [{ outcome: '?' }];
+                  return (
+                    <div className="flex justify-center items-center gap-3 my-3 min-h-[80px]">
+                      {items.map((b, i) => (
+                        <div key={i} className="flex flex-col items-center">
+                          <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center font-black text-sm sm:text-base shadow-2xl border-2 border-white/30 ${
+                            b?.isHidden 
+                              ? 'bg-red-950 text-red-300' 
+                              : 'bg-gradient-to-br from-red-600 to-red-800 text-white shadow-red-600/50'
+                          }`}>
+                            {b?.isHidden ? '🏏' : b?.outcome}
+                          </div>
+                          <span className="text-[10px] text-slate-300 font-bold mt-1">Ball {i + 1}</span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                }
+
+                // 4. Playing Cards (Mogambo, Teen Patti, Dragon Tiger, etc.)
                 const renderCard = (c, i) => (
                   <div 
                     key={i} 
