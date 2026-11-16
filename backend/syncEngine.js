@@ -7,6 +7,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const cacheService = require('./cacheService');
 
 const SPORT_NAMES = {
   4: { name: 'Cricket', icon: '🏏' },
@@ -37,6 +38,9 @@ class D247SyncEngine {
     this.inPlayEvents = [];
     this.matchCache = new Map(); // gmid -> structured match data
     this.casinoTables = [];
+    this.oddsHysteresis = new Map(); // key -> { price, size, timestamp } anti-flicker smoothing
+    this.sportMatchesMap = new Map(); // etid -> parsed matches
+    this.sportsFetchTick = 0;
 
     // Subscriptions
     this.activeGmidSubscriptions = new Set();
@@ -463,7 +467,24 @@ class D247SyncEngine {
             }
           }
         }
-        const isRunnerSuspended = isMatchSuspended || sec.gscode === 0 || sec.gstatus === 'SUSPENDED' || (back === 0 && lay === 0);
+        
+        const isExplicitlySuspended = isMatchSuspended || sec.gscode === 0 || sec.gstatus === 'SUSPENDED';
+        const cacheKey = `runner_${sec.sid || sec.nat || 'col'}`;
+
+        // Anti-flicker smoothing: if momentary 0 tick occurs without explicit upstream suspension, keep last confirmed odds for 1.8s
+        if (!isExplicitlySuspended && back === 0 && lay === 0 && this.oddsHysteresis.has(cacheKey)) {
+          const cached = this.oddsHysteresis.get(cacheKey);
+          if (Date.now() - cached.ts < 1800) {
+            back = cached.back;
+            backSize = cached.backSize;
+            lay = cached.lay;
+            laySize = cached.laySize;
+          }
+        } else if (back > 0 || lay > 0) {
+          this.oddsHysteresis.set(cacheKey, { back, backSize, lay, laySize, ts: Date.now() });
+        }
+
+        const isRunnerSuspended = isExplicitlySuspended || (back === 0 && lay === 0);
         return {
           name: sec.nat || '',
           back,
@@ -486,21 +507,31 @@ class D247SyncEngine {
   }
 
   /**
-   * Fetch All Live Matches across ALL Sports in Parallel (Promise.all)
-   * 100% indexing parity with D247.
+   * Fetch All Live Matches across ALL Sports with Tiered Polling & Anti-Throttling
+   * Hot sports (Cricket, Football, Tennis) fetched every tick for 0-latency live rates.
+   * Secondary sports fetched every 4th tick.
+   * All results stored in Redis/Memory Cache Service.
    */
   async fetchAllLiveSports() {
-    const sportIds = [4, 1, 2, 8, 7, 43, 15, 69, 18, 9, 11, 59, 17, 40, 58, 54];
+    this.sportsFetchTick++;
+    const isFullTick = this.sportsFetchTick % 4 === 1;
 
-    // Fetch all sports concurrently for sub-500ms responsiveness
-    const promises = sportIds.map(etid => 
+    // Primary sports that represent 98%+ of live exchange activity
+    const hotSportIds = [4, 1, 2];
+    // Secondary sports
+    const secondarySportIds = [8, 7, 43, 15, 69, 18, 9, 11, 59, 17, 40, 58, 54];
+
+    const targetSportIds = isFullTick 
+      ? [...hotSportIds, ...secondarySportIds] 
+      : hotSportIds;
+
+    const promises = targetSportIds.map(etid => 
       this.executeUpstream(`/highlighthomePrivate?etid=${etid}`, { etid, type: 'all' })
         .then(res => ({ etid, res }))
         .catch(() => ({ etid, res: null }))
     );
 
     const results = await Promise.all(promises);
-    const allEvents = [];
 
     for (const { etid, res } of results) {
       if (res && res.success && res.data) {
@@ -538,16 +569,14 @@ class D247SyncEngine {
           };
         });
 
-        // D247 Exact Sorting
+        // D247 Exact Sorting per sport
         parsedMatches.sort((a, b) => {
           if (a.inPlay && !b.inPlay) return -1;
           if (!a.inPlay && b.inPlay) return 1;
-
           if (a.inPlay && b.inPlay) {
             if (a.isVirtual && !b.isVirtual) return -1;
             if (!a.isVirtual && b.isVirtual) return 1;
           }
-
           return new Date(a.stime || 0) - new Date(b.stime || 0);
         });
 
@@ -613,12 +642,23 @@ class D247SyncEngine {
           parsedMatches.unshift(goal2Item);
         }
 
-        allEvents.push(...parsedMatches);
+        this.sportMatchesMap.set(etid, parsedMatches);
+      }
+    }
+
+    // Assemble all events preserving sport order: Cricket (4), Football (1), Tennis (2), etc.
+    const allOrderedSports = [4, 1, 2, 8, 7, 43, 15, 69, 18, 9, 11, 59, 17, 40, 58, 54];
+    const allEvents = [];
+    for (const sid of allOrderedSports) {
+      const list = this.sportMatchesMap.get(sid);
+      if (list && list.length > 0) {
+        allEvents.push(...list);
       }
     }
 
     if (allEvents.length > 0) {
       this.inPlayEvents = allEvents;
+      await cacheService.set('events:inplay', allEvents, 30);
       this.io.emit('events_list_update', this.inPlayEvents);
     }
   }
@@ -754,9 +794,33 @@ class D247SyncEngine {
             // Sort lays ascending (lowest to highest odds)
             lays.sort((a, b) => a.price - b.price);
 
-            const bestBack = backs.length > 0 ? backs[backs.length - 1] : { price: 0, size: 0 };
-            const bestLay = lays.length > 0 ? lays[0] : { price: 0, size: 0 };
-            const isSuspended = m.status === 'SUSPENDED' || sec.gstatus === 'SUSPENDED' || sec.gscode === 0 || (bestBack.price === 0 && bestLay.price === 0);
+            let bestBack = backs.length > 0 ? backs[backs.length - 1] : { price: 0, size: 0 };
+            let bestLay = lays.length > 0 ? lays[0] : { price: 0, size: 0 };
+            const isExplicitlySuspended = m.status === 'SUSPENDED' || sec.gstatus === 'SUSPENDED' || sec.gscode === 0;
+            const runnerKey = `m_${gmid}_${sec.sid || sec.nat}`;
+
+            // Anti-flicker: If not explicitly suspended but odds are momentarily 0, keep previous odds for 1.8s
+            if (!isExplicitlySuspended && bestBack.price === 0 && bestLay.price === 0 && this.oddsHysteresis.has(runnerKey)) {
+              const cached = this.oddsHysteresis.get(runnerKey);
+              if (Date.now() - cached.ts < 1800) {
+                bestBack = { price: cached.backPrice, size: cached.backSize };
+                bestLay = { price: cached.layPrice, size: cached.laySize };
+                if (backs.length === 0 && cached.backs) backs.push(...cached.backs);
+                if (lays.length === 0 && cached.lays) lays.push(...cached.lays);
+              }
+            } else if (bestBack.price > 0 || bestLay.price > 0) {
+              this.oddsHysteresis.set(runnerKey, {
+                backPrice: bestBack.price,
+                backSize: bestBack.size,
+                layPrice: bestLay.price,
+                laySize: bestLay.size,
+                backs: [...backs],
+                lays: [...lays],
+                ts: Date.now()
+              });
+            }
+
+            const isSuspended = isExplicitlySuspended || (bestBack.price === 0 && bestLay.price === 0);
 
             runners.push({
               sid: sec.sid,
@@ -892,10 +956,15 @@ class D247SyncEngine {
         const formatted = this.formatGameData(gmid, matchMeta.etid, rawRes.data);
         if (formatted) {
           this.matchCache.set(gmid, formatted);
+          await cacheService.set(`match:${gmid}`, formatted, 60);
           return formatted;
         }
       }
     } catch (err) {}
+
+    // Redis fallback
+    const cachedRedis = await cacheService.get(`match:${gmid}`);
+    if (cachedRedis) return cachedRedis;
 
     return this.matchCache.get(gmid) || null;
   }

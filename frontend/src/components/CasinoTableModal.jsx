@@ -257,43 +257,81 @@ export default function CasinoTableModal({ table, onClose }) {
                 </span>
               </div>
 
-              {/* Dynamic Real Cards */}
-              <div className="flex flex-wrap justify-center items-center gap-2.5 my-3 min-h-[80px]">
-                {roundData && roundData.cards && roundData.cards.length > 0 ? (
-                  roundData.cards.map((c, i) => (
-                    <div 
-                      key={i} 
-                      className={`w-12 h-16 sm:w-14 sm:h-20 rounded-lg flex flex-col items-center justify-between p-1 font-bold shadow-lg transition-transform hover:scale-105 ${
-                        c.isHidden 
-                          ? 'bg-gradient-to-br from-indigo-900 to-slate-900 border-2 border-indigo-400/40 text-indigo-300' 
-                          : 'bg-white border-2 border-slate-200'
-                      }`}
-                    >
-                      {c.isHidden ? (
-                        <div className="w-full h-full rounded border border-indigo-400/30 flex items-center justify-center text-xs font-mono">
-                          🂠
+              {/* Helper for rendering single playing card */}
+              {(() => {
+                const renderCard = (c, i) => (
+                  <div 
+                    key={i} 
+                    className={`w-12 h-16 sm:w-14 sm:h-20 rounded-lg flex flex-col items-center justify-between p-1 font-bold shadow-lg transition-transform hover:scale-105 ${
+                      c?.isHidden 
+                        ? 'bg-gradient-to-br from-indigo-900 to-slate-900 border-2 border-indigo-400/40 text-indigo-300' 
+                        : 'bg-white border-2 border-slate-200'
+                    }`}
+                  >
+                    {c?.isHidden ? (
+                      <div className="w-full h-full rounded border border-indigo-400/30 flex items-center justify-center text-xs font-mono">
+                        🂠
+                      </div>
+                    ) : (
+                      <>
+                        <div className={`text-xs sm:text-sm self-start leading-none ${c?.color === 'red' ? 'text-red-600' : 'text-slate-900'}`}>
+                          {c?.rank}
                         </div>
-                      ) : (
-                        <>
-                          <div className={`text-xs sm:text-sm self-start leading-none ${c.color === 'red' ? 'text-red-600' : 'text-slate-900'}`}>
-                            {c.rank}
-                          </div>
-                          <div className={`text-xl sm:text-2xl leading-none ${c.color === 'red' ? 'text-red-600' : 'text-slate-900'}`}>
-                            {c.suit}
-                          </div>
-                          <div className={`text-xs sm:text-sm self-end leading-none ${c.color === 'red' ? 'text-red-600' : 'text-slate-900'}`}>
-                            {c.rank}
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-xs text-emerald-300/80 italic py-4">
-                    Dealing cards for next round...
+                        <div className={`text-xl sm:text-2xl leading-none ${c?.color === 'red' ? 'text-red-600' : 'text-slate-900'}`}>
+                          {c?.suit}
+                        </div>
+                        <div className={`text-xs sm:text-sm self-end leading-none ${c?.color === 'red' ? 'text-red-600' : 'text-slate-900'}`}>
+                          {c?.rank}
+                        </div>
+                      </>
+                    )}
                   </div>
-                )}
-              </div>
+                );
+
+                if (table.slug === 'mogambo') {
+                  return (
+                    <div className="flex flex-col items-center gap-2.5 my-2">
+                      {/* Row 1: DAGA / TEJA */}
+                      <div className="flex flex-col items-center">
+                        <span className="text-[11px] font-black text-yellow-300 tracking-wider mb-1 uppercase drop-shadow">
+                          DAGA / TEJA
+                        </span>
+                        <div className="flex gap-2">
+                          {[0, 1].map((idx) => {
+                            const c = roundData?.cards?.[idx] || { isHidden: true };
+                            return renderCard(c, idx);
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Row 2: MOGAMBO */}
+                      <div className="flex flex-col items-center">
+                        <span className="text-[11px] font-black text-emerald-300 tracking-wider mb-1 uppercase drop-shadow">
+                          MOGAMBO
+                        </span>
+                        <div className="flex gap-2">
+                          {[2].map((idx) => {
+                            const c = roundData?.cards?.[idx] || { isHidden: true };
+                            return renderCard(c, idx);
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="flex flex-wrap justify-center items-center gap-2.5 my-3 min-h-[80px]">
+                    {roundData && roundData.cards && roundData.cards.length > 0 ? (
+                      roundData.cards.map((c, i) => renderCard(c, i))
+                    ) : (
+                      <div className="text-xs text-emerald-300/80 italic py-4">
+                        Dealing cards for next round...
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               <div className="flex justify-between items-center text-[11px] text-emerald-200/70 pt-2 border-t border-emerald-800/40">
                 <span>Game: {table.name}</span>

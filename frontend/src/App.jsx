@@ -141,28 +141,22 @@ export default function App() {
     };
   }, []);
 
-  // 2. High-Frequency Poller for Selected Match (700ms) - Guarantees ZERO Rate Difference
+  // 2. Fetch Selected Match Details on Change (WebSocket handles real-time stream with 0-delay)
   useEffect(() => {
     if (!selectedMatchGmid) return;
 
     let isMounted = true;
-    const pollMatchOdds = () => {
-      fetch(`/api/sports/match/${selectedMatchGmid}?etid=${selectedSportId}`)
-        .then(r => r.json())
-        .then(res => {
-          if (isMounted && res.success && res.data) {
-            setMatchDetails(res.data);
-          }
-        })
-        .catch(() => {});
-    };
-
-    pollMatchOdds();
-    const pollInterval = setInterval(pollMatchOdds, 700);
+    fetch(`/api/sports/match/${selectedMatchGmid}?etid=${selectedSportId}`)
+      .then(r => r.json())
+      .then(res => {
+        if (isMounted && res.success && res.data) {
+          setMatchDetails(res.data);
+        }
+      })
+      .catch(() => {});
 
     return () => {
       isMounted = false;
-      clearInterval(pollInterval);
     };
   }, [selectedMatchGmid, selectedSportId]);
 
@@ -565,55 +559,85 @@ export default function App() {
 
                               {/* Runners */}
                               <div className="divide-y divide-slate-800">
-                                {matchOddsMarket.runners?.map((r, rIdx) => (
-                                  <div key={rIdx} className="flex justify-between items-center p-2 hover:bg-slate-800/40 text-xs">
-                                    <span className="font-bold text-slate-100 truncate pr-2 text-sm">{r.runnerName}</span>
+                                {matchOddsMarket.runners?.map((r, rIdx) => {
+                                  // Normalize backs to exactly 3 items [Back 3, Back 2, Back 1]
+                                  const rawBacks = Array.isArray(r.backs) ? [...r.backs] : [];
+                                  if (rawBacks.length === 0 && r.backPrice > 0) {
+                                    rawBacks.push({ price: r.backPrice, size: r.backSize });
+                                  }
+                                  while (rawBacks.length < 3) {
+                                    rawBacks.unshift({ price: '-', size: '' });
+                                  }
+                                  const normBacks = rawBacks.slice(-3);
 
-                                    {r.suspended || r.status === 'SUSPENDED' ? (
-                                      <div className="w-56 sm:w-72 bg-[#2b3543] border border-slate-700 rounded py-2 text-center shadow-inner">
-                                        <span className="text-red-500 font-black text-xs tracking-wider animate-pulse flex items-center justify-center gap-1">
-                                          <Lock size={12} /> SUSPENDED
-                                        </span>
-                                      </div>
-                                    ) : (
-                                      <div className="flex items-center gap-1">
-                                        {/* Back 3, 2, 1 */}
-                                        {r.backs && r.backs.length === 3 ? (
-                                          r.backs.map((b, bIdx) => (
+                                  // Normalize lays to exactly 3 items [Lay 1, Lay 2, Lay 3]
+                                  const rawLays = Array.isArray(r.lays) ? [...r.lays] : [];
+                                  if (rawLays.length === 0 && r.layPrice > 0) {
+                                    rawLays.push({ price: r.layPrice, size: r.laySize });
+                                  }
+                                  while (rawLays.length < 3) {
+                                    rawLays.push({ price: '-', size: '' });
+                                  }
+                                  const normLays = rawLays.slice(0, 3);
+
+                                  return (
+                                    <div key={rIdx} className="flex justify-between items-center p-2 hover:bg-slate-800/40 text-xs">
+                                      <span className="font-bold text-slate-100 truncate pr-2 text-sm">{r.runnerName}</span>
+
+                                      {r.suspended || r.status === 'SUSPENDED' ? (
+                                        <div className="w-56 sm:w-72 bg-[#2b3543] border border-slate-700 rounded py-2 text-center shadow-inner">
+                                          <span className="text-red-500 font-black text-xs tracking-wider animate-pulse flex items-center justify-center gap-1">
+                                            <Lock size={12} /> SUSPENDED
+                                          </span>
+                                        </div>
+                                      ) : (
+                                        <div className="flex items-center gap-1">
+                                          {/* Back 3, 2, 1 */}
+                                          {normBacks.map((b, bIdx) => (
                                             <div 
                                               key={bIdx}
-                                              className={`flex flex-col items-center justify-center py-1 px-1.5 sm:px-2 rounded cursor-pointer select-none w-9 sm:w-12 text-center transition ${
-                                                bIdx === 2 ? 'bg-[#72bbef] text-slate-950 font-black' : bIdx === 1 ? 'bg-[#8bcbf3] text-slate-900 font-extrabold' : 'bg-[#a5d8f7] text-slate-900 font-bold'
+                                              className={`flex flex-col items-center justify-center py-1 px-1 sm:px-2 rounded cursor-pointer select-none w-9 sm:w-12 text-center transition ${
+                                                b.price === '-' 
+                                                  ? 'bg-slate-800/60 text-slate-500 font-bold border border-slate-700/50'
+                                                  : bIdx === 2 
+                                                    ? 'bg-[#72bbef] hover:bg-[#5bb2ec] text-slate-950 font-black' 
+                                                    : bIdx === 1 
+                                                      ? 'bg-[#95cdf8] hover:bg-[#7cbff0] text-slate-900 font-extrabold' 
+                                                      : 'bg-[#bce0fd] hover:bg-[#a5d5fa] text-slate-900 font-bold'
                                               }`}
                                             >
-                                              <span className="text-xs leading-none">{b.price || '-'}</span>
-                                              <span className="text-[8px] leading-tight text-slate-800 truncate">{b.size ? (b.size >= 1000 ? `${(b.size/1000).toFixed(0)}k` : b.size) : ''}</span>
+                                              <span className="text-xs leading-none">{b.price}</span>
+                                              <span className="text-[8px] leading-tight text-slate-800 truncate">
+                                                {b.size ? (b.size >= 1000 ? `${(b.size/1000).toFixed(0)}k` : b.size) : ''}
+                                              </span>
                                             </div>
-                                          ))
-                                        ) : (
-                                          <RateBox type="back" price={r.backPrice} size={r.backSize} />
-                                        )}
+                                          ))}
 
-                                        {/* Lay 1, 2, 3 */}
-                                        {r.lays && r.lays.length === 3 ? (
-                                          r.lays.map((l, lIdx) => (
+                                          {/* Lay 1, 2, 3 */}
+                                          {normLays.map((l, lIdx) => (
                                             <div 
                                               key={lIdx}
-                                              className={`flex flex-col items-center justify-center py-1 px-1.5 sm:px-2 rounded cursor-pointer select-none w-9 sm:w-12 text-center transition ${
-                                                lIdx === 0 ? 'bg-[#faa9ba] text-slate-950 font-black' : lIdx === 1 ? 'bg-[#f7b9c6] text-slate-900 font-extrabold' : 'bg-[#f5c9d2] text-slate-900 font-bold'
+                                              className={`flex flex-col items-center justify-center py-1 px-1 sm:px-2 rounded cursor-pointer select-none w-9 sm:w-12 text-center transition ${
+                                                l.price === '-' 
+                                                  ? 'bg-slate-800/60 text-slate-500 font-bold border border-slate-700/50'
+                                                  : lIdx === 0 
+                                                    ? 'bg-[#faa9ba] hover:bg-[#f692a7] text-slate-950 font-black' 
+                                                    : lIdx === 1 
+                                                      ? 'bg-[#fcc2ce] hover:bg-[#f9a6b6] text-slate-900 font-extrabold' 
+                                                      : 'bg-[#fde0e6] hover:bg-[#faccd6] text-slate-900 font-bold'
                                               }`}
                                             >
-                                              <span className="text-xs leading-none">{l.price || '-'}</span>
-                                              <span className="text-[8px] leading-tight text-slate-800 truncate">{l.size ? (l.size >= 1000 ? `${(l.size/1000).toFixed(0)}k` : l.size) : ''}</span>
+                                              <span className="text-xs leading-none">{l.price}</span>
+                                              <span className="text-[8px] leading-tight text-slate-800 truncate">
+                                                {l.size ? (l.size >= 1000 ? `${(l.size/1000).toFixed(0)}k` : l.size) : ''}
+                                              </span>
                                             </div>
-                                          ))
-                                        ) : (
-                                          <RateBox type="lay" price={r.layPrice} size={r.laySize} />
-                                        )}
-                                      </div>
-                                    )}
-                                  </div>
-                                ))}
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
                               </div>
                             </div>
                           )}
@@ -993,29 +1017,34 @@ export default function App() {
 
               </div>
 
-              {/* Casino Tables Grid with Robust Height & High-Res Posters */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5 overflow-y-auto max-h-[750px] p-1">
+              {/* Casino Tables Grid with Robust Fixed Height & High-Res CDN Posters */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5 overflow-y-auto max-h-[750px] p-1">
                 {filteredCasinoTables
                   .filter(t => !searchQuery || t.name.toLowerCase().includes(searchQuery.toLowerCase()) || t.slug.toLowerCase().includes(searchQuery.toLowerCase()))
                   .map(t => (
                   <div
                     key={t.id || t.slug}
                     onClick={() => setActiveCasinoTable(t)}
-                    style={{ minHeight: '240px', height: '240px' }}
-                    className="bg-slate-900 border border-slate-800 hover:border-amber-400 rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all cursor-pointer group text-white relative flex flex-col justify-between"
+                    style={{ minHeight: '250px', height: '250px' }}
+                    className="bg-[#0f1d2a] border border-slate-700/80 hover:border-yellow-400 rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all cursor-pointer group text-white relative flex flex-col justify-between select-none"
                   >
-                    {/* CDN Game Poster Artwork with guaranteed explicit height & no-collapse shrink-0 */}
+                    {/* Game Poster Artwork with direct CDN & Proxy Fallback */}
                     <div 
-                      style={{ height: '170px', minHeight: '170px', width: '100%', position: 'relative' }} 
-                      className="w-full shrink-0 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 overflow-hidden flex items-center justify-center"
+                      style={{ height: '155px', minHeight: '155px' }} 
+                      className="w-full shrink-0 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 overflow-hidden flex items-center justify-center relative"
                     >
                       <img 
-                        src={`/api/casino/image/${t.slug}`} 
+                        src={`https://cdn.926assets.com/g1-casino-icons/lc/${t.slug}.jpg`} 
                         alt={t.name}
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         onError={(e) => {
-                          e.target.onerror = null;
-                          e.target.src = '/api/casino/image/default';
+                          if (!e.target.dataset.triedProxy) {
+                            e.target.dataset.triedProxy = 'true';
+                            e.target.src = `/api/casino/image/${t.slug}`;
+                          } else {
+                            e.target.style.display = 'none';
+                            e.target.parentElement.classList.add('fallback-poster');
+                          }
                         }}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         loading="lazy"
@@ -1036,21 +1065,22 @@ export default function App() {
                     </div>
 
                     {/* Dedicated Game Title & Category Bar */}
-                    <div className="px-2.5 py-1.5 bg-slate-900 border-t border-slate-800 flex-1 flex flex-col justify-center">
-                      <h4 className="font-black text-xs sm:text-sm text-yellow-300 group-hover:text-yellow-200 leading-tight drop-shadow truncate">
+                    <div className="px-3 py-2 bg-[#0c1824] border-t border-slate-800 flex-1 flex flex-col justify-center">
+                      <h4 className="font-extrabold text-xs sm:text-sm text-yellow-300 group-hover:text-yellow-200 leading-tight drop-shadow truncate">
                         {t.name}
                       </h4>
-                      <span className="text-[10px] text-slate-400 font-bold block truncate mt-0.5">
-                        {t.category}
-                      </span>
+                      <div className="flex items-center justify-between mt-1 text-[10px] text-slate-400 font-semibold">
+                        <span className="truncate">{t.category}</span>
+                        <span className="font-mono text-slate-300">Min: {t.min || 100}</span>
+                      </div>
                     </div>
 
                     {/* Card Footer Bar */}
                     <div 
                       style={{ height: '32px', minHeight: '32px' }} 
-                      className="px-2.5 py-1.5 bg-slate-950 border-t border-slate-800/80 flex justify-between items-center text-[10px] text-slate-400 font-bold shrink-0"
+                      className="px-3 py-1.5 bg-[#08111a] border-t border-slate-800/80 flex justify-between items-center text-[10px] text-slate-400 font-bold shrink-0"
                     >
-                      <span>Min: {t.min}</span>
+                      <span className="text-slate-400">Max: {t.max >= 100000 ? `${(t.max / 100000).toFixed(0)}L` : (t.max || '2L')}</span>
                       <span className="text-emerald-400 font-black group-hover:translate-x-1 transition-transform flex items-center gap-0.5">
                         Play Live <ChevronRight size={12} />
                       </span>
