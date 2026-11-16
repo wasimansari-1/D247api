@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>D247 Live Real-Time Exchange & Casino</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- Socket.IO client -->
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <!-- Top D247 Navbar -->
+  <header class="d247-header">
+    <div class="header-left">
+      <div class="logo">
+        <span class="logo-home">🏠</span>
+        <span class="logo-text">D247</span>
+      </div>
+      <div class="live-pulse" id="connectionBadge" title="Live Synced with D247">
+        <span class="pulse-dot"></span> LIVE SYNC
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="balance-badge">
+        <div class="balance-label">Balance: <span class="val" id="userBalance">1500</span></div>
+        <div class="balance-label">Exp: <span class="val" id="userExp">0</span></div>
+      </div>
+      <button class="demo-btn">Demo ▼</button>
+      <button class="settings-btn" id="openSettingsBtn" title="Sync Settings">⚙️</button>
+    </div>
+  </header>
+
+  <!-- Live Rate Marquee Ticker -->
+  <div class="rate-ticker">
+    <span class="ticker-label">⚡ LIVE RATES:</span>
+    <div class="ticker-content" id="rateTickerContent">
+      Mumbai Indians (e): Back 1.86 / Lay 1.88 | Rajasthan Royals (e): Back 2.12 / Lay 2.16 | Man City: Back 2.10
+    </div>
+  </div>
+
+  <!-- Main Category Tabs -->
+  <nav class="main-nav">
+    <button class="nav-tab active" data-tab="sports" data-sport="4">🏏 Cricket</button>
+    <button class="nav-tab" data-tab="sports" data-sport="1">⚽ Soccer</button>
+    <button class="nav-tab" data-tab="sports" data-sport="2">🎾 Tennis</button>
+    <button class="nav-tab" data-tab="casino">🎰 Casino (78+ Tables)</button>
+  </nav>
+
+  <!-- Content Container -->
+  <main class="app-container">
+    
+    <!-- SPORTS SECTION -->
+    <section id="sportsSection" class="active-section">
+      <div class="sports-layout">
+        <!-- Match Selector Bar -->
+        <div class="match-bar">
+          <label>Select Match:</label>
+          <select id="matchSelector" class="d247-select"></select>
+        </div>
+
+        <!-- Live Match Header -->
+        <div class="match-header-card">
+          <div class="match-title" id="eventTitle">Loading Match...</div>
+          <div class="match-meta">
+            <span class="badge in-play">STARTED</span>
+            <span id="competitionName">Virtual Cricket League</span>
+            <span class="rules-link">Rules</span>
+          </div>
+        </div>
+
+        <!-- Real-Time Scoreboard (Cricket) -->
+        <div class="scoreboard-container" id="scoreboardContainer">
+          <div class="score-card">
+            <div class="score-team batting">
+              <span class="team-name" id="battingTeam">Mumbai Indians (e)</span>
+              <span class="team-runs" id="battingScore">10/0</span>
+              <span class="overs" id="matchOvers">(1.0 ov)</span>
+            </div>
+            <div class="score-team bowling">
+              <span class="team-name" id="bowlingTeam">Rajasthan Royals (e)</span>
+              <span class="team-runs" id="bowlingScore">0/0</span>
+            </div>
+          </div>
+          <!-- Current Over Balls -->
+          <div class="current-over-row">
+            <span class="over-lbl">Current Over:</span>
+            <div class="balls-list" id="ballsList">
+              <span class="ball-dot">1</span>
+              <span class="ball-dot">1</span>
+              <span class="ball-dot">1</span>
+              <span class="ball-dot">0</span>
+              <span class="ball-dot">1</span>
+              <span class="ball-dot">0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stream Video Placeholder / Iframe -->
+        <div class="video-container">
+          <div class="video-player-box" id="videoBox">
+            <div class="video-overlay">
+              <span>▶ LIVE VIDEO FEED</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Markets Container -->
+        <div class="markets-container" id="marketsContainer">
+          <!-- Dynamic Markets will be injected here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- CASINO SECTION -->
+    <section id="casinoSection" class="hidden-section">
+      <div class="casino-header">
+        <h2>🎰 Diamond Live Casino (78+ Tables)</h2>
+        <div class="casino-categories" id="casinoCats">
+          <button class="cat-pill active" data-cat="all">All (78+)</button>
+          <button class="cat-pill" data-cat="Teen Patti">Teen Patti</button>
+          <button class="cat-pill" data-cat="Dragon Tiger">Dragon Tiger</button>
+          <button class="cat-pill" data-cat="Lucky 7">Lucky 7</button>
+          <button class="cat-pill" data-cat="Andar Bahar">Andar Bahar</button>
+          <button class="cat-pill" data-cat="Matka">Worli / Matka</button>
+          <button class="cat-pill" data-cat="Roulette">Roulette</button>
+        </div>
+      </div>
+
+      <!-- Casino Tables Grid -->
+      <div class="casino-grid" id="casinoGrid">
+        <!-- Tables injected via JS -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Settings / Cookie Modal -->
+  <div class="modal-backdrop" id="settingsModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>⚙️ D247 Session & Cookie Sync</h3>
+        <button class="close-modal" id="closeSettingsBtn">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-info">
+          Paste your Chrome session cookie or cURL command below to connect directly with your live D247 demo account:
+        </p>
+        <textarea id="sessionCookieInput" placeholder="Paste cookie or cURL here..." rows="5"></textarea>
+        <div class="modal-actions">
+          <button class="btn-save" id="saveSessionBtn">Save & Sync Live</button>
+        </div>
+        <div id="sessionStatusMsg" class="status-msg"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
+

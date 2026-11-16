@@ -1,0 +1,11 @@
+{
+  "baseUrl": "https://diamondonline7.com/api/front",
+  "headers": {
+    "User-Agent": "Mozilla/5.0 (Linux; Android 16; Pixel 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Mobile Safari/537.36",
+    "Accept": "application/json, text/plain, */*",
+    "Content-Type": "application/json",
+    "Referer": "https://diamondonline7.com/home",
+    "Origin": "https://diamondonline7.com",
+    "Cookie": "g_token=s%3AzBHfQKByhl0zijRttlBlTl0DTIQ_546l.TVxTMbejZ4wTjuw7f45lptOc4054m%2B8s3dsU7WSA7NQ"
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "baseUrl": "https://d247.com/api/front",
+  "sports": {
+    "treedata": {
+      "method": "POST",
+      "endpoint": "/treedata",
+      "description": "Full sports navigation tree (Cricket, Soccer, Tennis, Leagues, Tournaments)"
+    },
+    "getLatestEvents": {
+      "method": "POST",
+      "endpoint": "/get_latest_events",
+      "description": "In-play and upcoming matches list"
+    },
+    "highlightHome": {
+      "method": "POST",
+      "endpoint": "/highlighthomePrivate?etid={etid}",
+      "description": "Featured matches by sport ID (4 = Cricket, 1 = Soccer, 2 = Tennis)"
+    },
+    "gameData": {
+      "method": "POST",
+      "endpoint": "/gamedataPrivate?etid={etid}&gmid={gmid}",
+      "description": "Live match odds, bookmaker markets, runners, and real-time scoreboard"
+    }
+  },
+  "casino": {
+    "tableList": {
+      "method": "POST",
+      "endpoint": "/tablelist",
+      "description": "Full list of all 78+ live dealer casino tables & games"
+    },
+    "tabData": {
+      "method": "POST",
+      "endpoint": "/tabdata?type={gameType}",
+      "description": "Game category and tab configuration"
+    },
+    "realtimeRoundData": {
+      "method": "POST",
+      "endpoint": "/data2?gtype={gameType}",
+      "description": "Real-time round cards, countdown timer, round ID, and live market odds"
+    },
+    "lastResults": {
+      "method": "POST",
+      "endpoint": "/lastresults2",
+      "description": "Previous round winners and historical results"
+    },
+    "launchOther": {
+      "method": "POST",
+      "endpoint": "/launchother",
+      "description": "Live video stream and external provider launcher"
+    },
+    "worliSectionData": {
+      "method": "POST",
+      "endpoint": "/worlisectiondata",
+      "description": "Worli / Matka specific market boards and charts"
+    }
+  },
+  "account": {
+    "userData": {
+      "method": "POST",
+      "endpoint": "/userdata",
+      "description": "User balance, active bets, and exposure"
+    },
+    "sessionCheck": {
+      "method": "POST",
+      "endpoint": "/check",
+      "description": "Session keep-alive and authentication verification"
+    },
+    "buttonList": {
+      "method": "POST",
+      "endpoint": "/buttonlist",
+      "description": "Bet stake buttons configuration"
+    }
+  }
+}
+

@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@keyframes flashYellow {
+  0% { background-color: #fef08a !important; }
+  100% { background-color: inherit; }
+}
+
+@keyframes flashRed {
+  0% { background-color: #fca5a5 !important; }
+  100% { background-color: inherit; }
+}
+
+.flash-up {
+  animation: flashYellow 0.4s ease-out;
+}
+
+.flash-down {
+  animation: flashRed 0.4s ease-out;
+}
+

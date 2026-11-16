@@ -1,0 +1,7 @@
+node_modules/
+frontend/node_modules/
+apk_unpacked/
+output/
+d247.apk
+.DS_Store
+*.log
