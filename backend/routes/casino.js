@@ -95,5 +95,19 @@ module.exports = function(syncEngine) {
     res.status(500).json({ success: false, msg: "Failed to fetch recent results" });
   });
 
+  // Get Live Video Stream URL for Casino Table
+  router.get(['/:gameType/livetv', '/:gameType/video', '/:gameType/tv'], (req, res) => {
+    const slug = req.params.gameType;
+    res.json({
+      success: true,
+      gameType: slug,
+      streamUrl: `https://stream.trubets365.com/player/?id=${slug}`,
+      sources: [
+        { name: 'Live Stream HQ', url: `https://stream.trubets365.com/player/?id=${slug}`, type: 'iframe' },
+        { name: 'External 247 Hub', url: `https://playg3.external247services.com/live/${slug}`, type: 'iframe' }
+      ]
+    });
+  });
+
   return router;
 };
