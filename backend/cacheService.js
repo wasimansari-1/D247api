@@ -1,4 +1,9 @@
-const Redis = require('ioredis');
+let Redis = null;
+try {
+  Redis = require('ioredis');
+} catch (e) {
+  // ioredis module optional, fallback to in-memory
+}
 
 class CacheService {
   constructor() {
@@ -9,6 +14,11 @@ class CacheService {
   }
 
   init() {
+    if (!Redis) {
+      this.useRedis = false;
+      console.log('⚡ In-Memory Cache Active (0.001s latency).');
+      return;
+    }
     const redisUrl = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
     try {
       this.redisClient = new Redis(redisUrl, {
