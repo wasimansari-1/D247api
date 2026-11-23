@@ -96,17 +96,28 @@ module.exports = function(syncEngine) {
   });
 
   // Get Live Video Stream URL for Casino Table
-  router.get(['/:gameType/livetv', '/:gameType/video', '/:gameType/tv'], (req, res) => {
+  router.get(['/:gameType/livetv', '/:gameType/video', '/:gameType/tv', '/:gameType/stream'], async (req, res) => {
     const slug = req.params.gameType;
-    res.json({
-      success: true,
-      gameType: slug,
-      streamUrl: `https://stream.trubets365.com/player/?id=${slug}`,
-      sources: [
-        { name: 'Live Stream HQ', url: `https://stream.trubets365.com/player/?id=${slug}`, type: 'iframe' },
-        { name: 'External 247 Hub', url: `https://playg3.external247services.com/live/${slug}`, type: 'iframe' }
-      ]
-    });
+    const clientIp = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || '103.21.244.2';
+
+    try {
+      const streamData = await syncEngine.getCasinoStreamUrl(slug, clientIp);
+      return res.json({
+        success: true,
+        gameType: slug,
+        streamUrl: streamData.streamUrl,
+        sources: streamData.sources
+      });
+    } catch (err) {
+      return res.json({
+        success: true,
+        gameType: slug,
+        streamUrl: `https://playg3.external247services.com/live/${slug}`,
+        sources: [
+          { name: 'External 247 Hub', url: `https://playg3.external247services.com/live/${slug}`, type: 'iframe' }
+        ]
+      });
+    }
   });
 
   return router;

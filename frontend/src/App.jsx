@@ -78,7 +78,7 @@ const HORIZONTAL_SPORT_TABS = [
   { id: 2, name: 'Tennis' },
   { id: 8, name: 'Table Tennis' },
   { id: 10, name: 'Horse Racing' },
-  { id: 43, name: 'Greyhound Racing' },
+  { id: 65, name: 'Greyhound Racing' },
   { id: 15, name: 'Basketball' },
   { id: 69, name: 'Wrestling' },
   { id: 18, name: 'Volleyball' },
@@ -460,9 +460,9 @@ export default function App() {
                   </div>
                 </button>
                 <button 
-                  onClick={() => { setActiveTab('sports'); setSelectedSportId(43); }}
+                  onClick={() => { setActiveTab('sports'); setSelectedSportId(65); }}
                   className={`w-full text-left px-3 py-2 hover:bg-sky-50 hover:text-sky-800 flex items-center justify-between transition ${
-                    activeTab === 'sports' && selectedSportId === 43 ? 'bg-sky-100 text-sky-900 font-black' : ''
+                    activeTab === 'sports' && (selectedSportId === 65 || selectedSportId === 43) ? 'bg-sky-100 text-sky-900 font-black' : ''
                   }`}
                 >
                   <div className="flex items-center gap-2">
@@ -669,6 +669,27 @@ export default function App() {
                     </marquee>
                   </div>
 
+                  {/* Super Over 2 Real Dealt Balls Visualizer matching Image 1 */}
+                  {matchDetails.gmid === 'superover2' && (
+                    <div className="bg-black/90 border border-slate-700 rounded-lg p-5 mb-3 flex flex-col items-center justify-center">
+                      <div className="flex items-center gap-3">
+                        {(matchDetails.cards || ['1', '?']).map((c, cIdx) => (
+                          <div 
+                            key={cIdx} 
+                            className="w-14 h-16 sm:w-16 sm:h-20 bg-[#1e293b] border-2 border-slate-600 rounded-lg flex items-center justify-center shadow-2xl"
+                          >
+                            <span className="text-3xl sm:text-4xl font-black text-white font-mono">
+                              {c}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-bold uppercase mt-2 tracking-widest">
+                        Over Balls Dealt
+                      </span>
+                    </div>
+                  )}
+
                   {/* Real Scoreboard ONLY when authentic live score data exists */}
                   {matchDetails.scoreboard && (
                     <div className="mb-3">
@@ -799,50 +820,181 @@ export default function App() {
                           )}
 
                           {/* 3. Fancy & Fancy1 Markets */}
-                          {fancyMarkets.map((fm, fmIdx) => (
-                            <div key={fmIdx} className="border border-slate-700 bg-slate-900 rounded-lg overflow-hidden shadow-sm">
-                              <div className="bg-[#243447] px-3 py-1.5 flex justify-between items-center border-b border-slate-700 text-xs font-black">
-                                <span className="text-yellow-400 uppercase tracking-wide">{fm.marketName}</span>
-                                <span className="text-[10px] bg-slate-800 text-slate-300 font-mono px-1.5 py-0.5 rounded border border-slate-700">
-                                  Min: {fm.min} | Max: {fm.max >= 1000 ? `${(fm.max / 1000).toFixed(0)}K` : fm.max}
-                                </span>
-                              </div>
-                              <table className="w-full text-left text-xs">
-                                <tbody className="divide-y divide-slate-800">
-                                  {fm.fancyList?.map((item, fIdx) => (
-                                    <tr key={fIdx} className="hover:bg-slate-800/60 transition">
-                                      <td className="py-2 px-3 font-bold text-white text-xs">
-                                        {item.title}
-                                      </td>
-                                      {item.suspended ? (
-                                        <td colSpan={2} className="py-1 px-1 bg-[#374151] text-center text-slate-300 font-bold text-xs">
-                                          <div className="flex items-center justify-center gap-1">
-                                            <Lock size={13} />
-                                            <span>SUSPENDED</span>
+                          {fancyMarkets.map((fm, fmIdx) => {
+                            const isFancy1Type = fm.marketType === 'fancy1' || fm.fancy1List || (fm.marketName || '').toLowerCase().includes('fancy1');
+                            const itemsList = fm.fancy1List || fm.fancyList || [];
+
+                            if (isFancy1Type) {
+                              return (
+                                <div key={fmIdx} className="border border-slate-700 bg-slate-900 rounded-lg overflow-hidden shadow-sm">
+                                  <div className="bg-[#243447] px-3 py-1.5 flex justify-between items-center border-b border-slate-700 text-xs font-black">
+                                    <span className="text-white uppercase tracking-wide font-bold">{fm.marketName}</span>
+                                    <span className="text-[10px] bg-slate-800 text-slate-300 font-mono px-1.5 py-0.5 rounded border border-slate-700">
+                                      Min: {fm.min || 100} | Max: {fm.max >= 1000 ? `${(fm.max / 1000).toFixed(0)}K` : fm.max || '10K'}
+                                    </span>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-800 bg-[#111c2a]">
+                                    {/* Left Column */}
+                                    <div className="divide-y divide-slate-800">
+                                      {itemsList.filter((_, idx) => idx % 2 === 0).map((item, fIdx) => (
+                                        <div key={fIdx} className="p-2 flex items-center justify-between hover:bg-slate-800/50 transition">
+                                          <div className="flex-1 pr-2">
+                                            <span className="text-xs font-bold text-white block">{item.title}</span>
+                                            <span className="text-[10px] text-slate-400 font-mono">
+                                              Min: {item.min || 100} Max: {item.max >= 1000 ? `${(item.max / 1000).toFixed(0)}K` : item.max || '10K'}
+                                            </span>
                                           </div>
+                                          <div className="flex items-center gap-1 shrink-0">
+                                            <div className="w-14 text-center">
+                                              <span className="text-[9px] text-slate-400 uppercase font-bold block mb-0.5">Back</span>
+                                              <div className="bg-[#72bbef] text-slate-950 font-black text-xs py-1 rounded shadow-sm">
+                                                {item.suspended || !item.back ? '-' : item.back}
+                                              </div>
+                                            </div>
+                                            <div className="w-14 text-center">
+                                              <span className="text-[9px] text-slate-400 uppercase font-bold block mb-0.5">Lay</span>
+                                              <div className="bg-[#faa9ba] text-slate-950 font-black text-xs py-1 rounded shadow-sm">
+                                                {item.suspended || !item.lay ? '-' : item.lay}
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+
+                                    {/* Right Column */}
+                                    <div className="divide-y divide-slate-800">
+                                      {itemsList.filter((_, idx) => idx % 2 === 1).map((item, fIdx) => (
+                                        <div key={fIdx} className="p-2 flex items-center justify-between hover:bg-slate-800/50 transition">
+                                          <div className="flex-1 pr-2">
+                                            <span className="text-xs font-bold text-white block">{item.title}</span>
+                                            <span className="text-[10px] text-slate-400 font-mono">
+                                              Min: {item.min || 100} Max: {item.max >= 1000 ? `${(item.max / 1000).toFixed(0)}K` : item.max || '10K'}
+                                            </span>
+                                          </div>
+                                          <div className="flex items-center gap-1 shrink-0">
+                                            <div className="w-14 text-center">
+                                              <span className="text-[9px] text-slate-400 uppercase font-bold block mb-0.5">Back</span>
+                                              <div className="bg-[#72bbef] text-slate-950 font-black text-xs py-1 rounded shadow-sm">
+                                                {item.suspended || !item.back ? '-' : item.back}
+                                              </div>
+                                            </div>
+                                            <div className="w-14 text-center">
+                                              <span className="text-[9px] text-slate-400 uppercase font-bold block mb-0.5">Lay</span>
+                                              <div className="bg-[#faa9ba] text-slate-950 font-black text-xs py-1 rounded shadow-sm">
+                                                {item.suspended || !item.lay ? '-' : item.lay}
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            }
+
+                            return (
+                              <div key={fmIdx} className="border border-slate-700 bg-slate-900 rounded-lg overflow-hidden shadow-sm">
+                                <div className="bg-[#243447] px-3 py-1.5 flex justify-between items-center border-b border-slate-700 text-xs font-black">
+                                  <span className="text-yellow-400 uppercase tracking-wide font-bold">{fm.marketName}</span>
+                                  <span className="text-[10px] bg-slate-800 text-slate-300 font-mono px-1.5 py-0.5 rounded border border-slate-700">
+                                    Min: {fm.min} | Max: {fm.max >= 1000 ? `${(fm.max / 1000).toFixed(0)}K` : fm.max}
+                                  </span>
+                                </div>
+                                <table className="w-full text-left text-xs">
+                                  <tbody className="divide-y divide-slate-800">
+                                    {itemsList.map((item, fIdx) => (
+                                      <tr key={fIdx} className="hover:bg-slate-800/60 transition">
+                                        <td className="py-2 px-3 font-bold text-white text-xs">
+                                          {item.title}
                                         </td>
-                                      ) : (
-                                        <>
-                                          <td className="py-1 px-1 text-center w-20">
-                                            <div className="bg-[#faa9ba] text-slate-950 font-black text-xs py-1 rounded shadow-sm">
-                                              <div>{item.noRate}</div>
-                                              <div className="text-[9px] font-medium text-slate-800">{item.noOdds}</div>
+                                        {item.suspended ? (
+                                          <td colSpan={2} className="py-1 px-1 bg-[#374151] text-center text-slate-300 font-bold text-xs">
+                                            <div className="flex items-center justify-center gap-1">
+                                              <Lock size={13} />
+                                              <span>SUSPENDED</span>
                                             </div>
                                           </td>
-                                          <td className="py-1 px-1 text-center w-20">
-                                            <div className="bg-[#72bbef] text-slate-950 font-black text-xs py-1 rounded shadow-sm">
-                                              <div>{item.yesRate}</div>
-                                              <div className="text-[9px] font-medium text-slate-800">{item.yesOdds}</div>
-                                            </div>
-                                          </td>
-                                        </>
-                                      )}
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
+                                        ) : (
+                                          <>
+                                            <td className="py-1 px-1 text-center w-20">
+                                              <div className="bg-[#faa9ba] text-slate-950 font-black text-xs py-1 rounded shadow-sm">
+                                                <div>{item.noRate}</div>
+                                                <div className="text-[9px] font-medium text-slate-800">{item.noOdds}</div>
+                                              </div>
+                                            </td>
+                                            <td className="py-1 px-1 text-center w-20">
+                                              <div className="bg-[#72bbef] text-slate-950 font-black text-xs py-1 rounded shadow-sm">
+                                                <div>{item.yesRate}</div>
+                                                <div className="text-[9px] font-medium text-slate-800">{item.yesOdds}</div>
+                                              </div>
+                                            </td>
+                                          </>
+                                        )}
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            );
+                          })}
+
+                          {/* Super Over 2 Last Result Ribbon matching Image 1 */}
+                          {matchDetails.gmid === 'superover2' && (
+                            <div className="bg-[#0b1726] border border-slate-700 rounded-lg p-2.5 flex items-center justify-between overflow-x-auto">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-bold text-slate-300 uppercase tracking-wider shrink-0">
+                                  Last Result
+                                </span>
+                                <div className="flex items-center gap-1.5">
+                                  {(matchDetails.recentResults || [
+                                    { winner: '1' }, { winner: '1' }, { winner: '1' }, { winner: '1' },
+                                    { winner: '1' }, { winner: '1' }, { winner: '1' }, { winner: '1' }
+                                  ]).map((resItem, rIdx) => {
+                                    const val = String(resItem.winner || resItem.nat || '1');
+                                    const isWicket = val.toLowerCase().includes('w');
+                                    const isBoundary = val === '4' || val === '6';
+                                    const bg = isWicket ? 'bg-red-600' : isBoundary ? 'bg-sky-600' : 'bg-emerald-600';
+                                    return (
+                                      <div
+                                        key={rIdx}
+                                        className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black text-white shadow-sm shrink-0 font-mono ${bg}`}
+                                        title={`Result: ${val}`}
+                                      >
+                                        {val}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                              <button className="text-[11px] font-bold text-sky-400 hover:text-sky-300 hover:underline shrink-0 ml-3">
+                                View All
+                              </button>
                             </div>
-                          ))}
+                          )}
+
+                          {/* 24X7 Support Ribbon matching Image 1 */}
+                          {matchDetails.gmid === 'superover2' && (
+                            <div className="flex flex-col gap-2 pt-2">
+                              <div className="bg-[#3182ce] text-white py-2 px-4 rounded-lg flex items-center justify-between shadow-md">
+                                <span className="font-extrabold text-sm tracking-wide">24X7 Support</span>
+                                <div className="flex items-center gap-2">
+                                  <a href="https://wa.me/639451469623" target="_blank" rel="noopener noreferrer" className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-white text-xs font-bold shadow hover:scale-110 transition">
+                                    WA
+                                  </a>
+                                  <a href="https://t.me/" target="_blank" rel="noopener noreferrer" className="w-6 h-6 rounded-full bg-sky-500 flex items-center justify-center text-white text-xs font-bold shadow hover:scale-110 transition">
+                                    TG
+                                  </a>
+                                </div>
+                              </div>
+                              <div className="text-center text-[11px] text-slate-400">
+                                <p className="font-semibold text-slate-300">100% SAFE Protected connection and encrypted data.</p>
+                                <p className="text-[10px] text-slate-500 mt-0.5">&copy; Copyright 2026. All Rights Reserved. Powered by D247.</p>
+                              </div>
+                            </div>
+                          )}
                         </>
                       );
                     })()}

@@ -7,6 +7,20 @@ export default function CasinoTableModal({ table, onClose }) {
   const [timer, setTimer] = useState(0);
   const [viewMode, setViewMode] = useState('board'); // 'board' | 'stream'
   const [loading, setLoading] = useState(true);
+  const [streamUrl, setStreamUrl] = useState('');
+
+  // Fetch live stream URL from Diamond API
+  useEffect(() => {
+    if (!table) return;
+    fetch(`/api/casino/${table.slug || table.id}/livetv`)
+      .then(r => r.json())
+      .then(res => {
+        if (res.success && res.streamUrl) {
+          setStreamUrl(res.streamUrl);
+        }
+      })
+      .catch(() => {});
+  }, [table]);
 
   // 1. Fetch live round data every 1 second
   useEffect(() => {
@@ -275,7 +289,7 @@ export default function CasinoTableModal({ table, onClose }) {
             /* Live Stream Video Player */
             <div className="relative bg-black w-full aspect-video flex items-center justify-center">
               <iframe
-                src={`https://stream.trubets365.com/player/?id=${table.slug}`}
+                src={streamUrl || `https://playg3.external247services.com/live/${table.slug}`}
                 title="Live Casino Stream"
                 className="w-full h-full border-0"
                 allow="autoplay; encrypted-media; fullscreen"

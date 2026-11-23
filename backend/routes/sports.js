@@ -43,28 +43,31 @@ module.exports = function(syncEngine) {
   });
 
   // Get Live TV Stream Details & Multi-Source Endpoints for Match
-  router.get(['/:etid/:gmid/livetv', '/stream/:gmid', '/:gmid/livetv'], (req, res) => {
+  router.get(['/:etid/:gmid/livetv', '/stream/:gmid', '/:gmid/livetv', '/:gmid/stream'], async (req, res) => {
     const gmid = req.params.gmid;
-    const etid = req.params.etid || 4;
+    const etid = req.params.etid || req.query.etid || 4;
+    const clientIp = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || '103.21.244.2';
 
-    res.json({
-      success: true,
-      gmid,
-      etid,
-      streamUrl: `https://stream.trubets365.com/player/?id=${gmid}`,
-      sources: [
-        {
-          name: 'Live Stream HQ (Trubets)',
-          url: `https://stream.trubets365.com/player/?id=${gmid}`,
-          type: 'iframe'
-        },
-        {
-          name: 'External 247 Live Hub',
-          url: `https://playg3.external247services.com/live/${gmid}`,
-          type: 'iframe'
-        }
-      ]
-    });
+    try {
+      const streamData = await syncEngine.getSportsTvUrl(gmid, etid, clientIp);
+      return res.json({
+        success: true,
+        gmid,
+        etid,
+        streamUrl: streamData.streamUrl,
+        sources: streamData.sources
+      });
+    } catch (err) {
+      return res.json({
+        success: true,
+        gmid,
+        etid,
+        streamUrl: `https://playg3.external247services.com/live/${gmid}`,
+        sources: [
+          { name: 'External 247 Live Hub', url: `https://playg3.external247services.com/live/${gmid}`, type: 'iframe' }
+        ]
+      });
+    }
   });
 
   // Get Live Match Scorecard

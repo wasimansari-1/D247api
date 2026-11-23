@@ -1,10 +1,28 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 export default function Scorecard({ scoreboard }) {
   if (!scoreboard) return null;
 
+  const [iframeFailed, setIframeFailed] = useState(false);
+
+  // 1. Official CloudFront Live Scoreboard Embed
+  if (scoreboard.embedUrl && !iframeFailed) {
+    return (
+      <div className="w-full bg-[#0b1f33] rounded-lg overflow-hidden border border-slate-700 shadow-md">
+        <iframe
+          src={scoreboard.embedUrl}
+          title="Official Live Scorecard"
+          className="w-full h-40 sm:h-44 border-0"
+          onError={() => setIframeFailed(true)}
+          allow="autoplay; encrypted-media"
+        />
+      </div>
+    );
+  }
+
+  // 2. Structured Scoreboard Fallback
   return (
-    <div className="bg-[#0b1f33] text-white p-3 border-b border-slate-700">
+    <div className="bg-[#0b1f33] text-white p-3 border-b border-slate-700 rounded-lg">
       <div className="flex justify-between items-center mb-2">
         <div>
           <span className="text-yellow-400 font-bold text-base block">{scoreboard.battingTeam || 'Batting Team'}</span>

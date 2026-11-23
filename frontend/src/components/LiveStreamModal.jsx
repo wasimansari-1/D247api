@@ -1,24 +1,48 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tv, X, ExternalLink, ShieldCheck, RefreshCw } from 'lucide-react';
 
 export default function LiveStreamModal({ match, onClose }) {
   if (!match) return null;
 
-  const [activeSource, setActiveSource] = useState(0);
-  const [iframeKey, setIframeKey] = useState(0);
-
-  const sources = [
+  const [sources, setSources] = useState([
     {
-      name: 'Live Stream HQ',
-      url: `https://stream.trubets365.com/player/?id=${match.gmid}`
+      name: 'Diamond Live TV',
+      url: match.streamUrl || `/api/sports/${match.gmid}/stream`
     },
     {
       name: 'External 247 Hub',
       url: `https://playg3.external247services.com/live/${match.gmid}`
     }
-  ];
+  ]);
+  const [activeSource, setActiveSource] = useState(0);
+  const [iframeKey, setIframeKey] = useState(0);
+  const [loading, setLoading] = useState(true);
 
-  const currentStreamUrl = sources[activeSource]?.url;
+  // Dynamically fetch authentic Diamond upstream stream URL
+  useEffect(() => {
+    let isMounted = true;
+    const isCasino = match.gmid === 'superover2' || match.gmid === 'goal2' || match.isVirtual;
+    const apiUrl = isCasino
+      ? `/api/casino/${match.gmid}/livetv`
+      : `/api/sports/${match.gmid}/stream?etid=${match.etid || 4}`;
+
+    fetch(apiUrl)
+      .then(res => res.json())
+      .then(data => {
+        if (isMounted && data.success && data.sources && data.sources.length > 0) {
+          setSources(data.sources);
+          setActiveSource(0);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => { isMounted = false; };
+  }, [match]);
+
+  const currentStreamUrl = sources[activeSource]?.url || match.streamUrl;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 animate-in fade-in duration-200">

@@ -50,7 +50,8 @@ const SPORT_NAMES = {
   // Racing Sports
   10: { name: 'Horse Racing', icon: '🏇', etid: 10, isRacing: true },
   71: { name: 'Horse Racing', icon: '🏇', etid: 71, isRacing: true },
-  43: { name: 'Greyhound Racing', icon: '🐕', etid: 43, isRacing: true }
+  65: { name: 'Greyhound Racing', icon: '🐕', etid: 65, isRacing: true },
+  43: { name: 'Greyhound Racing', icon: '🐕', etid: 65, isRacing: true }
 };
 
 const EXACT_79_CASINO_TABLES = [
@@ -444,7 +445,14 @@ class D247SyncEngine {
       const targetSlug = slug === 'roulette' ? 'roulette11' : slug;
       const res = await this.executeUpstream('/casino/data', { type: targetSlug });
       if (res && res.success && res.data) {
-        const raw = res.data;
+        // Merge t1 into raw to support both flat and nested schemas
+        const t1 = res.data.t1 || {};
+        const t2 = res.data.t2 || [];
+        const raw = {
+          ...res.data,
+          ...t1,
+          t2: t2.length > 0 ? t2 : (res.data.t2 || [])
+        };
 
         // Determine Authentic Game Deal Type (Cards vs Dice vs Roulette vs Balls)
         const sLower = (slug || '').toLowerCase();
@@ -507,8 +515,23 @@ class D247SyncEngine {
           });
         }
 
-        const rawRunners = raw.sub || (raw.t2 && raw.t2[0] ? raw.t2[0].section : []);
-        const runners = Array.isArray(rawRunners) ? rawRunners.map(s => {
+        // Collect runners from sub or across all markets in t2
+        let rawRunners = [];
+        if (Array.isArray(raw.sub) && raw.sub.length > 0) {
+          rawRunners = raw.sub;
+        } else if (Array.isArray(raw.t2) && raw.t2.length > 0) {
+          for (const m of raw.t2) {
+            if (Array.isArray(m.section)) {
+              rawRunners.push(...m.section.map(s => ({
+                ...s,
+                marketName: m.mname || '',
+                marketType: m.gtype || ''
+              })));
+            }
+          }
+        }
+
+        const runners = rawRunners.map(s => {
           let b = s.b || 0;
           let bs = s.bs || 0;
           let l = s.l || 0;
@@ -531,9 +554,9 @@ class D247SyncEngine {
             suspended: isSuspended,
             min: s.min || 100,
             max: s.max || 100000,
-            subtype: s.subtype || s.etype || ''
+            subtype: s.subtype || s.etype || s.marketName || ''
           };
-        }) : [];
+        });
 
         return {
           gameType: raw.gtype || slug,
@@ -546,7 +569,7 @@ class D247SyncEngine {
           items: parsedItems,
           runners: runners,
           rawRemark: raw.rem || '',
-          streamUrl: `https://stream.trubets365.com/player/?id=${slug}`,
+          streamUrl: `/api/casino/${slug}/livetv`,
           updatedAt: new Date().toISOString()
         };
       }
@@ -567,12 +590,79 @@ class D247SyncEngine {
         return res.data.map(r => ({
           mid: String(r.mid),
           winner: r.win || r.winner || r.result || '',
+          nat: r.win || r.winner || r.result || '',
           desc: r.desc || '',
           cards: r.card ? r.card.split(',') : []
         }));
       }
     } catch (err) {}
     return [];
+  }
+
+  /**
+   * Get Live TV Stream for Sports Match directly from Diamond Online (/gettv)
+   */
+  async getSportsTvUrl(gmid, etid = 4, ip = '103.21.244.2') {
+    if (gmid === 'superover2' || gmid === 'goal2' || EXACT_79_CASINO_TABLES.some(t => t.slug === gmid)) {
+      return this.getCasinoStreamUrl(gmid, ip);
+    }
+
+    try {
+      const res = await this.executeUpstream('/gettv', {
+        gmid: parseInt(gmid) || gmid,
+        ip: ip || '103.21.244.2',
+        cid: 1
+      });
+
+      if (res && res.data && res.data.url) {
+        return {
+          streamUrl: res.data.url,
+          sources: [
+            { name: 'Diamond Live TV (Official)', url: res.data.url, type: 'iframe' },
+            { name: 'External 247 Hub', url: `https://playg3.external247services.com/live/${gmid}`, type: 'iframe' }
+          ]
+        };
+      }
+    } catch (err) {
+      console.error(`Error in getSportsTvUrl(${gmid}):`, err.message);
+    }
+
+    return {
+      streamUrl: `https://playg3.external247services.com/live/${gmid}`,
+      sources: [
+        { name: 'External 247 Hub', url: `https://playg3.external247services.com/live/${gmid}`, type: 'iframe' },
+        { name: 'CloudFront Stream', url: `https://dzfytm4o128av.cloudfront.net/live/${gmid}`, type: 'iframe' }
+      ]
+    };
+  }
+
+  /**
+   * Get Live Video Stream for Casino / Virtual Table directly from Diamond Online (/casino/launchother)
+   */
+  async getCasinoStreamUrl(slug, ip = '103.21.244.2') {
+    try {
+      const res = await this.executeUpstream('/casino/launchother', { id: 'tv' });
+      if (res && res.data && res.data.token) {
+        const token = res.data.token;
+        const playerUrl = `https://diamondonline7.com/newmediaplayer/${slug}/${token}?ip=${ip || '103.21.244.2'}`;
+        return {
+          streamUrl: playerUrl,
+          sources: [
+            { name: 'Diamond Video (Official)', url: playerUrl, type: 'iframe' },
+            { name: 'External 247 Hub', url: `https://playg3.external247services.com/live/${slug}`, type: 'iframe' }
+          ]
+        };
+      }
+    } catch (err) {
+      console.error(`Error in getCasinoStreamUrl(${slug}):`, err.message);
+    }
+
+    return {
+      streamUrl: `https://playg3.external247services.com/live/${slug}`,
+      sources: [
+        { name: 'External 247 Hub', url: `https://playg3.external247services.com/live/${slug}`, type: 'iframe' }
+      ]
+    };
   }
 
   /**
@@ -710,27 +800,32 @@ class D247SyncEngine {
       if (rawMatches.length === 0 && this.sportsTree) {
         const treeSport = (this.sportsTree.t1 || []).find(s => s.etid === etid) || 
                           (this.sportsTree.t2 || []).find(s => s.etid === etid);
-        if (treeSport && Array.isArray(treeSport.children)) {
-          for (const league of treeSport.children) {
-            if (Array.isArray(league.children)) {
-              for (const m of league.children) {
-                rawMatches.push({
-                  gmid: m.gmid,
-                  etid: etid,
-                  ename: m.name,
-                  cname: league.name || sportInfo.name,
-                  iplay: false,
-                  status: 'OPEN',
-                  gscode: 1,
-                  stime: m.sdatetime || '',
-                  tv: true,
-                  f: etid === 4,
-                  bm: etid === 4 || etid === 1,
-                  section: []
-                });
+        if (treeSport) {
+          const collectMatches = (node, parentName) => {
+            if (!node) return;
+            if (node.gmid) {
+              rawMatches.push({
+                gmid: node.gmid,
+                etid: etid,
+                ename: node.name || node.ename,
+                cname: parentName || sportInfo.name,
+                iplay: Boolean(node.iplay),
+                status: 'OPEN',
+                gscode: 1,
+                stime: node.sdatetime || node.stime || '',
+                tv: true,
+                f: etid === 4,
+                bm: etid === 4 || etid === 1,
+                section: []
+              });
+            }
+            if (Array.isArray(node.children)) {
+              for (const child of node.children) {
+                collectMatches(child, node.name || parentName);
               }
             }
-          }
+          };
+          collectMatches(treeSport, sportInfo.name);
         }
       }
 
@@ -759,7 +854,7 @@ class D247SyncEngine {
           tv: Boolean(item.tv || item.gtv || item.scard || true),
           fancy: Boolean(item.f || etid === 4),
           bm: Boolean(item.bm || etid === 4 || etid === 1),
-          streamUrl: `https://stream.trubets365.com/player/?id=${gmid}`,
+          streamUrl: `/api/sports/${gmid}/stream`,
           isVirtual,
           cols,
           runners
@@ -779,6 +874,17 @@ class D247SyncEngine {
 
       // Pin Super Over 2 at top of Cricket (etid 4)
       if (etid === 4) {
+        const cachedSO2 = this.matchCache.get('superover2');
+        const so2Bookmaker = cachedSO2?.markets?.find(m => m.marketName === 'Bookmaker' || m.marketName === 'Match Odds');
+        const indRunner = so2Bookmaker?.runners?.find(r => r.runnerName === 'IND');
+        const engRunner = so2Bookmaker?.runners?.find(r => r.runnerName === 'ENG');
+
+        const isSO2Suspended = cachedSO2 ? cachedSO2.timer === 0 : false;
+        const indBack = indRunner?.backPrice || 1.95;
+        const indLay = indRunner?.layPrice || 1.98;
+        const engBack = engRunner?.backPrice || 1.95;
+        const engLay = engRunner?.layPrice || 1.98;
+
         const superOver2Item = {
           gmid: 'superover2',
           etid: 4,
@@ -787,23 +893,23 @@ class D247SyncEngine {
           eventName: 'Super Over2',
           competition: 'Diamond Virtual Cricket',
           inPlay: true,
-          status: 'OPEN',
-          gscode: 1,
+          status: isSO2Suspended ? 'SUSPENDED' : 'OPEN',
+          gscode: isSO2Suspended ? 0 : 1,
           stime: '',
           tv: true,
           fancy: true,
           bm: true,
           isVirtual: true,
           isPinned: true,
-          streamUrl: 'https://stream.trubets365.com/player/?id=superover2',
+          streamUrl: '/api/casino/superover2/livetv',
           cols: {
-            col1: { name: 'IND', back: 0, lay: 0, suspended: true, exists: true },
+            col1: { name: 'IND', back: indBack, lay: indLay, suspended: isSO2Suspended, exists: true },
             colX: { name: '', back: 0, lay: 0, suspended: false, exists: false },
-            col2: { name: 'ENG', back: 0, lay: 0, suspended: true, exists: true }
+            col2: { name: 'ENG', back: engBack, lay: engLay, suspended: isSO2Suspended, exists: true }
           },
           runners: [
-            { runnerName: 'IND', backPrice: 0, layPrice: 0, status: 'SUSPENDED' },
-            { runnerName: 'ENG', backPrice: 0, layPrice: 0, status: 'SUSPENDED' }
+            { runnerName: 'IND', backPrice: indBack, layPrice: indLay, status: isSO2Suspended ? 'SUSPENDED' : 'ACTIVE' },
+            { runnerName: 'ENG', backPrice: engBack, layPrice: engLay, status: isSO2Suspended ? 'SUSPENDED' : 'ACTIVE' }
           ]
         };
         parsedMatches.unshift(superOver2Item);
@@ -827,7 +933,7 @@ class D247SyncEngine {
           bm: true,
           isVirtual: true,
           isPinned: true,
-          streamUrl: 'https://stream.trubets365.com/player/?id=goal2',
+          streamUrl: '/api/casino/goal2/livetv',
           cols: {
             col1: { name: 'Team 1', back: 0, lay: 0, suspended: true, exists: true },
             colX: { name: '', back: 0, lay: 0, suspended: false, exists: false },
@@ -972,7 +1078,8 @@ class D247SyncEngine {
             min: m.min || 100,
             max: m.max || 10000,
             rem: m.rem || '',
-            fancy1List
+            fancy1List,
+            fancyList: fancy1List
           });
         }
       } else {
@@ -1052,6 +1159,14 @@ class D247SyncEngine {
       }
     }
 
+    const hasScoreboard = Boolean(rawData[0]?.scard || rawData.some(m => m.scard) || (etid === 4 && gmid !== 'superover2'));
+    if (hasScoreboard) {
+      extractedScoreboard = {
+        gmid,
+        embedUrl: `https://dzfytm4o128av.cloudfront.net/embed/${gmid}?theme=dark`
+      };
+    }
+
     return {
       gmid,
       etid: eventMeta.etid,
@@ -1060,7 +1175,7 @@ class D247SyncEngine {
       status: "IN_PLAY",
       remark: rawData[0]?.rem || eventMeta.remark || '',
       scoreboard: extractedScoreboard,
-      streamUrl: `https://stream.trubets365.com/player/?id=${gmid}`,
+      streamUrl: `/api/sports/${gmid}/stream`,
       markets,
       updatedAt: new Date().toISOString()
     };
@@ -1082,9 +1197,15 @@ class D247SyncEngine {
             formatted.timer = t1.lt !== undefined ? t1.lt : 0;
             formatted.totalTimer = t1.ft || 20;
             formatted.card = t1.card || '';
+            const rawCards = (t1.card || '').replace(/\[|\]/g, '').split(',').map(c => c.trim()).filter(Boolean);
+            formatted.cards = rawCards.length > 0 ? rawCards : ['1', '?'];
             formatted.eventName = t1.ename || 'IND Vs ENG Super Over2';
             formatted.status = t1.lt === 0 ? 'SUSPENDED' : 'IN_PLAY';
-            formatted.streamUrl = 'https://stream.trubets365.com/player/?id=superover2';
+            formatted.streamUrl = '/api/casino/superover2/livetv';
+
+            const recentRes = await this.fetchCasinoRecentResults('superover2');
+            formatted.recentResults = recentRes.slice(0, 15);
+
             this.matchCache.set(gmid, formatted);
             return formatted;
           }
@@ -1137,7 +1258,7 @@ class D247SyncEngine {
             status: raw.lt === 0 ? 'SUSPENDED' : 'IN_PLAY',
             timer: raw.lt !== undefined ? raw.lt : 0,
             totalTimer: raw.ft || 25,
-            streamUrl: 'https://stream.trubets365.com/player/?id=goal2',
+            streamUrl: '/api/casino/goal2/livetv',
             scoreboard: null,
             markets,
             updatedAt: new Date().toISOString()
@@ -1160,7 +1281,7 @@ class D247SyncEngine {
       if (rawRes && rawRes.success && Array.isArray(rawRes.data)) {
         const formatted = this.formatGameData(gmid, matchMeta.etid, rawRes.data);
         if (formatted) {
-          formatted.streamUrl = `https://stream.trubets365.com/player/?id=${gmid}`;
+          formatted.streamUrl = `/api/sports/${gmid}/stream`;
           this.matchCache.set(gmid, formatted);
           await cacheService.set(`match:${gmid}`, formatted, 60);
           return formatted;
