@@ -200,7 +200,11 @@ export default function CasinoTableModal({ table, onClose }) {
   const calculatedTotal = useMemo(() => {
     if (!roundData) return null;
 
-    if (isSicBo && roundData.dealType === "dice" && Array.isArray(roundData.cards)) {
+    if (
+      isSicBo &&
+      roundData.dealType === "dice" &&
+      Array.isArray(roundData.cards)
+    ) {
       const sum = roundData.cards.reduce(
         (acc, d) => acc + (parseInt(d.val) || 0),
         0,
@@ -287,54 +291,110 @@ export default function CasinoTableModal({ table, onClose }) {
 
     // 2. Lucky 6: L, O, H, E, B, R badges (Image 2 Exact Match)
     if (isLucky6) {
-      const char = (w.slice(0, 1) || 'L').toUpperCase();
-      let bg = 'bg-emerald-600 text-white font-black';
-      if (['R', 'H'].includes(char)) bg = 'bg-amber-600 text-white font-black';
-      if (char === 'B') bg = 'bg-slate-900 text-white font-black border border-slate-700';
-      return { letter: char, bg, title: w || 'Result' };
+      const char = (w.slice(0, 1) || "L").toUpperCase();
+      let bg = "bg-emerald-600 text-white font-black";
+      if (["R", "H"].includes(char)) bg = "bg-amber-600 text-white font-black";
+      if (char === "B")
+        bg = "bg-slate-900 text-white font-black border border-slate-700";
+      return { letter: char, bg, title: w || "Result" };
     }
 
     // 3. Super Over & Mini Super Over: Team letters A, I, T, E, R in Green Badges (Image 1 & 3 Exact Match)
     if (isSuperOver || isMiniSuperOver) {
       if (w === "1" || lower.includes("ind") || lower.includes("india")) {
-        return { letter: "I", bg: "bg-emerald-700 text-white font-black", title: "IND" };
+        return {
+          letter: "I",
+          bg: "bg-emerald-700 text-white font-black",
+          title: "IND",
+        };
       }
       if (w === "2") {
         if (slug.includes("superover2")) {
-          return { letter: "R", bg: "bg-emerald-700 text-white font-black", title: "RSA" };
+          return {
+            letter: "R",
+            bg: "bg-emerald-700 text-white font-black",
+            title: "RSA",
+          };
         }
-        return { letter: "A", bg: "bg-emerald-700 text-white font-black", title: "AUS" };
+        return {
+          letter: "A",
+          bg: "bg-emerald-700 text-white font-black",
+          title: "AUS",
+        };
       }
-      if (lower.includes("eng")) return { letter: "E", bg: "bg-emerald-700 text-white font-black", title: "ENG" };
-      if (lower.includes("aus")) return { letter: "A", bg: "bg-emerald-700 text-white font-black", title: "AUS" };
-      if (lower.includes("rsa")) return { letter: "R", bg: "bg-emerald-700 text-white font-black", title: "RSA" };
-      return { letter: "T", bg: "bg-emerald-700 text-white font-black", title: "Tie" };
+      if (lower.includes("eng"))
+        return {
+          letter: "E",
+          bg: "bg-emerald-700 text-white font-black",
+          title: "ENG",
+        };
+      if (lower.includes("aus"))
+        return {
+          letter: "A",
+          bg: "bg-emerald-700 text-white font-black",
+          title: "AUS",
+        };
+      if (lower.includes("rsa"))
+        return {
+          letter: "R",
+          bg: "bg-emerald-700 text-white font-black",
+          title: "RSA",
+        };
+      return {
+        letter: "T",
+        bg: "bg-emerald-700 text-white font-black",
+        title: "Tie",
+      };
     }
 
     // 4. Teen Patti Test: T (Tiger), L (Lion), D (Dragon) Badges (Image 1 Exact Match)
     if (isTeenTest) {
       if (lower.includes("tiger") || w === "1" || lower.startsWith("t")) {
-        return { letter: "T", bg: "bg-amber-600 text-white font-black", title: "Tiger" };
+        return {
+          letter: "T",
+          bg: "bg-amber-600 text-white font-black",
+          title: "Tiger",
+        };
       }
       if (lower.includes("lion") || w === "2" || lower.startsWith("l")) {
-        return { letter: "L", bg: "bg-emerald-600 text-white font-black", title: "Lion" };
+        return {
+          letter: "L",
+          bg: "bg-emerald-600 text-white font-black",
+          title: "Lion",
+        };
       }
-      return { letter: "D", bg: "bg-rose-600 text-white font-black", title: "Dragon" };
+      return {
+        letter: "D",
+        bg: "bg-rose-600 text-white font-black",
+        title: "Dragon",
+      };
     }
 
     // 5. Open Teenpatti & Poker 6: Winning Player Number Badges (Image 2 & 5 Exact Match)
     if (isTeenOpen || isPoker6) {
       const numMatch = w.match(/\d+/);
-      const displayNum = numMatch ? numMatch[0] : (w || "1");
-      return { letter: displayNum, bg: "bg-emerald-600 text-white font-black", title: `Player ${displayNum}` };
+      const displayNum = numMatch ? numMatch[0] : w || "1";
+      return {
+        letter: displayNum,
+        bg: "bg-emerald-600 text-white font-black",
+        title: `Player ${displayNum}`,
+      };
     }
 
     // 6. Poker 1-Day & 20-20 Poker: A & B Badges (Image 3 & 4 Exact Match)
     if (isPoker1Day || isPoker20) {
       if (w === "1" || lower === "a" || lower.includes("player a")) {
-        return { letter: "A", bg: "bg-amber-600 text-white font-black", title: "Player A" };
+        return {
+          letter: "A",
+          bg: "bg-amber-600 text-white font-black",
+          title: "Player A",
+        };
       }
-      return { letter: "B", bg: "bg-emerald-600 text-white font-black", title: "Player B" };
+      return {
+        letter: "B",
+        bg: "bg-emerald-600 text-white font-black",
+        title: "Player B",
+      };
     }
 
     // 3. Teen Patti 1-Day, 20-20, Queen Top, Jack Top (Image 3, 4, 5 Exact Match)
@@ -350,9 +410,17 @@ export default function CasinoTableModal({ table, onClose }) {
       slug.includes("patti")
     ) {
       if (w === "1" || lower === "a" || lower.includes("player a")) {
-        return { letter: "A", bg: "bg-amber-600 text-white font-black", title: "Player A" };
+        return {
+          letter: "A",
+          bg: "bg-amber-600 text-white font-black",
+          title: "Player A",
+        };
       }
-      return { letter: "B", bg: "bg-emerald-600 text-white font-black", title: "Player B" };
+      return {
+        letter: "B",
+        bg: "bg-emerald-600 text-white font-black",
+        title: "Player B",
+      };
     }
 
     // 4. Sic Bo & Sic Bo 2: Dice total sum in green circles (Image 5 Exact Match)
@@ -651,15 +719,19 @@ export default function CasinoTableModal({ table, onClose }) {
             {(() => {
               // Mini Super Over: Cricket Pitch Header Banner + Red Ball Badges on Left (Image 1 Exact Match)
               if (isMiniSuperOver) {
-                const rawBalls = (roundData?.card || "").split(/[|,]/).filter(Boolean);
-                const parsedBalls = rawBalls.map(code => {
-                  if (code === '1' || code === '?') return null;
-                  const rank = code.slice(0, -2) || code;
-                  if (rank === '10') return '0';
-                  if (['J', 'Q', 'K'].includes(rank)) return 'W';
-                  if (rank === 'A') return '1';
-                  return rank;
-                }).filter(Boolean);
+                const rawBalls = (roundData?.card || "")
+                  .split(/[|,]/)
+                  .filter(Boolean);
+                const parsedBalls = rawBalls
+                  .map((code) => {
+                    if (code === "1" || code === "?") return null;
+                    const rank = code.slice(0, -2) || code;
+                    if (rank === "10") return "0";
+                    if (["J", "Q", "K"].includes(rank)) return "W";
+                    if (rank === "A") return "1";
+                    return rank;
+                  })
+                  .filter(Boolean);
 
                 let runs = 0;
                 for (const b of parsedBalls) {
@@ -673,14 +745,23 @@ export default function CasinoTableModal({ table, onClose }) {
                     {/* Pitch Scoreboard Banner */}
                     <div className="bg-[#1e3a1f]/95 border border-emerald-500/60 rounded px-3 py-1.5 text-white shadow-xl w-full select-none">
                       <div className="flex justify-between items-center text-[11px] font-mono">
-                        <span className="font-bold text-slate-100">IND 8-0 (1.0)</span>
-                        <span className="text-yellow-300 font-bold">AUS Needed 6 runs from 2 balls</span>
+                        <span className="font-bold text-slate-100">
+                          IND 8-0 (1.0)
+                        </span>
+                        <span className="text-yellow-300 font-bold">
+                          AUS Needed 6 runs from 2 balls
+                        </span>
                       </div>
                       <div className="flex justify-between items-center text-[11px] font-mono mt-0.5">
-                        <span className="font-black text-white">AUS {runs}-0 ({overs}) CRR 6.00 RR 12.00</span>
+                        <span className="font-black text-white">
+                          AUS {runs}-0 ({overs}) CRR 6.00 RR 12.00
+                        </span>
                         <div className="flex gap-1">
                           {parsedBalls.map((b, i) => (
-                            <span key={i} className="w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] font-bold flex items-center justify-center">
+                            <span
+                              key={i}
+                              className="w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] font-bold flex items-center justify-center"
+                            >
                               {b}
                             </span>
                           ))}
@@ -690,19 +771,23 @@ export default function CasinoTableModal({ table, onClose }) {
 
                     {/* Left Dealt Balls (Red Circles matching Image 1 right) */}
                     <div className="flex flex-col gap-1.5 mt-2">
-                      {parsedBalls.length > 0 ? (
-                        parsedBalls.map((b, i) => (
-                          <div key={i} className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-red-600 border-2 border-white text-white font-mono font-black text-xs sm:text-sm flex items-center justify-center shadow-lg">
-                            {b}
-                          </div>
-                        ))
-                      ) : (
-                        [0, 3].map((b, i) => (
-                          <div key={i} className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-red-600 border-2 border-white text-white font-mono font-black text-xs sm:text-sm flex items-center justify-center shadow-lg">
-                            {b}
-                          </div>
-                        ))
-                      )}
+                      {parsedBalls.length > 0
+                        ? parsedBalls.map((b, i) => (
+                            <div
+                              key={i}
+                              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-red-600 border-2 border-white text-white font-mono font-black text-xs sm:text-sm flex items-center justify-center shadow-lg"
+                            >
+                              {b}
+                            </div>
+                          ))
+                        : [0, 3].map((b, i) => (
+                            <div
+                              key={i}
+                              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-red-600 border-2 border-white text-white font-mono font-black text-xs sm:text-sm flex items-center justify-center shadow-lg"
+                            >
+                              {b}
+                            </div>
+                          ))}
                     </div>
                   </div>
                 );
@@ -710,17 +795,21 @@ export default function CasinoTableModal({ table, onClose }) {
 
               // Super Over 1 / 2: Pitch Scoreboard Banner (Image 3 Exact Match)
               if (isSuperOver && !isMiniSuperOver && !isBallByBall) {
-                const isSO2 = slug.includes('superover2');
-                const team1 = isSO2 ? 'ENG' : 'IND';
-                const team2 = isSO2 ? 'RSA' : 'ENG';
+                const isSO2 = slug.includes("superover2");
+                const team1 = isSO2 ? "ENG" : "IND";
+                const team2 = isSO2 ? "RSA" : "ENG";
                 return (
                   <div className="flex flex-col items-start gap-1 w-full max-w-sm pointer-events-none">
                     <div className="bg-[#1e3a1f]/95 border border-emerald-500/60 rounded px-3 py-1.5 text-white shadow-xl w-full select-none">
                       <div className="flex justify-between items-center text-[11px] font-mono">
-                        <span className="font-bold text-slate-100">{team1} 0-0 (0.0)CRR 0.00</span>
+                        <span className="font-bold text-slate-100">
+                          {team1} 0-0 (0.0)CRR 0.00
+                        </span>
                       </div>
                       <div className="flex justify-between items-center text-[11px] font-mono mt-0.5">
-                        <span className="font-black text-white">{team2} 0-0 (0.0)</span>
+                        <span className="font-black text-white">
+                          {team2} 0-0 (0.0)
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -798,7 +887,13 @@ export default function CasinoTableModal({ table, onClose }) {
                         TIGER
                       </div>
                       <div className="flex gap-1">
-                        {[0, 1, 2].map(idx => renderCard(tigerCards[idx], `tt-t-${idx}`, !tigerCards[idx] || tigerCards[idx].isHidden))}
+                        {[0, 1, 2].map((idx) =>
+                          renderCard(
+                            tigerCards[idx],
+                            `tt-t-${idx}`,
+                            !tigerCards[idx] || tigerCards[idx].isHidden,
+                          ),
+                        )}
                       </div>
                     </div>
                     <div className="mt-0.5">
@@ -806,7 +901,13 @@ export default function CasinoTableModal({ table, onClose }) {
                         LION
                       </div>
                       <div className="flex gap-1">
-                        {[0, 1, 2].map(idx => renderCard(lionCards[idx], `tt-l-${idx}`, !lionCards[idx] || lionCards[idx].isHidden))}
+                        {[0, 1, 2].map((idx) =>
+                          renderCard(
+                            lionCards[idx],
+                            `tt-l-${idx}`,
+                            !lionCards[idx] || lionCards[idx].isHidden,
+                          ),
+                        )}
                       </div>
                     </div>
                     <div className="mt-0.5">
@@ -814,7 +915,13 @@ export default function CasinoTableModal({ table, onClose }) {
                         DRAGON
                       </div>
                       <div className="flex gap-1">
-                        {[0, 1, 2].map(idx => renderCard(dragonCards[idx], `tt-d-${idx}`, !dragonCards[idx] || dragonCards[idx].isHidden))}
+                        {[0, 1, 2].map((idx) =>
+                          renderCard(
+                            dragonCards[idx],
+                            `tt-d-${idx}`,
+                            !dragonCards[idx] || dragonCards[idx].isHidden,
+                          ),
+                        )}
                       </div>
                     </div>
                   </div>
@@ -830,7 +937,13 @@ export default function CasinoTableModal({ table, onClose }) {
                       DEALER
                     </div>
                     <div className="flex gap-1">
-                      {[0, 1, 2].map(idx => renderCard(cards[idx], `to-d-${idx}`, !cards[idx] || cards[idx].isHidden))}
+                      {[0, 1, 2].map((idx) =>
+                        renderCard(
+                          cards[idx],
+                          `to-d-${idx}`,
+                          !cards[idx] || cards[idx].isHidden,
+                        ),
+                      )}
                     </div>
                   </div>
                 );
@@ -850,7 +963,13 @@ export default function CasinoTableModal({ table, onClose }) {
                           PLAYER A
                         </div>
                         <div className="flex gap-1">
-                          {[0, 1].map(idx => renderCard(pA[idx], `pk-a-${idx}`, !pA[idx] || pA[idx].isHidden))}
+                          {[0, 1].map((idx) =>
+                            renderCard(
+                              pA[idx],
+                              `pk-a-${idx}`,
+                              !pA[idx] || pA[idx].isHidden,
+                            ),
+                          )}
                         </div>
                       </div>
                       <div>
@@ -858,7 +977,13 @@ export default function CasinoTableModal({ table, onClose }) {
                           PLAYER B
                         </div>
                         <div className="flex gap-1">
-                          {[0, 1].map(idx => renderCard(pB[idx], `pk-b-${idx}`, !pB[idx] || pB[idx].isHidden))}
+                          {[0, 1].map((idx) =>
+                            renderCard(
+                              pB[idx],
+                              `pk-b-${idx}`,
+                              !pB[idx] || pB[idx].isHidden,
+                            ),
+                          )}
                         </div>
                       </div>
                     </div>
@@ -867,7 +992,13 @@ export default function CasinoTableModal({ table, onClose }) {
                         BOARD
                       </div>
                       <div className="flex gap-1">
-                        {[0, 1, 2, 3, 4].map(idx => renderCard(board[idx], `pk-bd-${idx}`, !board[idx] || board[idx].isHidden))}
+                        {[0, 1, 2, 3, 4].map((idx) =>
+                          renderCard(
+                            board[idx],
+                            `pk-bd-${idx}`,
+                            !board[idx] || board[idx].isHidden,
+                          ),
+                        )}
                       </div>
                     </div>
                   </div>
@@ -884,7 +1015,13 @@ export default function CasinoTableModal({ table, onClose }) {
                       COMMUNITY
                     </div>
                     <div className="flex gap-1">
-                      {[0, 1, 2, 3, 4].map(idx => renderCard(community[idx], `p6-c-${idx}`, !community[idx] || community[idx].isHidden))}
+                      {[0, 1, 2, 3, 4].map((idx) =>
+                        renderCard(
+                          community[idx],
+                          `p6-c-${idx}`,
+                          !community[idx] || community[idx].isHidden,
+                        ),
+                      )}
                     </div>
                   </div>
                 );
@@ -902,7 +1039,13 @@ export default function CasinoTableModal({ table, onClose }) {
                         PLAYER A
                       </div>
                       <div className="flex gap-1">
-                        {[0, 1, 2].map(idx => renderCard(playerA[idx], `t1-a-${idx}`, !playerA[idx] || playerA[idx].isHidden))}
+                        {[0, 1, 2].map((idx) =>
+                          renderCard(
+                            playerA[idx],
+                            `t1-a-${idx}`,
+                            !playerA[idx] || playerA[idx].isHidden,
+                          ),
+                        )}
                       </div>
                     </div>
                     <div className="mt-0.5">
@@ -910,7 +1053,13 @@ export default function CasinoTableModal({ table, onClose }) {
                         PLAYER B
                       </div>
                       <div className="flex gap-1">
-                        {[0, 1, 2].map(idx => renderCard(playerB[idx], `t1-b-${idx}`, !playerB[idx] || playerB[idx].isHidden))}
+                        {[0, 1, 2].map((idx) =>
+                          renderCard(
+                            playerB[idx],
+                            `t1-b-${idx}`,
+                            !playerB[idx] || playerB[idx].isHidden,
+                          ),
+                        )}
                       </div>
                     </div>
                   </div>
@@ -929,7 +1078,13 @@ export default function CasinoTableModal({ table, onClose }) {
                         PLAYER A
                       </div>
                       <div className="flex gap-1">
-                        {[0, 1, 2].map(idx => renderCard(playerA[idx], `t20-a-${idx}`, !playerA[idx] || playerA[idx].isHidden))}
+                        {[0, 1, 2].map((idx) =>
+                          renderCard(
+                            playerA[idx],
+                            `t20-a-${idx}`,
+                            !playerA[idx] || playerA[idx].isHidden,
+                          ),
+                        )}
                       </div>
                     </div>
                     <div className="mt-0.5">
@@ -937,7 +1092,13 @@ export default function CasinoTableModal({ table, onClose }) {
                         PLAYER B
                       </div>
                       <div className="flex gap-1">
-                        {[0, 1, 2].map(idx => renderCard(playerB[idx], `t20-b-${idx}`, !playerB[idx] || playerB[idx].isHidden))}
+                        {[0, 1, 2].map((idx) =>
+                          renderCard(
+                            playerB[idx],
+                            `t20-b-${idx}`,
+                            !playerB[idx] || playerB[idx].isHidden,
+                          ),
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1166,8 +1327,18 @@ export default function CasinoTableModal({ table, onClose }) {
 
               // Mogambo Table (Daga / Teja + Mogambo) (Image 1 Exact Match)
               if (slug === "mogambo") {
-                const c1 = roundData?.cards?.[0] || { rank: "5", suit: "♠", color: "black", isHidden: false };
-                const c2 = roundData?.cards?.[1] || { rank: "8", suit: "♥", color: "red", isHidden: false };
+                const c1 = roundData?.cards?.[0] || {
+                  rank: "5",
+                  suit: "♠",
+                  color: "black",
+                  isHidden: false,
+                };
+                const c2 = roundData?.cards?.[1] || {
+                  rank: "8",
+                  suit: "♥",
+                  color: "red",
+                  isHidden: false,
+                };
                 const c3 = roundData?.cards?.[2] || { isHidden: true };
                 return (
                   <div className="flex flex-col items-start gap-1">
@@ -1295,8 +1466,10 @@ export default function CasinoTableModal({ table, onClose }) {
               </span>
             )}
           </div>
-          <button 
-            onClick={() => recentResults[0] && setSelectedResultModal(recentResults[0])}
+          <button
+            onClick={() =>
+              recentResults[0] && setSelectedResultModal(recentResults[0])
+            }
             className="text-[10px] font-bold text-slate-400 hover:text-yellow-400 hover:underline shrink-0 ml-3"
           >
             View All
@@ -1348,9 +1521,18 @@ export default function CasinoTableModal({ table, onClose }) {
               isSuspended={isSuspended}
             />
           ) : isSuperOver ? (
-            <SuperOverBoard roundData={roundData} timer={timer} isSuspended={isSuspended} slug={slug} />
+            <SuperOverBoard
+              roundData={roundData}
+              timer={timer}
+              isSuspended={isSuspended}
+              slug={slug}
+            />
           ) : isBallByBall ? (
-            <BallByBallBoard roundData={roundData} timer={timer} isSuspended={isSuspended} />
+            <BallByBallBoard
+              roundData={roundData}
+              timer={timer}
+              isSuspended={isSuspended}
+            />
           ) : isBaccarat ? (
             <BaccaratBoard roundData={roundData} timer={timer} isSuspended={isSuspended} />
           ) : isLucky15 ? (
@@ -1360,19 +1542,47 @@ export default function CasinoTableModal({ table, onClose }) {
           ) : isLucky7 ? (
             <Lucky7Board roundData={roundData} timer={timer} isSuspended={isSuspended} />
           ) : isTeenTest ? (
-            <TeenPattiTestBoard roundData={roundData} timer={timer} isSuspended={isSuspended} />
+            <TeenPattiTestBoard
+              roundData={roundData}
+              timer={timer}
+              isSuspended={isSuspended}
+            />
           ) : isTeenOpen ? (
-            <TeenPattiOpenBoard roundData={roundData} timer={timer} isSuspended={isSuspended} />
+            <TeenPattiOpenBoard
+              roundData={roundData}
+              timer={timer}
+              isSuspended={isSuspended}
+            />
           ) : isPoker1Day ? (
-            <Poker1DayBoard roundData={roundData} timer={timer} isSuspended={isSuspended} />
+            <Poker1DayBoard
+              roundData={roundData}
+              timer={timer}
+              isSuspended={isSuspended}
+            />
           ) : isPoker20 ? (
-            <Poker20Board roundData={roundData} timer={timer} isSuspended={isSuspended} />
+            <Poker20Board
+              roundData={roundData}
+              timer={timer}
+              isSuspended={isSuspended}
+            />
           ) : isPoker6 ? (
-            <Poker6Board roundData={roundData} timer={timer} isSuspended={isSuspended} />
+            <Poker6Board
+              roundData={roundData}
+              timer={timer}
+              isSuspended={isSuspended}
+            />
           ) : isTeen1Day ? (
-            <TeenPatti1DayBoard roundData={roundData} timer={timer} isSuspended={isSuspended} />
+            <TeenPatti1DayBoard
+              roundData={roundData}
+              timer={timer}
+              isSuspended={isSuspended}
+            />
           ) : isTeen20 ? (
-            <TeenPatti20Board roundData={roundData} timer={timer} isSuspended={isSuspended} />
+            <TeenPatti20Board
+              roundData={roundData}
+              timer={timer}
+              isSuspended={isSuspended}
+            />
           ) : isUniqueRoulette ? (
             <UniqueRouletteBoard
               roundData={roundData}
