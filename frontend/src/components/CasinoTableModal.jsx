@@ -8,10 +8,18 @@ export default function CasinoTableModal({ table, onClose }) {
   const [loading, setLoading] = useState(true);
   const [streamUrl, setStreamUrl] = useState('');
   const [streamKey, setStreamKey] = useState(0);
+  const [selectedWorliTab, setSelectedWorliTab] = useState('Single');
 
   const slug = (table?.slug || table?.id || '').toLowerCase();
-  const isLucky6 = slug === 'lucky6' || slug === 'lucky5' || (table?.name || '').toLowerCase().includes('lucky 6');
-  const isRoulette = slug.includes('roulette') || (table?.name || '').toLowerCase().includes('roulette');
+  const nameLow = (table?.name || '').toLowerCase();
+  const isLucky6 = slug === 'lucky6' || slug === 'lucky5' || nameLow.includes('lucky 6');
+  const isRoulette = slug.includes('roulette') || nameLow.includes('roulette');
+  const isWorli = slug === 'worli' || slug === 'worli2' || slug === 'worli3' || nameLow.includes('worli') || nameLow.includes('matka');
+  const isPoison = slug.includes('poison') || nameLow.includes('poison');
+  const isUniqueTeen = slug.includes('unique') || nameLow.includes('unique teen');
+  const isJoker = slug.includes('joker') || slug === 'joker120' || slug === 'joker1' || nameLow.includes('joker');
+  const isSuperOver = slug.includes('superover') || slug.includes('ballbyball') || nameLow.includes('super over');
+  const isSuspended = timer <= 0 || roundData?.status === 'SUSPENDED';
 
   // Fetch live stream URL from Diamond / D247 API
   useEffect(() => {
@@ -138,30 +146,20 @@ export default function CasinoTableModal({ table, onClose }) {
     const w = (winnerName || '').trim();
     const lower = w.toLowerCase();
 
-    // 1. Roulette Results (Numbers 0 to 36)
-    if (/^\d{1,2}$/.test(w)) {
+    // 1. Roulette Results (Numbers 0..36, 00 - Red, Black, Green)
+    if (isRoulette || (/^\d{1,2}$/.test(w) && (slug.includes('roulette') || !isNaN(parseInt(w))))) {
       const num = parseInt(w);
-      const RED_NUMS = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
-      if (num === 0) {
-        return { letter: '0', bg: 'bg-emerald-600 text-white border border-emerald-400 font-mono', title: '0 (Green)' };
+      if (!isNaN(num)) {
+        const RED_ROULETTE = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
+        const display = String(w).trim().padStart(2, '0');
+        if (num === 0 || w === '0' || w === '00') {
+          return { letter: display, bg: 'bg-emerald-600 text-white font-mono font-black', title: `Result: ${display}` };
+        }
+        if (RED_ROULETTE.includes(num)) {
+          return { letter: display, bg: 'bg-red-600 text-white font-mono font-black', title: `Result: ${display}` };
+        }
+        return { letter: display, bg: 'bg-black text-white font-mono font-black border border-slate-700', title: `Result: ${display}` };
       }
-      const isRed = RED_NUMS.includes(num);
-      return {
-        letter: String(num),
-        bg: isRed ? 'bg-red-600 text-white font-mono' : 'bg-slate-950 text-white border border-slate-700 font-mono',
-        title: `Number ${num} (${isRed ? 'Red' : 'Black'})`
-      };
-    }
-
-    // 2. Sic Bo / Dice Results (e.g. "1,2,4" or "4,4,6")
-    if (w.includes(',')) {
-      const parts = w.split(',').map(n => parseInt(n.trim())).filter(n => !isNaN(n));
-      const sum = parts.reduce((a, b) => a + b, 0);
-      return {
-        letter: String(sum || w),
-        bg: 'bg-amber-600 text-slate-950 font-black border border-amber-300',
-        title: `Dice: ${w} (Total: ${sum})`
-      };
     }
 
     // 3. Cricket Ball by Ball (e.g. "1 Run", "6 Run", "Wicket")
@@ -339,6 +337,28 @@ export default function CasinoTableModal({ table, onClose }) {
           </div>
         </div>
 
+        {/* Worli Matka Market Countdown Schedule (Image 6 & 7) */}
+        {isWorli && (
+          <div className="bg-[#0b1f36] px-2 py-1.5 border-b border-sky-900/60 flex items-center gap-2 overflow-x-auto scrollbar-none select-none">
+            {[
+              { name: 'ASIA CLOSE', time: '00:47:57', date: '24 NOV 26 04:00 PM' },
+              { name: 'TAJ OPEN', time: '01:47:57', date: '24 NOV 26 05:00 PM' },
+              { name: 'TAJ CLOSE', time: '02:47:57', date: '24 NOV 26 06:00 PM' },
+              { name: 'GULF OPEN', time: '03:47:57', date: '24 NOV 26 07:00 PM' },
+              { name: 'GULF CLOSE', time: '04:47:57', date: '24 NOV 26 08:00 PM' },
+              { name: 'DIAMOND OPEN', time: '05:47:57', date: '24 NOV 26 09:00 PM' },
+              { name: 'DIAMOND CLOSE', time: '06:47:57', date: '24 NOV 26 10:00 PM' },
+              { name: 'WORLD OPEN', time: '07:47:57', date: '24 NOV 26 11:00 PM' },
+            ].map((m, idx) => (
+              <div key={idx} className="bg-[#14324f] px-2.5 py-1 rounded border border-sky-500/40 shrink-0 text-center font-mono">
+                <div className="text-sky-300 font-black text-[10px] leading-tight">{m.name}</div>
+                <div className="text-yellow-400 font-bold text-[10px] leading-tight">⏱ {m.time}</div>
+                <div className="text-[8px] text-slate-400 leading-none">{m.date}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* 3. Live Video Container with Floating HUD Overlay (Image 10 Exact Parity) */}
         <div className="relative w-full aspect-video bg-black overflow-hidden select-none border-b border-slate-800 shrink-0">
           
@@ -366,8 +386,97 @@ export default function CasinoTableModal({ table, onClose }) {
 
             {/* Game Specific Overlay Components */}
             {(() => {
-              // 0. Lucky 6 Table (Exact match to Image 1 top left)
-              if (slug === 'lucky6' || slug === 'lucky5') {
+              // Unique Teen Patti: No cards in video HUD (cards rendered in 6-card strip below video)
+              if (isUniqueTeen) {
+                return null;
+              }
+
+              // Poison Teenpatti (Image 1 & 3: Poison 1 card, Player A 3 cards, Player B 3 cards)
+              if (isPoison) {
+                const cards = roundData?.cards || [];
+                const poisonCard = cards[0];
+                const playerA = cards.slice(1, 4);
+                const playerB = cards.slice(4, 7);
+                return (
+                  <div className="flex flex-col items-start gap-1">
+                    <div>
+                      <div className="text-[10px] sm:text-[11px] font-black text-amber-300 uppercase tracking-wider drop-shadow-md mb-0.5">
+                        POISON
+                      </div>
+                      <div className="flex gap-1">
+                        {renderCard(poisonCard, 'poison-card', !poisonCard || poisonCard.isHidden)}
+                      </div>
+                    </div>
+                    <div className="mt-0.5">
+                      <div className="text-[10px] sm:text-[11px] font-black text-amber-300 uppercase tracking-wider drop-shadow-md mb-0.5">
+                        PLAYER A
+                      </div>
+                      <div className="flex gap-1">
+                        {[0, 1, 2].map(idx => renderCard(playerA[idx], `pa-${idx}`, !playerA[idx] || playerA[idx].isHidden))}
+                      </div>
+                    </div>
+                    <div className="mt-0.5">
+                      <div className="text-[10px] sm:text-[11px] font-black text-amber-300 uppercase tracking-wider drop-shadow-md mb-0.5">
+                        PLAYER B
+                      </div>
+                      <div className="flex gap-1">
+                        {[0, 1, 2].map(idx => renderCard(playerB[idx], `pb-${idx}`, !playerB[idx] || playerB[idx].isHidden))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              // Unlimited Joker 20-20 & One-Day (Image 4: Joker 1 card, Player A 3 cards, Player B 3 cards)
+              if (isJoker) {
+                const cards = roundData?.cards || [];
+                const jokerCard = cards[0];
+                const playerA = cards.slice(1, 4);
+                const playerB = cards.slice(4, 7);
+                return (
+                  <div className="flex flex-col items-start gap-1">
+                    <div>
+                      <div className="text-[10px] sm:text-[11px] font-black text-red-400 uppercase tracking-wider drop-shadow-md mb-0.5">
+                        JOKER
+                      </div>
+                      <div className="flex gap-1">
+                        {renderCard(jokerCard, 'joker-card', !jokerCard || jokerCard.isHidden)}
+                      </div>
+                    </div>
+                    <div className="mt-0.5">
+                      <div className="text-[10px] sm:text-[11px] font-black text-amber-300 uppercase tracking-wider drop-shadow-md mb-0.5">
+                        PLAYER A
+                      </div>
+                      <div className="flex gap-1">
+                        {[0, 1, 2].map(idx => renderCard(playerA[idx], `pa-${idx}`, !playerA[idx] || playerA[idx].isHidden))}
+                      </div>
+                    </div>
+                    <div className="mt-0.5">
+                      <div className="text-[10px] sm:text-[11px] font-black text-amber-300 uppercase tracking-wider drop-shadow-md mb-0.5">
+                        PLAYER B
+                      </div>
+                      <div className="flex gap-1">
+                        {[0, 1, 2].map(idx => renderCard(playerB[idx], `pb-${idx}`, !playerB[idx] || playerB[idx].isHidden))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              // Worli Matka (Image 6 & 7: 3 cards dealt for Pana)
+              if (isWorli) {
+                const cards = roundData?.cards || [];
+                return (
+                  <div className="flex flex-col items-start gap-1">
+                    <div className="flex gap-1">
+                      {[0, 1, 2].map(idx => renderCard(cards[idx], `worli-${idx}`, !cards[idx] || cards[idx].isHidden))}
+                    </div>
+                  </div>
+                );
+              }
+
+              // Lucky 6 Table (Image 5: 1 card)
+              if (isLucky6) {
                 const c = roundData?.cards?.[0];
                 return (
                   <div className="flex flex-col items-start gap-1">
@@ -379,8 +488,8 @@ export default function CasinoTableModal({ table, onClose }) {
                 );
               }
 
-              // 0.1 Virtual Cricket (Super Over / Ball by Ball)
-              if (slug.includes('superover') || slug.includes('ballbyball') || roundData?.dealType === 'cricket_ball') {
+              // Virtual Cricket (Super Over / Ball by Ball)
+              if (isSuperOver || roundData?.dealType === 'cricket_ball') {
                 const balls = roundData?.cards || [];
                 return (
                   <div className="flex flex-col items-start gap-1">
@@ -404,14 +513,14 @@ export default function CasinoTableModal({ table, onClose }) {
                   </div>
                 );
               }
-              // 1. Mogambo Table (Exact match to User Image 10)
+
+              // Mogambo Table (Exact match to User Image 10)
               if (slug === 'mogambo') {
                 const c1 = roundData?.cards?.[0];
                 const c2 = roundData?.cards?.[1];
                 const c3 = roundData?.cards?.[2];
                 return (
                   <div className="flex flex-col items-start gap-1">
-                    {/* DAGA / TEJA */}
                     <div>
                       <div className="text-[10px] sm:text-[11px] font-black text-white uppercase tracking-wider drop-shadow-md mb-0.5">
                         DAGA / TEJA
@@ -421,8 +530,6 @@ export default function CasinoTableModal({ table, onClose }) {
                         {renderCard(c2, 'dt2', !c2 || c2.isHidden)}
                       </div>
                     </div>
-
-                    {/* MOGAMBO */}
                     <div className="mt-0.5">
                       <div className="text-[10px] sm:text-[11px] font-black text-white uppercase tracking-wider drop-shadow-md mb-0.5">
                         MOGAMBO
@@ -435,7 +542,7 @@ export default function CasinoTableModal({ table, onClose }) {
                 );
               }
 
-              // 2. Teen Patti / 20-20 / VIP
+              // Standard Teen Patti / 20-20 / VIP
               if (slug.includes('teen') || slug.includes('patti')) {
                 const cards = roundData?.cards || [];
                 const playerA = cards.slice(0, 3);
@@ -614,9 +721,294 @@ export default function CasinoTableModal({ table, onClose }) {
 
         {/* 5. Real Live Betting Odds Board */}
         <div className="flex-1 overflow-y-auto p-3 sm:p-4 bg-[#0b1726]">
-          {isLucky6 ? (
-            /* Lucky 6 Custom Betting Board (Exact Match to Diamond Online Image 1) */
+          {isWorli ? (
+            /* Worli Matka Custom Betting Board (Exact Match to Diamond Online Image 6 & 7) */
             <div className="flex flex-col gap-3">
+              {/* Coin Amount & 1-Click Bet Palette */}
+              <div className="bg-[#112435] p-2.5 rounded-lg border border-slate-700 flex flex-wrap items-center justify-between gap-2">
+                <div className="text-[11px] font-black text-slate-300 uppercase tracking-wide">
+                  SET YOUR COIN AMOUNT AND START 1-CLICK BET!
+                </div>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <button className="px-2.5 py-1 bg-red-600 hover:bg-red-500 text-white font-bold text-xs rounded shadow">
+                    Reset
+                  </button>
+                  <div className="px-2.5 py-1 bg-purple-700 text-white font-bold text-xs rounded-full border border-purple-400">
+                    0 =
+                  </div>
+                  {[25, 50, 100, 200, 500, '1K'].map((coin, cIdx) => (
+                    <div
+                      key={cIdx}
+                      className="w-8 h-8 rounded-full bg-cyan-700 hover:bg-cyan-600 text-white font-bold text-[11px] flex items-center justify-center cursor-pointer shadow border border-cyan-400 active:scale-95 transition"
+                    >
+                      +{coin}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Matka Tabs & Interactive Grid */}
+              <div className="grid grid-cols-12 gap-2 relative">
+                {/* Suspended Lock Overlay */}
+                {isSuspended && (
+                  <div className="absolute inset-0 z-30 bg-black/75 backdrop-blur-[2px] rounded-lg flex flex-col items-center justify-center text-red-400 font-black text-sm tracking-wider gap-1 border border-red-500/50">
+                    <Lock size={24} className="text-red-500 animate-pulse" />
+                    <span>LOCKED / SUSPENDED</span>
+                  </div>
+                )}
+
+                {/* Left Vertical Tabs (Exact to Image 6 & 7) */}
+                <div className="col-span-3 sm:col-span-2 flex flex-col gap-1 bg-[#0f1d2c] p-1 rounded-lg border border-slate-700/80">
+                  {[
+                    'Jodi', 'Single', 'Pana', 'SP', 'DP', 'Trio', 'Cycle', 
+                    'Motor SP', '56 Charts', '64 Charts', 'ABR', 'Common SP', 
+                    'Common DP', 'Color DP'
+                  ].map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setSelectedWorliTab(tab)}
+                      className={`py-1.5 px-2 text-center text-xs font-black rounded transition truncate ${
+                        selectedWorliTab === tab
+                          ? 'bg-[#1e3a5f] text-white border-l-4 border-sky-400 font-extrabold shadow'
+                          : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                      }`}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Right Interactive Single Grid (Exact to Image 6 & 7) */}
+                <div className="col-span-9 sm:col-span-10 flex flex-col gap-1.5">
+                  {/* Row 1: 1, 2, 3, 4, 5, LINE 1, ODD */}
+                  <div className="grid grid-cols-7 gap-1 text-slate-900 font-black">
+                    {[1, 2, 3, 4, 5].map((num) => (
+                      <div
+                        key={num}
+                        className="py-3 bg-[#72bbef] hover:bg-[#5caae6] rounded flex items-center justify-center text-lg sm:text-xl font-serif font-black cursor-pointer shadow active:scale-95 transition"
+                      >
+                        {num}
+                      </div>
+                    ))}
+                    <div className="py-2 px-1 bg-[#72bbef] hover:bg-[#5caae6] rounded flex flex-col items-center justify-center text-center cursor-pointer shadow active:scale-95 transition">
+                      <span className="text-[11px] font-black uppercase leading-tight">LINE 1</span>
+                      <span className="text-[8px] font-mono text-slate-800">1|2|3|4|5</span>
+                    </div>
+                    <div className="py-2 px-1 bg-[#72bbef] hover:bg-[#5caae6] rounded flex flex-col items-center justify-center text-center cursor-pointer shadow active:scale-95 transition">
+                      <span className="text-[11px] font-black uppercase leading-tight">ODD</span>
+                      <span className="text-[8px] font-mono text-slate-800">1|3|5|7|9</span>
+                    </div>
+                  </div>
+
+                  {/* Row 2: 6, 7, 8, 9, 0, LINE 2, EVEN */}
+                  <div className="grid grid-cols-7 gap-1 text-slate-900 font-black">
+                    {[6, 7, 8, 9, 0].map((num) => (
+                      <div
+                        key={num}
+                        className="py-3 bg-[#72bbef] hover:bg-[#5caae6] rounded flex items-center justify-center text-lg sm:text-xl font-serif font-black cursor-pointer shadow active:scale-95 transition"
+                      >
+                        {num}
+                      </div>
+                    ))}
+                    <div className="py-2 px-1 bg-[#72bbef] hover:bg-[#5caae6] rounded flex flex-col items-center justify-center text-center cursor-pointer shadow active:scale-95 transition">
+                      <span className="text-[11px] font-black uppercase leading-tight">LINE 2</span>
+                      <span className="text-[8px] font-mono text-slate-800">6|7|8|9|0</span>
+                    </div>
+                    <div className="py-2 px-1 bg-[#72bbef] hover:bg-[#5caae6] rounded flex flex-col items-center justify-center text-center cursor-pointer shadow active:scale-95 transition">
+                      <span className="text-[11px] font-black uppercase leading-tight">EVEN</span>
+                      <span className="text-[8px] font-mono text-slate-800">2|4|6|8|0</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Matka Markets Ribbon */}
+              <div className="bg-[#112435] px-3 py-2 rounded-lg border border-slate-700 flex items-center justify-between text-xs overflow-x-auto scrollbar-none">
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="text-slate-400 font-bold text-[11px] mr-1">Last Result</span>
+                  {['Diamond', 'World', 'Taj', 'Lords', 'Riga', 'Asia', 'Gulf'].map((m) => (
+                    <div key={m} className="px-2 py-0.5 bg-slate-800 border border-slate-700 text-slate-300 rounded text-[10px] font-bold">
+                      {m}
+                    </div>
+                  ))}
+                </div>
+                <button className="text-[10px] font-bold text-sky-400 hover:underline shrink-0 ml-2">
+                  View All
+                </button>
+              </div>
+            </div>
+          ) : isPoison ? (
+            /* Poison Teenpatti Custom Betting Board (Exact Match to Diamond Online Image 1 & 3) */
+            <div className="flex flex-col gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* Left: Player A & Player B Back/Lay */}
+                <div className="bg-[#112435] rounded-lg border border-slate-700 overflow-hidden">
+                  <div className="grid grid-cols-3 bg-[#0c1b29] text-[11px] font-bold text-slate-300 border-b border-slate-700 py-2 px-3 text-center">
+                    <div className="text-left font-black text-slate-400">Runner</div>
+                    <div className="bg-[#72bbef]/20 text-[#72bbef] rounded font-black py-0.5">Back</div>
+                    <div className="bg-[#faa9ba]/20 text-[#faa9ba] rounded font-black py-0.5 ml-1">Lay</div>
+                  </div>
+                  {['Player A', 'Player B'].map((pName, pIdx) => {
+                    const runner = roundData?.runners?.find(r => (r.name || '').toLowerCase() === pName.toLowerCase());
+                    return (
+                      <div key={pIdx} className="grid grid-cols-3 items-center border-b border-slate-800 p-2.5 text-center">
+                        <div className="text-left font-black text-xs text-white">{pName}</div>
+                        {isSuspended ? (
+                          <div className="py-2 bg-[#2b3543] rounded border border-slate-700 text-slate-400 flex items-center justify-center">
+                            <Lock size={14} className="text-slate-300" />
+                          </div>
+                        ) : (
+                          <button className="py-1.5 bg-[#72bbef] hover:bg-[#5caae6] text-slate-950 font-black text-xs rounded transition shadow">
+                            {runner?.back || '1.95'}
+                          </button>
+                        )}
+                        {isSuspended ? (
+                          <div className="py-2 bg-[#2b3543] rounded border border-slate-700 text-slate-400 flex items-center justify-center ml-1">
+                            <Lock size={14} className="text-slate-300" />
+                          </div>
+                        ) : (
+                          <button className="py-1.5 bg-[#faa9ba] hover:bg-[#f294a8] text-slate-950 font-black text-xs rounded transition shadow ml-1">
+                            {runner?.lay || '2.05'}
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Right: Poison Side Bets (Even, Odd, Red, Black, Suits) */}
+                <div className="bg-[#112435] rounded-lg border border-slate-700 overflow-hidden">
+                  {/* Row 1: Header Even | Odd | Red | Black */}
+                  <div className="grid grid-cols-5 bg-[#0c1b29] text-[10px] font-bold text-slate-300 border-b border-slate-700 py-1.5 px-2 text-center">
+                    <div className="text-left font-bold text-amber-400">Poison</div>
+                    <div>Even</div>
+                    <div>Odd</div>
+                    <div className="text-red-400">Red ♥♦</div>
+                    <div className="text-slate-200">Black ♠♣</div>
+                  </div>
+                  <div className="grid grid-cols-5 items-center p-2 border-b border-slate-800 text-center gap-1">
+                    <div className="text-left text-[11px] font-bold text-slate-400">Rate</div>
+                    {['Even', 'Odd', 'Red', 'Black'].map((opt, i) => (
+                      <div key={i} className="py-2 bg-[#2b3543] rounded border border-slate-700 text-slate-400 flex items-center justify-center">
+                        {isSuspended ? <Lock size={12} className="text-slate-300" /> : <span className="text-xs font-black text-sky-300">2.0</span>}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Row 2: Suits Header ♠ | ♥ | ♦ | ♣ */}
+                  <div className="grid grid-cols-5 bg-[#0c1b29] text-[11px] font-bold text-slate-300 border-b border-slate-700 py-1.5 px-2 text-center">
+                    <div className="text-left font-bold text-amber-400">Suits</div>
+                    <div>♠</div>
+                    <div className="text-red-400">♥</div>
+                    <div className="text-red-400">♦</div>
+                    <div>♣</div>
+                  </div>
+                  <div className="grid grid-cols-5 items-center p-2 text-center gap-1">
+                    <div className="text-left text-[11px] font-bold text-slate-400">Rate</div>
+                    {['♠', '♥', '♦', '♣'].map((s, i) => (
+                      <div key={i} className="py-2 bg-[#2b3543] rounded border border-slate-700 text-slate-400 flex items-center justify-center">
+                        {isSuspended ? <Lock size={12} className="text-slate-300" /> : <span className="text-xs font-black text-amber-300">4.0</span>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : isUniqueTeen ? (
+            /* Unique Teen Patti Custom Betting Board (Exact Match to Diamond Online Image 2) */
+            <div className="flex flex-col gap-3">
+              <div className="bg-[#112435] text-white text-xs sm:text-sm font-bold px-4 py-2.5 rounded-t-lg flex items-center justify-between border-b border-slate-700">
+                <span className="flex items-center gap-2">
+                  <span className="text-yellow-400 font-black">👆</span>
+                  Select any 3 cards of your choice and experience TeenPatti in a unique way.
+                </span>
+                <span className="text-[11px] font-mono text-slate-400">Round ID: #{roundData?.roundId || 'Connecting...'}</span>
+              </div>
+              <div className="flex items-center justify-center gap-2 sm:gap-4 py-4 bg-[#0c1b29] rounded-b-lg border border-slate-700/80 overflow-x-auto scrollbar-none px-2">
+                {[0, 1, 2, 3, 4, 5].map((idx) => {
+                  const c = roundData?.cards?.[idx];
+                  const isRed = c?.color === 'red' || c?.suit === '♥' || c?.suit === '♦';
+                  return (
+                    <div key={idx} className="flex flex-col items-center gap-1.5 shrink-0">
+                      <div className="w-6 h-6 rounded-full bg-slate-300 text-slate-900 font-black text-xs flex items-center justify-center shadow">
+                        {idx + 1}
+                      </div>
+                      {c && !c.isHidden ? (
+                        <div className="w-12 h-18 sm:w-16 sm:h-24 bg-white border-2 border-yellow-400 rounded-lg shadow-xl flex flex-col justify-between p-1 select-none font-bold">
+                          <div className={`text-sm sm:text-base font-black leading-none ${isRed ? 'text-red-600' : 'text-slate-900'}`}>
+                            {c.rank}
+                          </div>
+                          <div className={`text-xl sm:text-3xl leading-none self-center ${isRed ? 'text-red-600' : 'text-slate-900'}`}>
+                            {c.suit}
+                          </div>
+                          <div className={`text-[10px] sm:text-xs font-black leading-none self-end rotate-180 ${isRed ? 'text-red-600' : 'text-slate-900'}`}>
+                            {c.rank}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="w-12 h-18 sm:w-16 sm:h-24 rounded-lg bg-[#0b2742] border-2 border-yellow-400/80 shadow-md flex items-center justify-center">
+                          <div className="text-yellow-300 font-serif text-xl">✦</div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : isJoker ? (
+            /* Unlimited Joker 20-20 Custom Betting Board (Exact Match to Diamond Online Image 4) */
+            <div className="flex flex-col gap-3">
+              {/* Select your Joker strip */}
+              <div className="bg-[#112435] rounded-lg border border-slate-700 p-2.5 flex flex-col sm:flex-row items-center gap-2.5">
+                <div className="px-3 py-1.5 bg-sky-600 text-white font-black text-xs rounded shrink-0 shadow">
+                  Select your Joker
+                </div>
+                <div className="grid grid-cols-13 gap-1 w-full overflow-x-auto scrollbar-none">
+                  {['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'].map((r) => (
+                    <div
+                      key={r}
+                      className="py-1 px-1 bg-white hover:bg-slate-100 rounded border border-slate-300 text-slate-900 flex flex-col items-center justify-center cursor-pointer shadow-sm min-w-[24px] hover:scale-105 transition"
+                    >
+                      <span className="text-[11px] font-black">{r}</span>
+                      <div className="flex gap-0.5 text-[6px] text-slate-600 leading-none">
+                        <span className="text-black">♠</span>
+                        <span className="text-red-600">♥</span>
+                        <span className="text-red-600">♦</span>
+                        <span className="text-black">♣</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Player A & Player B Back/Lay */}
+              <div className="bg-[#112435] rounded-lg border border-slate-700 p-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {['Player A', 'Player B'].map((pName, pIdx) => (
+                  <div key={pIdx} className="flex items-center justify-between bg-[#0c1b29] p-2.5 rounded-lg border border-slate-700/80">
+                    <span className="font-black text-sm text-white">{pName}</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-16 py-2 bg-[#2b3543] rounded border border-slate-700 text-slate-400 flex items-center justify-center">
+                        <Lock size={14} className="text-slate-300" />
+                      </div>
+                      <div className="w-16 py-2 bg-[#2b3543] rounded border border-slate-700 text-slate-400 flex items-center justify-center">
+                        <Lock size={14} className="text-slate-300" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : isLucky6 ? (
+            /* Lucky 6 Custom Betting Board (Exact Match to Diamond Online Image 5) */
+            <div className="flex flex-col gap-3 relative">
+              {/* Suspended Lock Overlay */}
+              {isSuspended && (
+                <div className="absolute inset-0 z-30 bg-black/75 backdrop-blur-[2px] rounded-lg flex flex-col items-center justify-center text-red-400 font-black text-sm tracking-wider gap-1 border border-red-500/50">
+                  <Lock size={24} className="text-red-500 animate-pulse" />
+                  <span>LOCKED / SUSPENDED</span>
+                </div>
+              )}
+
               <div className="flex justify-between items-center text-xs border-b border-slate-700/60 pb-2">
                 <div className="flex items-center gap-2">
                   <span className="font-extrabold text-sky-400 text-sm">LUCKY 6</span>
@@ -700,7 +1092,7 @@ export default function CasinoTableModal({ table, onClose }) {
               </div>
             </div>
           ) : isRoulette ? (
-            /* Roulette / VIP Roulette Custom Betting Board (Exact Match to Diamond Online Image 2) */
+            /* Roulette / VIP Roulette Custom Betting Board (Exact Match to Diamond Online Image 8 & 9) */
             <div className="flex flex-col gap-3">
               <div className="flex justify-between items-center text-xs border-b border-slate-700/60 pb-2">
                 <div className="flex items-center gap-2">
@@ -716,7 +1108,15 @@ export default function CasinoTableModal({ table, onClose }) {
               {/* Roulette Layout & Chips palette */}
               <div className="flex flex-col lg:flex-row gap-3">
                 {/* Roulette Felt Mat */}
-                <div className="flex-1 overflow-x-auto bg-[#475569] p-2 rounded-xl shadow-2xl border border-slate-600">
+                <div className="flex-1 overflow-x-auto bg-[#475569] p-2 rounded-xl shadow-2xl border border-slate-600 relative">
+                  {/* Suspended Lock Overlay */}
+                  {isSuspended && (
+                    <div className="absolute inset-0 z-30 bg-black/75 backdrop-blur-[2px] rounded-xl flex flex-col items-center justify-center text-red-400 font-black text-sm tracking-wider gap-1 border border-red-500/50">
+                      <Lock size={24} className="text-red-500 animate-pulse" />
+                      <span>LOCKED / SUSPENDED</span>
+                    </div>
+                  )}
+
                   <div className="min-w-[420px]">
                     {/* Top Zero Row */}
                     <div className="w-full bg-[#15803d] text-white font-mono font-black text-center py-1.5 rounded-t border border-emerald-500 cursor-pointer hover:bg-emerald-600 transition shadow">

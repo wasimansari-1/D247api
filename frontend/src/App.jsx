@@ -1854,16 +1854,17 @@ export default function App() {
                       style={{ minHeight: "250px", height: "250px" }}
                       className="bg-[#0f1d2a] border border-slate-700/80 hover:border-yellow-400 rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all cursor-pointer group text-white relative flex flex-col justify-between select-none"
                     >
-                      <img 
-                        src={`/api/casino/image/${t.slug}`} 
-                        alt={t.name}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        onError={(e) => {
-                          e.target.src = 'https://cdn.926assets.com/g1-casino-icons/lc/teen20.jpg';
-                        }}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        loading="lazy"
-                      />
+                      <div className="relative w-full h-[150px] overflow-hidden">
+                        <img 
+                          src={`/api/casino/image/${t.slug}`} 
+                          alt={t.name}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          onError={(e) => {
+                            e.target.src = 'https://cdn.926assets.com/g1-casino-icons/lc/teen20.jpg';
+                          }}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          loading="lazy"
+                        />
 
                         <div className="absolute top-2 left-2 z-10">
                           <span className="text-[10px] bg-red-600/95 font-black px-1.5 py-0.5 rounded text-white uppercase tracking-wider flex items-center gap-1 shadow-md">

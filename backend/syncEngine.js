@@ -55,13 +55,14 @@ const SPORT_NAMES = {
 };
 
 const CASINO_SLUG_MAP = {
-  // Roulette
-  roulette: "roulette11",
-  roulette11: "roulette11",
-  viproulette: "roulette12",
-  broulette: "ourroullete",
+  // Roulette (Exact Diamond Online Mapping: Beach -> 12, Roulette -> 13, VIP -> 11, Unique -> ourroullete)
+  roulette: "roulette13",
+  roulette11: "roulette13",
+  viproulette: "roulette11",
+  broulette: "roulette12",
   ourroullete: "ourroullete",
-  uroulette: "roulette13",
+  uroulette: "ourroullete",
+  roulette12: "roulette12",
   roulette13: "roulette13",
 
   // Lucky games
@@ -90,7 +91,7 @@ const CASINO_SLUG_MAP = {
   ab20: "ab20",
   abj: "abj",
 
-  // Teen Patti
+  // Teen Patti & Joker Games
   'teen': 'teen',
   'teen20': 'teen20',
   'teen3': 'teen3',
@@ -100,8 +101,14 @@ const CASINO_SLUG_MAP = {
   'teen20b': 'teen20b',
   'teen20b_dup': 'teen20b',
   'teen20c': 'teen20c',
-  'teen1': 'teen1',
-  'teen120': 'teen120',
+  'teen1': 'joker1',
+  'teen120': 'joker120',
+  'joker': 'joker1',
+  'joker1': 'joker1',
+  'joker120': 'joker120',
+  'unlimitedjoker': 'joker120',
+  'unlimitedjoker20': 'joker120',
+  'unlimitedjoker1day': 'joker1',
   'teen41': 'poison',
   'teen42': 'poison20',
   'poison': 'poison',
@@ -121,7 +128,7 @@ const CASINO_SLUG_MAP = {
   // Cards & Baccarat
   'baccarat': 'baccarat',
   'baccarat2': 'baccarat2',
-  'baccarat29': 'baccarat',
+  'baccarat29': 'teensin',
   'tbaccarat': 'baccarat',
   'card32': 'card32',
   'card32eu': 'card32eu',
@@ -130,8 +137,6 @@ const CASINO_SLUG_MAP = {
   'queentop': 'queen',
   'jack': 'joker1',
   'jacktop': 'joker1',
-  'joker1': 'joker1',
-  'joker120': 'joker120',
 
   // Others & Special
   'dt20': 'dt20',
@@ -198,7 +203,7 @@ const EXACT_77_CASINO_TABLES = [
   },
   {
     id: "12",
-    slug: "teen120",
+    slug: "joker120",
     name: "UNLIMITED JOKER 20 20",
     category: "Teen Patti",
   },
@@ -210,7 +215,7 @@ const EXACT_77_CASINO_TABLES = [
   },
   {
     id: "14",
-    slug: "teen1",
+    slug: "joker1",
     name: "UNLIMITED JOKER ONEDAY",
     category: "Teen Patti",
   },
@@ -918,7 +923,7 @@ class D247SyncEngine {
         return {
           gameType: raw.gtype || slug,
           dealType: dealType,
-          roundId: String(raw.mid || Date.now()),
+          roundId: String(raw.mid || raw.gmid || t1.gmid || (Array.isArray(t2) && t2[0]?.mid) || raw.roundId || Date.now()),
           timer: raw.lt !== undefined ? raw.lt : 0,
           totalTimer: raw.ft || 20,
           card: raw.card || "",
@@ -944,18 +949,23 @@ class D247SyncEngine {
       const sLow = (slug || "").toLowerCase();
       const targetSlug = CASINO_SLUG_MAP[sLow] || slug;
       const res = await this.executeUpstream("/casino/lastresults", {
+        gType: targetSlug,
         type: targetSlug,
+        ismob: 1,
       });
-      if (res && res.success && Array.isArray(res.data)) {
-        return res.data.map((r) => ({
-          mid: String(r.mid),
-          winner: r.win || r.winner || r.result || "",
-          nat: r.win || r.winner || r.result || "",
+      const list = res?.data?.res || (Array.isArray(res?.data) ? res.data : []);
+      if (Array.isArray(list) && list.length > 0) {
+        return list.map((r) => ({
+          mid: String(r.mid || ""),
+          winner: String(r.win || r.winner || r.result || ""),
+          nat: String(r.win || r.winner || r.result || ""),
           desc: r.desc || "",
-          cards: r.card ? r.card.split(",") : [],
+          cards: r.card ? String(r.card).split(",") : [],
         }));
       }
-    } catch (err) {}
+    } catch (err) {
+      console.error(`Error in fetchCasinoRecentResults(${slug}):`, err.message);
+    }
     return [];
   }
 
