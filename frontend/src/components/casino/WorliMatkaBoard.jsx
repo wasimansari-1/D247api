@@ -1,12 +1,43 @@
 import React, { useState } from 'react';
-import { Lock } from 'lucide-react';
+import { Lock, Clock } from 'lucide-react';
 
 export default function WorliMatkaBoard({ roundData, timer, isSuspended }) {
   const [selectedWorliTab, setSelectedWorliTab] = useState('Single');
+  const isBettingClosed = isSuspended || timer <= 3;
+
+  // Market Timers Bar (Image 2 Exact Match)
+  const marketTimers = [
+    { name: 'ASIA CLOSE', time: '00:47:57' },
+    { name: 'TAJ OPEN', time: '01:47:57' },
+    { name: 'TAJ CLOSE', time: '02:47:57' },
+    { name: 'GULF OPEN', time: '03:47:57' },
+    { name: 'GULF CLOSE', time: '04:47:57' },
+    { name: 'DIAMOND OPEN', time: '05:47:57' },
+    { name: 'DIAMOND CLOSE', time: '06:47:57' },
+    { name: 'WORLD OPEN', time: '07:47:57' }
+  ];
 
   return (
     <div className="flex flex-col gap-3 select-none">
-      {/* Coin Amount & 1-Click Bet Palette */}
+      {/* 1. Market Timers Bar (Image 2 Top Ribbon Exact Match) */}
+      <div className="bg-[#0b1b2b] rounded-lg border border-slate-700/80 p-1 flex items-center gap-1.5 overflow-x-auto scrollbar-none shadow-md">
+        {marketTimers.map((m, idx) => (
+          <div
+            key={idx}
+            className="flex-1 min-w-[95px] bg-[#12283d] border border-slate-700/60 rounded px-2 py-1 text-center flex flex-col items-center justify-center shadow-inner shrink-0"
+          >
+            <span className="text-[10px] font-black text-sky-400 tracking-tight leading-none truncate w-full">
+              {m.name}
+            </span>
+            <div className="flex items-center gap-0.5 text-[9px] font-mono text-amber-300 font-bold mt-0.5">
+              <Clock size={9} />
+              <span>{m.time}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* 2. Coin Amount & 1-Click Bet Palette */}
       <div className="bg-[#112435] p-2.5 rounded-lg border border-slate-700 flex flex-wrap items-center justify-between gap-2 shadow-lg">
         <div className="text-[11px] font-black text-slate-300 uppercase tracking-wide">
           SET YOUR COIN AMOUNT AND START 1-CLICK BET!
@@ -29,17 +60,17 @@ export default function WorliMatkaBoard({ roundData, timer, isSuspended }) {
         </div>
       </div>
 
-      {/* Matka Tabs & Interactive Grid */}
+      {/* 3. Matka Tabs & Interactive Grid */}
       <div className="grid grid-cols-12 gap-2 relative">
         {/* Suspended Lock Overlay */}
-        {isSuspended && (
+        {isBettingClosed && (
           <div className="absolute inset-0 z-30 bg-black/75 backdrop-blur-[2px] rounded-lg flex flex-col items-center justify-center text-red-400 font-black text-sm tracking-wider gap-1 border border-red-500/50">
             <Lock size={24} className="text-red-500 animate-pulse" />
             <span>LOCKED / SUSPENDED</span>
           </div>
         )}
 
-        {/* Left Vertical Tabs (Exact to Image 6 & 7) */}
+        {/* Left Vertical Tabs (Exact to Image 2) */}
         <div className="col-span-3 sm:col-span-2 flex flex-col gap-1 bg-[#0f1d2c] p-1 rounded-lg border border-slate-700/80 shadow">
           {[
             'Jodi', 'Single', 'Pana', 'SP', 'DP', 'Trio', 'Cycle', 
@@ -60,7 +91,7 @@ export default function WorliMatkaBoard({ roundData, timer, isSuspended }) {
           ))}
         </div>
 
-        {/* Right Interactive Single Grid (Exact to Image 6 & 7) */}
+        {/* Right Interactive Single Grid (Exact to Image 2) */}
         <div className="col-span-9 sm:col-span-10 flex flex-col gap-1.5">
           {/* Row 1: 1, 2, 3, 4, 5, LINE 1, ODD */}
           <div className="grid grid-cols-7 gap-1 text-slate-900 font-black">
@@ -104,7 +135,7 @@ export default function WorliMatkaBoard({ roundData, timer, isSuspended }) {
         </div>
       </div>
 
-      {/* Bottom Matka Markets Ribbon */}
+      {/* 4. Bottom Matka Markets Ribbon */}
       <div className="bg-[#112435] px-3 py-2 rounded-lg border border-slate-700 flex items-center justify-between text-xs overflow-x-auto scrollbar-none shadow-lg">
         <div className="flex items-center gap-1.5 shrink-0">
           <span className="text-slate-400 font-bold text-[11px] mr-1">Last Result</span>

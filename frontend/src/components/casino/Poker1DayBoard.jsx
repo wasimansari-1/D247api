@@ -5,6 +5,9 @@ export default function Poker1DayBoard({ roundData, timer, isSuspended }) {
   const runners = roundData?.runners || [];
   const [showRules, setShowRules] = useState(true);
 
+  // Betting is strictly locked when timer <= 3 or suspended (Exact Diamond logic)
+  const isBettingClosed = isSuspended || timer <= 3;
+
   const playerA = runners.find(r => (r.name || '').toLowerCase() === 'player a') || {
     name: 'Player A',
     back: 1.98,
@@ -40,18 +43,18 @@ export default function Poker1DayBoard({ roundData, timer, isSuspended }) {
           <div className="flex items-center justify-between p-2.5 px-3 border-b border-slate-800">
             <span className="font-black text-sm text-white">Player A</span>
             <div className="flex items-center gap-1">
-              {isSuspended ? (
-                <div className="w-16 py-1.5 bg-[#2b3543] rounded border border-slate-700 text-slate-400 flex items-center justify-center">
-                  <Lock size={12} className="text-slate-300" />
+              {isBettingClosed ? (
+                <div className="w-16 py-1.5 bg-[#1e3a5f] rounded border border-blue-500/30 text-blue-200 flex items-center justify-center">
+                  <Lock size={12} className="text-blue-300" />
                 </div>
               ) : (
                 <button className="w-16 py-1.5 bg-[#72bbef] hover:bg-[#5caae6] text-slate-950 font-black text-xs rounded transition shadow">
                   {playerA.back || '1.98'}
                 </button>
               )}
-              {isSuspended ? (
-                <div className="w-16 py-1.5 bg-[#2b3543] rounded border border-slate-700 text-slate-400 flex items-center justify-center ml-1">
-                  <Lock size={12} className="text-slate-300" />
+              {isBettingClosed ? (
+                <div className="w-16 py-1.5 bg-[#4a2430] rounded border border-pink-500/30 text-pink-200 flex items-center justify-center ml-1">
+                  <Lock size={12} className="text-pink-300" />
                 </div>
               ) : (
                 <button className="w-16 py-1.5 bg-[#faa9ba] hover:bg-[#f294a8] text-slate-950 font-black text-xs rounded transition shadow ml-1">
@@ -63,12 +66,27 @@ export default function Poker1DayBoard({ roundData, timer, isSuspended }) {
 
           {/* Player A Side Bets: 2 Cards Bonus & 7 Cards Bonus */}
           <div className="grid grid-cols-2 p-2 gap-2 bg-[#0c1b29]">
-            <button className="py-2 px-2 bg-[#72bbef] hover:bg-[#5caae6] text-slate-950 font-bold text-xs rounded transition shadow active:scale-95 truncate">
-              {a2Bonus?.back ? `2 Cards: ${a2Bonus.back}` : '2 Cards Bonus'}
-            </button>
-            <button className="py-2 px-2 bg-[#72bbef] hover:bg-[#5caae6] text-slate-950 font-bold text-xs rounded transition shadow active:scale-95 truncate">
-              {a7Bonus?.back ? `7 Cards: ${a7Bonus.back}` : '7 Cards Bonus'}
-            </button>
+            {isBettingClosed ? (
+              <div className="py-2 px-2 bg-[#1e293b] rounded border border-slate-700 text-slate-400 flex items-center justify-center gap-1.5">
+                <Lock size={12} className="text-slate-300" />
+                <span className="text-[11px] font-bold">2 Cards Bonus</span>
+              </div>
+            ) : (
+              <button className="py-2 px-2 bg-[#72bbef] hover:bg-[#5caae6] text-slate-950 font-bold text-xs rounded transition shadow active:scale-95 truncate">
+                {a2Bonus?.back ? `2 Cards: ${a2Bonus.back}` : '2 Cards Bonus'}
+              </button>
+            )}
+
+            {isBettingClosed ? (
+              <div className="py-2 px-2 bg-[#1e293b] rounded border border-slate-700 text-slate-400 flex items-center justify-center gap-1.5">
+                <Lock size={12} className="text-slate-300" />
+                <span className="text-[11px] font-bold">7 Cards Bonus</span>
+              </div>
+            ) : (
+              <button className="py-2 px-2 bg-[#72bbef] hover:bg-[#5caae6] text-slate-950 font-bold text-xs rounded transition shadow active:scale-95 truncate">
+                {a7Bonus?.back ? `7 Cards: ${a7Bonus.back}` : '7 Cards Bonus'}
+              </button>
+            )}
           </div>
         </div>
 
@@ -77,18 +95,18 @@ export default function Poker1DayBoard({ roundData, timer, isSuspended }) {
           <div className="flex items-center justify-between p-2.5 px-3 border-b border-slate-800">
             <span className="font-black text-sm text-white">Player B</span>
             <div className="flex items-center gap-1">
-              {isSuspended ? (
-                <div className="w-16 py-1.5 bg-[#2b3543] rounded border border-slate-700 text-slate-400 flex items-center justify-center">
-                  <Lock size={12} className="text-slate-300" />
+              {isBettingClosed ? (
+                <div className="w-16 py-1.5 bg-[#1e3a5f] rounded border border-blue-500/30 text-blue-200 flex items-center justify-center">
+                  <Lock size={12} className="text-blue-300" />
                 </div>
               ) : (
                 <button className="w-16 py-1.5 bg-[#72bbef] hover:bg-[#5caae6] text-slate-950 font-black text-xs rounded transition shadow">
                   {playerB.back || '1.98'}
                 </button>
               )}
-              {isSuspended ? (
-                <div className="w-16 py-1.5 bg-[#2b3543] rounded border border-slate-700 text-slate-400 flex items-center justify-center ml-1">
-                  <Lock size={12} className="text-slate-300" />
+              {isBettingClosed ? (
+                <div className="w-16 py-1.5 bg-[#4a2430] rounded border border-pink-500/30 text-pink-200 flex items-center justify-center ml-1">
+                  <Lock size={12} className="text-pink-300" />
                 </div>
               ) : (
                 <button className="w-16 py-1.5 bg-[#faa9ba] hover:bg-[#f294a8] text-slate-950 font-black text-xs rounded transition shadow ml-1">
@@ -100,22 +118,37 @@ export default function Poker1DayBoard({ roundData, timer, isSuspended }) {
 
           {/* Player B Side Bets: 2 Cards Bonus & 7 Cards Bonus */}
           <div className="grid grid-cols-2 p-2 gap-2 bg-[#0c1b29]">
-            <button className="py-2 px-2 bg-[#72bbef] hover:bg-[#5caae6] text-slate-950 font-bold text-xs rounded transition shadow active:scale-95 truncate">
-              {b2Bonus?.back ? `2 Cards: ${b2Bonus.back}` : '2 Cards Bonus'}
-            </button>
-            <button className="py-2 px-2 bg-[#72bbef] hover:bg-[#5caae6] text-slate-950 font-bold text-xs rounded transition shadow active:scale-95 truncate">
-              {b7Bonus?.back ? `7 Cards: ${b7Bonus.back}` : '7 Cards Bonus'}
-            </button>
+            {isBettingClosed ? (
+              <div className="py-2 px-2 bg-[#1e293b] rounded border border-slate-700 text-slate-400 flex items-center justify-center gap-1.5">
+                <Lock size={12} className="text-slate-300" />
+                <span className="text-[11px] font-bold">2 Cards Bonus</span>
+              </div>
+            ) : (
+              <button className="py-2 px-2 bg-[#72bbef] hover:bg-[#5caae6] text-slate-950 font-bold text-xs rounded transition shadow active:scale-95 truncate">
+                {b2Bonus?.back ? `2 Cards: ${b2Bonus.back}` : '2 Cards Bonus'}
+              </button>
+            )}
+
+            {isBettingClosed ? (
+              <div className="py-2 px-2 bg-[#1e293b] rounded border border-slate-700 text-slate-400 flex items-center justify-center gap-1.5">
+                <Lock size={12} className="text-slate-300" />
+                <span className="text-[11px] font-bold">7 Cards Bonus</span>
+              </div>
+            ) : (
+              <button className="py-2 px-2 bg-[#72bbef] hover:bg-[#5caae6] text-slate-950 font-bold text-xs rounded transition shadow active:scale-95 truncate">
+                {b7Bonus?.back ? `7 Cards: ${b7Bonus.back}` : '7 Cards Bonus'}
+              </button>
+            )}
           </div>
         </div>
       </div>
 
-      {/* 2. Promo Banner (Image 3 Exact Match) */}
+      {/* 2. Promo Banner (Image 1 Exact Match) */}
       <div className="py-2 px-4 rounded-lg bg-emerald-700 text-white font-extrabold text-xs text-center shadow tracking-wide">
         Play Our New Game Premium Teenpatti 1 Day
       </div>
 
-      {/* 3. Rules Table Accordion (Image 3 Exact Match) */}
+      {/* 3. Rules Table Accordion (Image 1 Exact Match) */}
       <div className="bg-[#112435] rounded-lg border border-slate-700 overflow-hidden shadow-lg">
         <button
           onClick={() => setShowRules(!showRules)}

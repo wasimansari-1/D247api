@@ -39,6 +39,8 @@ import BaccaratBoard from './casino/BaccaratBoard';
 import Lucky15Board from './casino/Lucky15Board';
 import DragonTigerBoard from './casino/DragonTigerBoard';
 import Lucky7Board from './casino/Lucky7Board';
+import CricketMatch20Board from './casino/CricketMatch20Board';
+import AmarAkbarAnthonyBoard from './casino/AmarAkbarAnthonyBoard';
 import ResultDetailModal from './casino/ResultDetailModal';
 
 export default function CasinoTableModal({ table, onClose }) {
@@ -50,11 +52,14 @@ export default function CasinoTableModal({ table, onClose }) {
   const [streamKey, setStreamKey] = useState(0);
   const [lucky15Popup, setLucky15Popup] = useState(null);
   const [ballByBallPopup, setBallByBallPopup] = useState(null);
+  const [cmatch20Popup, setCmatch20Popup] = useState(null);
   const [selectedResultModal, setSelectedResultModal] = useState(null);
 
   const slug = (table?.slug || table?.id || "").toLowerCase();
   const nameLow = (table?.name || "").toLowerCase();
 
+  const isCMatch20 = slug === 'cmatch20' || nameLow.includes('cricket match 20') || nameLow.includes('cmatch');
+  const isAAA = slug === 'aaa' || slug === 'aaa2' || slug === 'vaaa' || nameLow.includes('amar akbar anthony') || nameLow.includes('amar');
   const isWorli = slug === 'worli' || slug === 'worli2' || slug === 'worli3' || nameLow.includes('worli') || nameLow.includes('matka');
   const isPoison = slug.includes('poison') || nameLow.includes('poison');
   const isUniqueTeen = slug.includes('unique') && (slug.includes('teen') || slug.includes('patti') || nameLow.includes('unique teen'));
@@ -149,6 +154,7 @@ export default function CasinoTableModal({ table, onClose }) {
     let isMounted = true;
     isFirstFetchRef.current = true;
     lastHandledResultMidRef.current = null;
+    setRecentResults([]);
 
     const fetchResults = () => {
       fetch(`/api/casino/results/${slug}`)
@@ -179,6 +185,11 @@ export default function CasinoTableModal({ table, onClose }) {
                     setBallByBallPopup(txt);
                     setTimeout(() => setBallByBallPopup(null), 2000);
                   }
+                  if (isCMatch20) {
+                    const txt = outcome.toUpperCase().includes('W') ? 'WICKET' : `${outcome} RUNS`;
+                    setCmatch20Popup(txt);
+                    setTimeout(() => setCmatch20Popup(null), 2000);
+                  }
                 }
               }
             }
@@ -194,7 +205,7 @@ export default function CasinoTableModal({ table, onClose }) {
       isMounted = false;
       clearInterval(resultsInterval);
     };
-  }, [slug, isLucky15, isBallByBall]);
+  }, [slug, isLucky15, isBallByBall, isCMatch20]);
 
   // Calculate Total strictly for games like Mogambo, Sic Bo (Never for Teenpatti Joker)
   const calculatedTotal = useMemo(() => {
@@ -347,57 +358,80 @@ export default function CasinoTableModal({ table, onClose }) {
       };
     }
 
-    // 4. Teen Patti Test: T (Tiger), L (Lion), D (Dragon) Badges (Image 1 Exact Match)
+    // 4. Teen Patti Test: T (Tiger), L (Lion), D (Dragon) in Dark Green Badges (Image 7 Exact Match)
     if (isTeenTest) {
       if (lower.includes("tiger") || w === "1" || lower.startsWith("t")) {
         return {
           letter: "T",
-          bg: "bg-amber-600 text-white font-black",
+          bg: "bg-emerald-700 text-white font-black",
           title: "Tiger",
         };
       }
       if (lower.includes("lion") || w === "2" || lower.startsWith("l")) {
         return {
           letter: "L",
-          bg: "bg-emerald-600 text-white font-black",
+          bg: "bg-emerald-700 text-white font-black",
           title: "Lion",
         };
       }
       return {
         letter: "D",
-        bg: "bg-rose-600 text-white font-black",
+        bg: "bg-emerald-700 text-white font-black",
         title: "Dragon",
+      };
+    }
+
+    // 4.1 Cricket Match 20-20: Runs 2..10 in Green Badges (Image 3 Exact Match)
+    if (isCMatch20) {
+      const d = w.match(/\d+/);
+      const rNum = d ? d[0] : w || "0";
+      return {
+        letter: rNum,
+        bg: "bg-emerald-700 text-white font-black font-mono",
+        title: `${rNum} Runs`,
+      };
+    }
+
+    // 4.2 Amar Akbar Anthony: A, B, C in Dark Green Circular Badges (Image 4 Exact Match)
+    if (isAAA) {
+      let char = "A";
+      if (w === "1" || lower === "a" || lower.includes("amar")) char = "A";
+      else if (w === "2" || lower === "b" || lower.includes("akbar")) char = "B";
+      else if (w === "3" || lower === "c" || lower.includes("anthony")) char = "C";
+      return {
+        letter: char,
+        bg: "bg-emerald-700 text-white font-black",
+        title: char === "A" ? "Amar" : char === "B" ? "Akbar" : "Anthony",
       };
     }
 
     // 5. Open Teenpatti & Poker 6: Winning Player Number Badges (Image 2 & 5 Exact Match)
     if (isTeenOpen || isPoker6) {
-      const numMatch = w.match(/\d+/);
-      const displayNum = numMatch ? numMatch[0] : w || "1";
-      return {
-        letter: displayNum,
-        bg: "bg-emerald-600 text-white font-black",
-        title: `Player ${displayNum}`,
-      };
-    }
-
-    // 6. Poker 1-Day & 20-20 Poker: A & B Badges (Image 3 & 4 Exact Match)
-    if (isPoker1Day || isPoker20) {
-      if (w === "1" || lower === "a" || lower.includes("player a")) {
-        return {
-          letter: "A",
-          bg: "bg-amber-600 text-white font-black",
-          title: "Player A",
-        };
+      let num = "1";
+      if (["1", "2", "3", "4", "5", "6"].includes(w)) {
+        num = w;
+      } else {
+        const m = (w || "").match(/[1-6]/);
+        if (m) num = m[0];
       }
       return {
-        letter: "B",
-        bg: "bg-emerald-600 text-white font-black",
-        title: "Player B",
+        letter: num,
+        bg: "bg-emerald-700 text-white font-black",
+        title: `Player ${num}`,
       };
     }
 
-    // 3. Teen Patti 1-Day, 20-20, Queen Top, Jack Top (Image 3, 4, 5 Exact Match)
+    // 6. Poker 1-Day & 20-20 Poker: A & B in Dark Green Badges (Image 1 Exact Match)
+    if (isPoker1Day || isPoker20) {
+      const isA = w === "1" || lower === "a" || lower.includes("player a");
+      return {
+        letter: isA ? "A" : "B",
+        bg: "bg-emerald-700 text-white font-black",
+        title: isA ? "Player A" : "Player B",
+      };
+    }
+
+    // 7. Teen Patti 1-Day, 20-20, Queen Top, Jack Top, Poison, Joker in Dark Green Badges (Image 3 & 4 Exact Match)
     if (
       isTeen1Day ||
       isTeen20 ||
@@ -409,17 +443,20 @@ export default function CasinoTableModal({ table, onClose }) {
       slug.includes("teen") ||
       slug.includes("patti")
     ) {
+      let char = "A";
       if (w === "1" || lower === "a" || lower.includes("player a")) {
-        return {
-          letter: "A",
-          bg: "bg-amber-600 text-white font-black",
-          title: "Player A",
-        };
+        char = "A";
+      } else if (w === "2" || lower === "b" || lower.includes("player b")) {
+        char = "B";
+      } else if (lower.includes("tie") || lower === "t" || w === "0" || w === "3") {
+        char = "T";
+      } else {
+        char = w.slice(0, 1).toUpperCase() || "A";
       }
       return {
-        letter: "B",
-        bg: "bg-emerald-600 text-white font-black",
-        title: "Player B",
+        letter: char,
+        bg: "bg-emerald-700 text-white font-black",
+        title: char === "A" ? "Player A" : char === "B" ? "Player B" : "Tie",
       };
     }
 
@@ -702,6 +739,16 @@ export default function CasinoTableModal({ table, onClose }) {
             <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none animate-in zoom-in-50 fade-in duration-300">
               <div className="w-32 h-32 rounded-full bg-gradient-to-br from-red-600 via-rose-700 to-red-950 border-4 border-white/60 flex items-center justify-center text-white text-xl font-black font-mono shadow-2xl drop-shadow-[0_10px_20px_rgba(0,0,0,0.8)] tracking-wider">
                 {ballByBallPopup}
+              </div>
+            </div>
+          )}
+
+          {/* Cricket Match 20-20 3D Cricket Ball Zoom Popup (Image 3 Center Screen Exact Match) */}
+          {cmatch20Popup && (
+            <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none animate-in zoom-in-50 fade-in duration-300">
+              <div className="relative w-36 h-36 rounded-full bg-gradient-to-br from-red-600 via-rose-700 to-red-950 border-4 border-white/60 flex flex-col items-center justify-center text-white font-mono shadow-2xl drop-shadow-[0_10px_25px_rgba(0,0,0,0.9)] tracking-wider ring-2 ring-red-900">
+                <div className="absolute inset-y-0 w-1 border-r border-dashed border-white/40 left-1/2 -translate-x-1/2 pointer-events-none"></div>
+                <span className="relative z-10 text-2xl font-black drop-shadow text-center uppercase">{cmatch20Popup}</span>
               </div>
             </div>
           )}
@@ -1529,6 +1576,18 @@ export default function CasinoTableModal({ table, onClose }) {
             />
           ) : isBallByBall ? (
             <BallByBallBoard
+              roundData={roundData}
+              timer={timer}
+              isSuspended={isSuspended}
+            />
+          ) : isCMatch20 ? (
+            <CricketMatch20Board
+              roundData={roundData}
+              timer={timer}
+              isSuspended={isSuspended}
+            />
+          ) : isAAA ? (
+            <AmarAkbarAnthonyBoard
               roundData={roundData}
               timer={timer}
               isSuspended={isSuspended}

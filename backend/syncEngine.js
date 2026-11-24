@@ -78,7 +78,7 @@ const CASINO_SLUG_MAP = {
   // Virtual & Cricket (Exact Diamond Online Mapping)
   minisuperover: "superover3",
   superover3: "superover3",
-  superover2: "superover2",
+  superover2: "superover",
   superover: "superover",
   cricketv2: "superover3",
   cricketv3: "cricketv3",
@@ -102,10 +102,10 @@ const CASINO_SLUG_MAP = {
   instantteen2: "patti2",
   teen2024: "patti2",
   patti2: "patti2",
-  teen20b: "joker20",
-  teen20b_dup: "joker20",
-  joker20: "joker20",
-  teenjoker20: "joker20",
+  teen20b: "teen20b",
+  teen20b_dup: "teen20b",
+  joker20: "teen20b",
+  teenjoker20: "teen20b",
   teen20c: "teen20c",
   teen1: "joker1",
   teen120: "joker120",
@@ -138,6 +138,9 @@ const CASINO_SLUG_MAP = {
   // Cards & Baccarat
   baccarat: "baccarat",
   baccarat2: "baccarat2",
+  poker: "poker",
+  poker20: "poker20",
+  poker6: "poker6",
   baccarat29: "teensin",
   tbaccarat: "baccarat",
   card32: "card32",
@@ -1019,13 +1022,19 @@ class D247SyncEngine {
       const list = res?.data?.res || (Array.isArray(res?.data) ? res.data : []);
       if (Array.isArray(list) && list.length > 0) {
         return list.map((r) => {
-          const val = String(
-            r.win !== undefined && r.win !== null && r.win !== ""
-              ? r.win
-              : r.nat !== undefined && r.nat !== null
-                ? r.nat
-                : r.winner || r.result || "",
-          );
+          let val = "";
+          if (targetSlug === "poker6") {
+            // For Poker 6, r.nat or r.sid is the winning player number (1..6)
+            val = String(r.nat || r.winner || r.win || "");
+          } else {
+            val = String(
+              r.win !== undefined && r.win !== null && r.win !== ""
+                ? r.win
+                : r.nat !== undefined && r.nat !== null
+                  ? r.nat
+                  : r.winner || r.result || "",
+            );
+          }
           return {
             mid: String(r.mid || ""),
             winner: val,
