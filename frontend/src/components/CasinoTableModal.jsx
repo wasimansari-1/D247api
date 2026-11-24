@@ -861,7 +861,7 @@ export default function CasinoTableModal({ table, onClose }) {
     const bScore = ((getBaccVal(rawCards[1]) + getBaccVal(rawCards[3]) + getBaccVal(rawCards[5])) % 10);
     d1 = String(pScore);
     d2 = String(bScore);
-  } else if (isAndarBahar || isAB20 || isAB3 || isAB4) {
+  } else if (isAndarBahar) {
     const rawCards = roundData?.card ? roundData.card.split(',').map(s => s.trim()).filter(x => x && x !== '1' && x !== '0') : (roundData?.cards || []);
     const jokerCard = rawCards[0];
     const jSuit = String(typeof jokerCard === 'string' ? jokerCard : (jokerCard?.suit || '')).toUpperCase();
