@@ -62,6 +62,7 @@ const CASINO_SLUG_MAP = {
   broulette: "roulette12",
   ourroullete: "ourroullete",
   uroulette: "ourroullete",
+  uniqueroulette: "ourroullete",
   roulette12: "roulette12",
   roulette13: "roulette13",
 
@@ -74,7 +75,7 @@ const CASINO_SLUG_MAP = {
   lucky7c: "lucky7eu2",
   lucky15: "lucky15",
 
-  // Virtual & Cricket
+  // Virtual & Cricket (Exact Diamond Online Mapping)
   minisuperover: "superover3",
   superover3: "superover3",
   superover2: "superover2",
@@ -91,15 +92,17 @@ const CASINO_SLUG_MAP = {
   ab20: "ab20",
   abj: "abj",
 
-  // Teen Patti & Joker Games
+  // Teen Patti & Joker Games (Exact Diamond Online Mapping: Joker20 -> 169..., Joker120 -> 170..., Joker1 -> 168...)
   'teen': 'teen',
   'teen20': 'teen20',
   'teen3': 'teen3',
   'teen33': 'teen33',
   'teen202': 'teen33',
   'teen2024': 'teen33',
-  'teen20b': 'teen20b',
-  'teen20b_dup': 'teen20b',
+  'teen20b': 'joker20',
+  'teen20b_dup': 'joker20',
+  'joker20': 'joker20',
+  'teenjoker20': 'joker20',
   'teen20c': 'teen20c',
   'teen1': 'joker1',
   'teen120': 'joker120',
@@ -108,6 +111,7 @@ const CASINO_SLUG_MAP = {
   'joker120': 'joker120',
   'unlimitedjoker': 'joker120',
   'unlimitedjoker20': 'joker120',
+  'unlimitedjokeroneday': 'joker1',
   'unlimitedjoker1day': 'joker1',
   'teen41': 'poison',
   'teen42': 'poison20',
@@ -209,7 +213,7 @@ const EXACT_77_CASINO_TABLES = [
   },
   {
     id: "13",
-    slug: "teen20b",
+    slug: "joker20",
     name: "TEENPATTI JOKER 20 20",
     category: "Teen Patti",
   },
@@ -228,13 +232,13 @@ const EXACT_77_CASINO_TABLES = [
   { id: "16", slug: "btable2", name: "2 BOLLYWOOD CASINO", category: "Others" },
   {
     id: "17",
-    slug: "uroulette",
+    slug: "ourroullete",
     name: "UNIQUE ROULETTE",
     category: "Roulette",
   },
   {
     id: "18",
-    slug: "minisuperover",
+    slug: "superover3",
     name: "MINI SUPER OVER",
     category: "Cricket",
   },
@@ -868,6 +872,13 @@ class D247SyncEngine {
           });
         }
 
+        // 2 Bollywood Casino & Bollywood Casino only deals 1 card (Image 3)
+        if (sLower.includes('btable') || sLower.includes('bollywood')) {
+          if (parsedItems.length > 0) {
+            parsedItems = [parsedItems[0]];
+          }
+        }
+
         // Collect runners from sub or across all markets in t2
         let rawRunners = [];
         if (Array.isArray(raw.sub) && raw.sub.length > 0) {
@@ -920,15 +931,45 @@ class D247SyncEngine {
           };
         });
 
+        // Cricket Live Scorecard calculation for Super Over / Mini Super Over
+        let cricketScore = null;
+        if (sLower.includes('superover') || sLower.includes('ballbyball') || dealType === 'cricket_ball') {
+          const ballArray = cardStrings.filter(c => c && c !== '1' && c !== '?');
+          let runs = 0;
+          let wickets = 0;
+          for (const b of ballArray) {
+            if (b.toLowerCase().includes('w')) {
+              wickets++;
+            } else {
+              const r = parseInt(b);
+              if (!isNaN(r)) runs += r;
+              else if (b.includes('A') || b.includes('K') || b.includes('Q') || b.includes('J')) {
+                runs += 4;
+              }
+            }
+          }
+          const overs = Math.floor(ballArray.length / 6) + '.' + (ballArray.length % 6);
+          const crr = ballArray.length > 0 ? ((runs / ballArray.length) * 6).toFixed(2) : '0.00';
+          cricketScore = {
+            team1: 'IND',
+            team1Score: `${runs}-${wickets} (${overs})`,
+            team1CRR: `CRR ${crr}`,
+            team2: sLower.includes('superover2') ? 'ENG' : sLower.includes('superover3') || sLower.includes('mini') ? 'AUS' : 'RSA',
+            team2Score: '0-0 (0.0)',
+            balls: ballArray
+          };
+        }
+
         return {
           gameType: raw.gtype || slug,
           dealType: dealType,
-          roundId: String(raw.mid || raw.gmid || t1.gmid || (Array.isArray(t2) && t2[0]?.mid) || raw.roundId || Date.now()),
+          roundId: String(t1.gmid || raw.mid || raw.gmid || (Array.isArray(t2) && t2[0]?.mid) || raw.roundId || Date.now()),
           timer: raw.lt !== undefined ? raw.lt : 0,
           totalTimer: raw.ft || 20,
           card: raw.card || "",
           cards: parsedItems,
           items: parsedItems,
+          score: cricketScore,
           runners: runners,
           rawRemark: raw.rem || "",
           streamUrl: `/api/casino/${slug}/livetv`,
