@@ -956,11 +956,12 @@ class D247SyncEngine {
           }
           const overs = Math.floor(ballArray.length / 6) + '.' + (ballArray.length % 6);
           const crr = ballArray.length > 0 ? ((runs / ballArray.length) * 6).toFixed(2) : '0.00';
+          const isSO2 = sLower.includes('superover2');
           cricketScore = {
-            team1: 'IND',
+            team1: isSO2 ? 'ENG' : 'IND',
             team1Score: `${runs}-${wickets} (${overs})`,
             team1CRR: `CRR ${crr}`,
-            team2: sLower.includes('superover2') ? 'ENG' : sLower.includes('superover3') || sLower.includes('mini') ? 'AUS' : 'RSA',
+            team2: isSO2 ? 'RSA' : sLower.includes('superover3') || sLower.includes('mini') ? 'AUS' : 'ENG',
             team2Score: '0-0 (0.0)',
             balls: ballArray
           };
@@ -969,7 +970,7 @@ class D247SyncEngine {
         return {
           gameType: raw.gtype || slug,
           dealType: dealType,
-          roundId: String(t1.gmid || raw.mid || raw.gmid || (Array.isArray(t2) && t2[0]?.mid) || raw.roundId || Date.now()),
+          roundId: String(t1.mid || t1.gmid || raw.mid || raw.gmid || (Array.isArray(t2) && t2[0]?.mid) || raw.roundId || (t1.oldgmid) || Date.now()),
           timer: raw.lt !== undefined ? raw.lt : 0,
           totalTimer: raw.ft || 20,
           card: raw.card || "",
@@ -2123,8 +2124,8 @@ class D247SyncEngine {
             formatted.eventName =
               t1.ename ||
               (gmid === "superover"
-                ? "ENG Vs RSA Super Over"
-                : "IND Vs ENG Super Over2");
+                ? "IND Vs ENG Super Over"
+                : "ENG Vs RSA Super Over2");
             formatted.status = t1.lt === 0 ? "SUSPENDED" : "IN_PLAY";
             formatted.streamUrl = `/api/casino/${gmid}/livetv`;
 

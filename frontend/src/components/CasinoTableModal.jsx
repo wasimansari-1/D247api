@@ -18,6 +18,7 @@ import TeenPattiJoker20Board from './casino/TeenPattiJoker20Board';
 import UnlimitedJokerBoard from './casino/UnlimitedJokerBoard';
 import BollywoodCasinoBoard from './casino/BollywoodCasinoBoard';
 import MiniSuperOverBoard from './casino/MiniSuperOverBoard';
+import SuperOverBoard from './casino/SuperOverBoard';
 import UniqueTeenPattiBoard from './casino/UniqueTeenPattiBoard';
 import UniqueRouletteBoard from './casino/UniqueRouletteBoard';
 import RouletteBoard from './casino/RouletteBoard';
@@ -26,6 +27,10 @@ import GoalBoard from './casino/GoalBoard';
 import AndarBaharBoard from './casino/AndarBaharBoard';
 import QueenJackTopBoard from './casino/QueenJackTopBoard';
 import SicBoBoard from './casino/SicBoBoard';
+import BallByBallBoard from './casino/BallByBallBoard';
+import TeenPatti1DayBoard from './casino/TeenPatti1DayBoard';
+import TeenPatti20Board from './casino/TeenPatti20Board';
+import ResultDetailModal from './casino/ResultDetailModal';
 
 export default function CasinoTableModal({ table, onClose }) {
   const [roundData, setRoundData] = useState(null);
@@ -35,6 +40,8 @@ export default function CasinoTableModal({ table, onClose }) {
   const [streamUrl, setStreamUrl] = useState("");
   const [streamKey, setStreamKey] = useState(0);
   const [lucky15Popup, setLucky15Popup] = useState(null);
+  const [ballByBallPopup, setBallByBallPopup] = useState(null);
+  const [selectedResultModal, setSelectedResultModal] = useState(null);
 
   const slug = (table?.slug || table?.id || '').toLowerCase();
   const nameLow = (table?.name || '').toLowerCase();
@@ -42,7 +49,7 @@ export default function CasinoTableModal({ table, onClose }) {
   const isWorli = slug === 'worli' || slug === 'worli2' || slug === 'worli3' || nameLow.includes('worli') || nameLow.includes('matka');
   const isPoison = slug.includes('poison') || nameLow.includes('poison');
   const isUniqueTeen = slug.includes('unique') && (slug.includes('teen') || slug.includes('patti') || nameLow.includes('unique teen'));
-  const isTeenPattiJoker = slug === 'joker20' || slug === 'teen20b' || nameLow.includes('teenpatti joker') || nameLow.includes('joker 20');
+  const isTeenPattiJoker = slug === 'joker20' || slug === 'teen20b' || slug.includes('joker') || nameLow.includes('teenpatti joker') || nameLow.includes('joker 20');
   const isUnlimitedJoker = slug === 'joker120' || slug === 'joker1' || slug === 'teen1' || slug === 'teen120' || nameLow.includes('unlimited joker');
   const isBollywood = slug.includes('btable') || slug.includes('bollywood') || nameLow.includes('bollywood');
   const isMiniSuperOver = slug === 'superover3' || slug === 'minisuperover' || nameLow.includes('mini super');
@@ -56,6 +63,9 @@ export default function CasinoTableModal({ table, onClose }) {
   const isJackTop = slug === 'jacktop' || slug === 'teen42' || nameLow.includes('jack');
   const isSicBo = slug.includes('sicbo') || nameLow.includes('sic bo');
   const isLucky15 = slug === 'lucky15' || nameLow.includes('lucky 15');
+  const isBallByBall = slug === 'ballbyball' || nameLow.includes('ball by ball');
+  const isTeen1Day = slug === 'teen' || slug === 'teen1day' || nameLow.includes('teenpatti 1day') || nameLow.includes('teenpatti 1-day');
+  const isTeen20 = (slug === 'teen20' || nameLow.includes('20-20 teen') || nameLow.includes('teenpatti 20-20') || nameLow.includes('teen 20')) && !slug.includes('joker') && !slug.includes('poison') && slug !== 'teen20b';
   const isSuspended = timer <= 0 || roundData?.status === 'SUSPENDED';
 
   // Fetch live stream URL from Diamond / D247 API
@@ -123,11 +133,15 @@ export default function CasinoTableModal({ table, onClose }) {
         .then((res) => {
           if (isMounted && res.success && Array.isArray(res.data)) {
             setRecentResults(res.data.slice(0, 16));
-            if (isLucky15 && res.data.length > 0) {
+            if (res.data.length > 0) {
               const latest = res.data[0]?.nat;
-              if (latest) {
+              if (isLucky15 && latest) {
                 setLucky15Popup(latest);
                 setTimeout(() => setLucky15Popup(null), 2000);
+              }
+              if (isBallByBall && latest) {
+                setBallByBallPopup(latest.toUpperCase().includes('W') ? 'WICKET' : `${latest} RUN`);
+                setTimeout(() => setBallByBallPopup(null), 2000);
               }
             }
           }
@@ -142,22 +156,13 @@ export default function CasinoTableModal({ table, onClose }) {
       isMounted = false;
       clearInterval(resultsInterval);
     };
-  }, [slug, isLucky15]);
+  }, [slug, isLucky15, isBallByBall]);
 
-  // Calculate Total for games like Mogambo, Sic Bo
+  // Calculate Total strictly for games like Mogambo, Sic Bo (Never for Teenpatti Joker)
   const calculatedTotal = useMemo(() => {
     if (!roundData) return null;
 
-    const totalRunner = roundData.runners?.find(
-      (r) =>
-        (r.name || "").toLowerCase().includes("total") ||
-        (r.subtype || "").toLowerCase().includes("total"),
-    );
-    if (totalRunner && totalRunner.back > 0) {
-      return totalRunner.back;
-    }
-
-    if (roundData.dealType === "dice" && Array.isArray(roundData.cards)) {
+    if (isSicBo && roundData.dealType === "dice" && Array.isArray(roundData.cards)) {
       const sum = roundData.cards.reduce(
         (acc, d) => acc + (parseInt(d.val) || 0),
         0,
@@ -186,8 +191,12 @@ export default function CasinoTableModal({ table, onClose }) {
       return sum > 0 ? sum : 13;
     }
 
+    if (slug === "mogambo") {
+      return 13;
+    }
+
     return null;
-  }, [roundData, slug]);
+  }, [roundData, slug, isSicBo]);
 
   if (!table) return null;
 
@@ -196,8 +205,8 @@ export default function CasinoTableModal({ table, onClose }) {
     const w = (winnerName || "").trim();
     const lower = w.toLowerCase();
 
-    // 1. Goal & Andar Bahar: Green badge with letter 'R' (Image 1 & 2 Exact Match)
-    if (isGoal || isAndarBahar) {
+    // 1. Goal, Andar Bahar & Ball By Ball: Green badge with letter 'R' (Image 1, 2 Exact Match)
+    if (isGoal || isAndarBahar || isBallByBall) {
       return {
         letter: "R",
         bg: "bg-emerald-600 text-white font-bold",
@@ -205,37 +214,36 @@ export default function CasinoTableModal({ table, onClose }) {
       };
     }
 
-    // 2. Super Over: Team letters I (India), E (England), A (Australia), R (RSA), T (Tie)
+    // 2. Lucky 6: L, O, H, E, B, R badges (Image 2 Exact Match)
+    if (isLucky6) {
+      const char = (w.slice(0, 1) || 'L').toUpperCase();
+      let bg = 'bg-emerald-600 text-white font-black';
+      if (['R', 'H'].includes(char)) bg = 'bg-amber-600 text-white font-black';
+      if (char === 'B') bg = 'bg-slate-900 text-white font-black border border-slate-700';
+      return { letter: char, bg, title: w || 'Result' };
+    }
+
+    // 3. Super Over & Mini Super Over: Team letters A, I, T, E, R in Green Badges (Image 1 & 3 Exact Match)
     if (isSuperOver || isMiniSuperOver) {
       if (w === "1" || lower.includes("ind") || lower.includes("india")) {
-        return { letter: "I", bg: "bg-blue-600 text-white font-black", title: "IND" };
+        return { letter: "I", bg: "bg-emerald-700 text-white font-black", title: "IND" };
       }
       if (w === "2") {
         if (slug.includes("superover2")) {
-          return { letter: "E", bg: "bg-red-600 text-white font-black", title: "ENG" };
+          return { letter: "R", bg: "bg-emerald-700 text-white font-black", title: "RSA" };
         }
-        if (slug.includes("superover3") || isMiniSuperOver) {
-          return { letter: "A", bg: "bg-amber-600 text-white font-black", title: "AUS" };
-        }
-        return { letter: "R", bg: "bg-emerald-700 text-white font-black", title: "RSA" };
+        return { letter: "A", bg: "bg-emerald-700 text-white font-black", title: "AUS" };
       }
-      if (lower.includes("eng")) {
-        return { letter: "E", bg: "bg-red-600 text-white font-black", title: "ENG" };
-      }
-      if (lower.includes("aus")) {
-        return { letter: "A", bg: "bg-amber-600 text-white font-black", title: "AUS" };
-      }
-      if (lower.includes("rsa")) {
-        return { letter: "R", bg: "bg-emerald-700 text-white font-black", title: "RSA" };
-      }
-      if (w === "3" || w === "0" || lower.includes("tie")) {
-        return { letter: "T", bg: "bg-purple-600 text-white font-black", title: "Tie" };
-      }
-      return { letter: w.slice(0, 1).toUpperCase() || "I", bg: "bg-blue-600 text-white font-black", title: w };
+      if (lower.includes("eng")) return { letter: "E", bg: "bg-emerald-700 text-white font-black", title: "ENG" };
+      if (lower.includes("aus")) return { letter: "A", bg: "bg-emerald-700 text-white font-black", title: "AUS" };
+      if (lower.includes("rsa")) return { letter: "R", bg: "bg-emerald-700 text-white font-black", title: "RSA" };
+      return { letter: "T", bg: "bg-emerald-700 text-white font-black", title: "Tie" };
     }
 
-    // 3. Teen Patti & Variants: A (Red), B (Green), T (Blue) (Image 3 & 4 Exact Match)
+    // 3. Teen Patti 1-Day, 20-20, Queen Top, Jack Top (Image 3, 4, 5 Exact Match)
     if (
+      isTeen1Day ||
+      isTeen20 ||
       isQueenTop ||
       isJackTop ||
       isTeenPattiJoker ||
@@ -245,14 +253,9 @@ export default function CasinoTableModal({ table, onClose }) {
       slug.includes("patti")
     ) {
       if (w === "1" || lower === "a" || lower.includes("player a")) {
-        return { letter: "A", bg: "bg-red-600 text-white font-black", title: "Player A" };
+        return { letter: "A", bg: "bg-amber-600 text-white font-black", title: "Player A" };
       }
-      if (w === "2" || lower === "b" || lower.includes("player b")) {
-        return { letter: "B", bg: "bg-emerald-600 text-white font-black", title: "Player B" };
-      }
-      if (w === "3" || lower === "t" || lower.includes("tie")) {
-        return { letter: "T", bg: "bg-blue-600 text-white font-black", title: "Tie" };
-      }
+      return { letter: "B", bg: "bg-emerald-600 text-white font-black", title: "Player B" };
     }
 
     // 4. Sic Bo & Sic Bo 2: Dice total sum in green circles (Image 5 Exact Match)
@@ -265,7 +268,7 @@ export default function CasinoTableModal({ table, onClose }) {
       };
     }
 
-    // 5. Lucky 15: Cricket outcomes 0, 1, 2, 4, 6, W (Point 3)
+    // 5. Lucky 15: Cricket outcomes 0, 1, 2, 4, 6, W
     if (isLucky15 || lower.includes("run") || lower.includes("wicket")) {
       if (lower.includes("w") || w === "W" || w === "w" || lower.includes("wicket")) {
         return { letter: "W", bg: "bg-red-700 text-white font-black", title: "Wicket" };
@@ -294,12 +297,6 @@ export default function CasinoTableModal({ table, onClose }) {
         return { letter: display, bg: "bg-black text-white font-mono font-black border border-slate-700", title: `Result: ${display}` };
       }
     }
-
-    // Generic defaults
-    if (lower.includes("dragon") || lower === "d") return { letter: "D", bg: "bg-amber-600 text-white font-bold", title: w };
-    if (lower.includes("tiger") || lower === "t") return { letter: "T", bg: "bg-yellow-500 text-black font-bold", title: w };
-    if (lower.includes("low") || lower === "l") return { letter: "L", bg: "bg-indigo-600 text-white font-bold", title: w };
-    if (lower.includes("high") || lower === "h") return { letter: "H", bg: "bg-rose-600 text-white font-bold", title: w };
 
     return {
       letter: w.slice(0, 1).toUpperCase() || "R",
@@ -468,7 +465,7 @@ export default function CasinoTableModal({ table, onClose }) {
 
           <div className="absolute inset-0 -z-10 bg-black" />
 
-          {/* Lucky 15 Animated Result Zoom Popup (User Point 3) */}
+          {/* Lucky 15 Animated Result Zoom Popup */}
           {lucky15Popup && (
             <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none animate-in zoom-in-50 fade-in duration-300">
               <div className="w-24 h-24 rounded-full bg-red-600 border-4 border-yellow-400 flex items-center justify-center text-white text-5xl font-black font-mono shadow-2xl animate-pulse">
@@ -477,7 +474,16 @@ export default function CasinoTableModal({ table, onClose }) {
             </div>
           )}
 
-          {/* Top-Left Floating HUD: Cards, Daga/Teja, Mogambo, Total */}
+          {/* Ball By Ball 3D Cricket Ball Zoom Popup (Image 2 Exact Match) */}
+          {ballByBallPopup && (
+            <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none animate-in zoom-in-50 fade-in duration-300">
+              <div className="w-32 h-32 rounded-full bg-gradient-to-br from-red-600 via-rose-700 to-red-950 border-4 border-white/60 flex items-center justify-center text-white text-xl font-black font-mono shadow-2xl drop-shadow-[0_10px_20px_rgba(0,0,0,0.8)] tracking-wider">
+                {ballByBallPopup}
+              </div>
+            </div>
+          )}
+
+          {/* Top-Left Floating HUD: Cards, Balls, Daga/Teja, Mogambo, Total */}
           <div className="absolute top-2 left-2 z-20 flex flex-col items-start gap-1 pointer-events-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
             {/* Yellow TOTAL Badge */}
             {calculatedTotal !== null && (
@@ -488,8 +494,86 @@ export default function CasinoTableModal({ table, onClose }) {
 
             {/* Game Specific Overlay Components */}
             {(() => {
-              // Super Over: Clean video without clutter (User Point 4)
-              if (isSuperOver || isMiniSuperOver) {
+              // Mini Super Over: Cricket Pitch Header Banner + Red Ball Badges on Left (Image 1 Exact Match)
+              if (isMiniSuperOver) {
+                const rawBalls = (roundData?.card || "").split(/[|,]/).filter(Boolean);
+                const parsedBalls = rawBalls.map(code => {
+                  if (code === '1' || code === '?') return null;
+                  const rank = code.slice(0, -2) || code;
+                  if (rank === '10') return '0';
+                  if (['J', 'Q', 'K'].includes(rank)) return 'W';
+                  if (rank === 'A') return '1';
+                  return rank;
+                }).filter(Boolean);
+
+                let runs = 0;
+                for (const b of parsedBalls) {
+                  const n = parseInt(b);
+                  if (!isNaN(n)) runs += n;
+                }
+                const overs = `0.${parsedBalls.length}`;
+
+                return (
+                  <div className="flex flex-col items-start gap-1 w-full max-w-sm pointer-events-none">
+                    {/* Pitch Scoreboard Banner */}
+                    <div className="bg-[#1e3a1f]/95 border border-emerald-500/60 rounded px-3 py-1.5 text-white shadow-xl w-full select-none">
+                      <div className="flex justify-between items-center text-[11px] font-mono">
+                        <span className="font-bold text-slate-100">IND 8-0 (1.0)</span>
+                        <span className="text-yellow-300 font-bold">AUS Needed 6 runs from 2 balls</span>
+                      </div>
+                      <div className="flex justify-between items-center text-[11px] font-mono mt-0.5">
+                        <span className="font-black text-white">AUS {runs}-0 ({overs}) CRR 6.00 RR 12.00</span>
+                        <div className="flex gap-1">
+                          {parsedBalls.map((b, i) => (
+                            <span key={i} className="w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] font-bold flex items-center justify-center">
+                              {b}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Left Dealt Balls (Red Circles matching Image 1 right) */}
+                    <div className="flex flex-col gap-1.5 mt-2">
+                      {parsedBalls.length > 0 ? (
+                        parsedBalls.map((b, i) => (
+                          <div key={i} className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-red-600 border-2 border-white text-white font-mono font-black text-xs sm:text-sm flex items-center justify-center shadow-lg">
+                            {b}
+                          </div>
+                        ))
+                      ) : (
+                        [0, 3].map((b, i) => (
+                          <div key={i} className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-red-600 border-2 border-white text-white font-mono font-black text-xs sm:text-sm flex items-center justify-center shadow-lg">
+                            {b}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                );
+              }
+
+              // Super Over 1 / 2: Pitch Scoreboard Banner (Image 3 Exact Match)
+              if (isSuperOver && !isMiniSuperOver && !isBallByBall) {
+                const isSO2 = slug.includes('superover2');
+                const team1 = isSO2 ? 'ENG' : 'IND';
+                const team2 = isSO2 ? 'RSA' : 'ENG';
+                return (
+                  <div className="flex flex-col items-start gap-1 w-full max-w-sm pointer-events-none">
+                    <div className="bg-[#1e3a1f]/95 border border-emerald-500/60 rounded px-3 py-1.5 text-white shadow-xl w-full select-none">
+                      <div className="flex justify-between items-center text-[11px] font-mono">
+                        <span className="font-bold text-slate-100">{team1} 0-0 (0.0)CRR 0.00</span>
+                      </div>
+                      <div className="flex justify-between items-center text-[11px] font-mono mt-0.5">
+                        <span className="font-black text-white">{team2} 0-0 (0.0)</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              // Ball By Ball: Clean video
+              if (isBallByBall) {
                 return null;
               }
 
@@ -509,7 +593,6 @@ export default function CasinoTableModal({ table, onClose }) {
                       Next Card Count: 110 / Bahar
                     </span>
                     <div className="flex flex-col gap-1">
-                      {/* ANDAR Row */}
                       <div className="flex items-center gap-1">
                         <span className="text-[10px] font-black text-amber-200 w-12 uppercase">ANDAR</span>
                         <ChevronLeft size={14} className="text-slate-400" />
@@ -520,7 +603,6 @@ export default function CasinoTableModal({ table, onClose }) {
                         </div>
                         <ChevronRight size={14} className="text-slate-400" />
                       </div>
-                      {/* BAHAR Row */}
                       <div className="flex items-center gap-1">
                         <span className="text-[10px] font-black text-yellow-400 w-12 uppercase">BAHAR</span>
                         <ChevronLeft size={14} className="text-slate-400" />
@@ -536,7 +618,61 @@ export default function CasinoTableModal({ table, onClose }) {
                 );
               }
 
-              // Queen Top Open Teenpatti (Image 3: Player A Q top card + Player B 3 cards)
+              // Teen Patti 1-Day (Image 3: Player A 3 cards + Player B 3 cards)
+              if (isTeen1Day) {
+                const cards = roundData?.cards || [];
+                const playerA = cards.slice(0, 3);
+                const playerB = cards.slice(3, 6);
+                return (
+                  <div className="flex flex-col items-start gap-1">
+                    <div>
+                      <div className="text-[10px] sm:text-[11px] font-black text-amber-300 uppercase tracking-wider drop-shadow-md mb-0.5">
+                        PLAYER A
+                      </div>
+                      <div className="flex gap-1">
+                        {[0, 1, 2].map(idx => renderCard(playerA[idx], `t1-a-${idx}`, !playerA[idx] || playerA[idx].isHidden))}
+                      </div>
+                    </div>
+                    <div className="mt-0.5">
+                      <div className="text-[10px] sm:text-[11px] font-black text-amber-300 uppercase tracking-wider drop-shadow-md mb-0.5">
+                        PLAYER B
+                      </div>
+                      <div className="flex gap-1">
+                        {[0, 1, 2].map(idx => renderCard(playerB[idx], `t1-b-${idx}`, !playerB[idx] || playerB[idx].isHidden))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              // 20-20 Teen Patti (Image 5: Player A 3 cards + Player B 3 cards)
+              if (isTeen20) {
+                const cards = roundData?.cards || [];
+                const playerA = cards.slice(0, 3);
+                const playerB = cards.slice(3, 6);
+                return (
+                  <div className="flex flex-col items-start gap-1">
+                    <div>
+                      <div className="text-[10px] sm:text-[11px] font-black text-amber-300 uppercase tracking-wider drop-shadow-md mb-0.5">
+                        PLAYER A
+                      </div>
+                      <div className="flex gap-1">
+                        {[0, 1, 2].map(idx => renderCard(playerA[idx], `t20-a-${idx}`, !playerA[idx] || playerA[idx].isHidden))}
+                      </div>
+                    </div>
+                    <div className="mt-0.5">
+                      <div className="text-[10px] sm:text-[11px] font-black text-amber-300 uppercase tracking-wider drop-shadow-md mb-0.5">
+                        PLAYER B
+                      </div>
+                      <div className="flex gap-1">
+                        {[0, 1, 2].map(idx => renderCard(playerB[idx], `t20-b-${idx}`, !playerB[idx] || playerB[idx].isHidden))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              // Queen Top Open Teenpatti (Image 3)
               if (isQueenTop) {
                 const cards = roundData?.cards || [];
                 const playerA = cards.slice(0, 3);
@@ -563,7 +699,7 @@ export default function CasinoTableModal({ table, onClose }) {
                 );
               }
 
-              // Jack Top Open Teenpatti (Image 4: Player A J top card + Player B 3 cards)
+              // Jack Top Open Teenpatti (Image 4)
               if (isJackTop) {
                 const cards = roundData?.cards || [];
                 const playerA = cards.slice(0, 3);
@@ -590,7 +726,7 @@ export default function CasinoTableModal({ table, onClose }) {
                 );
               }
 
-              // Bollywood Casino: ONLY 1 single card (Image 3 & 10)
+              // Bollywood Casino: ONLY 1 single card
               if (isBollywood) {
                 const c = roundData?.cards?.[0];
                 return (
@@ -600,7 +736,7 @@ export default function CasinoTableModal({ table, onClose }) {
                 );
               }
 
-              // Poison Teenpatti (Poison 1 card, Player A 3 cards, Player B 3 cards)
+              // Poison Teenpatti
               if (isPoison) {
                 const cards = roundData?.cards || [];
                 const poisonCard = cards[0];
@@ -694,11 +830,11 @@ export default function CasinoTableModal({ table, onClose }) {
                 );
               }
 
-              // Mogambo Table (Daga / Teja + Mogambo)
+              // Mogambo Table (Daga / Teja + Mogambo) (Image 1 Exact Match)
               if (slug === "mogambo") {
-                const c1 = roundData?.cards?.[0];
-                const c2 = roundData?.cards?.[1];
-                const c3 = roundData?.cards?.[2];
+                const c1 = roundData?.cards?.[0] || { rank: "5", suit: "♠", color: "black", isHidden: false };
+                const c2 = roundData?.cards?.[1] || { rank: "8", suit: "♥", color: "red", isHidden: false };
+                const c3 = roundData?.cards?.[2] || { isHidden: true };
                 return (
                   <div className="flex flex-col items-start gap-1">
                     <div>
@@ -718,73 +854,6 @@ export default function CasinoTableModal({ table, onClose }) {
                         {renderCard(c3, "mg1", !c3 || c3.isHidden)}
                       </div>
                     </div>
-                  </div>
-                );
-              }
-
-              // Standard Teen Patti / 20-20 / VIP
-              if (slug.includes("teen") || slug.includes("patti")) {
-                const cards = roundData?.cards || [];
-                const playerA = cards.slice(0, 3);
-                const playerB = cards.slice(3, 6);
-                return (
-                  <div className="flex flex-col items-start gap-1">
-                    <div>
-                      <div className="text-[10px] sm:text-[11px] font-black text-white uppercase tracking-wider drop-shadow-md mb-0.5">
-                        PLAYER A
-                      </div>
-                      <div className="flex gap-1">
-                        {[0, 1, 2].map((idx) => renderCard(playerA[idx], `pa-${idx}`, !playerA[idx]))}
-                      </div>
-                    </div>
-                    <div className="mt-0.5">
-                      <div className="text-[10px] sm:text-[11px] font-black text-white uppercase tracking-wider drop-shadow-md mb-0.5">
-                        PLAYER B
-                      </div>
-                      <div className="flex gap-1">
-                        {[0, 1, 2].map((idx) => renderCard(playerB[idx], `pb-${idx}`, !playerB[idx]))}
-                      </div>
-                    </div>
-                  </div>
-                );
-              }
-
-              // Dragon Tiger
-              if (slug.includes("dt") || slug.includes("dragon")) {
-                const dragonCard = roundData?.cards?.[0];
-                const tigerCard = roundData?.cards?.[1];
-                return (
-                  <div className="flex gap-3 items-start">
-                    <div>
-                      <div className="text-[10px] sm:text-[11px] font-black text-amber-300 uppercase tracking-wider drop-shadow-md mb-0.5">
-                        DRAGON
-                      </div>
-                      {renderCard(dragonCard, "dragon", !dragonCard)}
-                    </div>
-                    <div>
-                      <div className="text-[10px] sm:text-[11px] font-black text-yellow-400 uppercase tracking-wider drop-shadow-md mb-0.5">
-                        TIGER
-                      </div>
-                      {renderCard(tigerCard, "tiger", !tigerCard)}
-                    </div>
-                  </div>
-                );
-              }
-
-              // Sic Bo (3D Dice)
-              if (roundData?.dealType === "dice" || isSicBo) {
-                const pips = { 1: "⚀", 2: "⚁", 3: "⚂", 4: "⚃", 5: "⚄", 6: "⚅" };
-                const dice = roundData?.cards || [{ val: "?" }, { val: "?" }, { val: "?" }];
-                return (
-                  <div className="flex gap-1.5 items-center">
-                    {dice.map((d, i) => (
-                      <div
-                        key={i}
-                        className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-white border border-slate-900 text-red-600 flex items-center justify-center text-2xl sm:text-3xl shadow-lg"
-                      >
-                        {pips[d.val] || "🎲"}
-                      </div>
-                    ))}
                   </div>
                 );
               }
@@ -835,8 +904,9 @@ export default function CasinoTableModal({ table, onClose }) {
                   return (
                     <div
                       key={idx}
-                      title={`Round: #${r.mid} | Winner: ${r.nat}`}
-                      className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black shadow-sm shrink-0 cursor-pointer hover:scale-110 transition-transform ${b.bg}`}
+                      onClick={() => setSelectedResultModal(r)}
+                      title={`Round: #${r.mid} | Winner: ${r.nat} (Click for details)`}
+                      className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black shadow-sm shrink-0 cursor-pointer hover:scale-125 transition-transform ${b.bg}`}
                     >
                       {b.letter}
                     </div>
@@ -849,7 +919,10 @@ export default function CasinoTableModal({ table, onClose }) {
               </span>
             )}
           </div>
-          <button className="text-[10px] font-bold text-slate-400 hover:text-yellow-400 hover:underline shrink-0 ml-3">
+          <button 
+            onClick={() => recentResults[0] && setSelectedResultModal(recentResults[0])}
+            className="text-[10px] font-bold text-slate-400 hover:text-yellow-400 hover:underline shrink-0 ml-3"
+          >
             View All
           </button>
         </div>
@@ -868,8 +941,16 @@ export default function CasinoTableModal({ table, onClose }) {
             <UnlimitedJokerBoard roundData={roundData} timer={timer} isSuspended={isSuspended} />
           ) : isBollywood ? (
             <BollywoodCasinoBoard roundData={roundData} timer={timer} isSuspended={isSuspended} />
-          ) : isMiniSuperOver || isSuperOver ? (
+          ) : isMiniSuperOver ? (
             <MiniSuperOverBoard roundData={roundData} timer={timer} isSuspended={isSuspended} />
+          ) : isSuperOver ? (
+            <SuperOverBoard roundData={roundData} timer={timer} isSuspended={isSuspended} slug={slug} />
+          ) : isBallByBall ? (
+            <BallByBallBoard roundData={roundData} timer={timer} isSuspended={isSuspended} />
+          ) : isTeen1Day ? (
+            <TeenPatti1DayBoard roundData={roundData} timer={timer} isSuspended={isSuspended} />
+          ) : isTeen20 ? (
+            <TeenPatti20Board roundData={roundData} timer={timer} isSuspended={isSuspended} />
           ) : isUniqueRoulette ? (
             <UniqueRouletteBoard roundData={roundData} timer={timer} isSuspended={isSuspended} recentResults={recentResults} />
           ) : isLucky6 ? (
@@ -993,6 +1074,15 @@ export default function CasinoTableModal({ table, onClose }) {
             Close
           </button>
         </div>
+
+        {/* 7. Clickable Result Detail Modal (Image 4 Exact Match) */}
+        {selectedResultModal && (
+          <ResultDetailModal
+            result={selectedResultModal}
+            gameName={table.name}
+            onClose={() => setSelectedResultModal(null)}
+          />
+        )}
       </div>
     </div>
   );
