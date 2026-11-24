@@ -58,8 +58,16 @@ io.on('connection', (socket) => {
     if (snapshot) {
       socket.emit('odds_update', {
         gmid,
+        roundId: snapshot.roundId || '',
         markets: snapshot.markets,
         scoreboard: snapshot.scoreboard,
+        streamUrl: snapshot.streamUrl,
+        timer: snapshot.timer,
+        totalTimer: snapshot.totalTimer,
+        card: snapshot.card,
+        cards: snapshot.cards,
+        recentResults: snapshot.recentResults,
+        status: snapshot.status,
         updatedAt: snapshot.updatedAt
       });
     }

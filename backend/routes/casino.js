@@ -49,7 +49,7 @@ module.exports = function(syncEngine) {
 
     const primaryUrl = `https://cdn.926assets.com/g1-casino-icons/lc/${slug}.jpg`;
     const altUrl = `https://cdn.926assets.com/g1-casino-icons/lc/${rawSlug}.jpg`;
-    const defaultUrl = `https://cdn.926assets.com/g1-casino-icons/default.jpg`;
+    const defaultUrl = `https://cdn.926assets.com/g1-casino-icons/lc/teen20.jpg`;
 
     try {
       let imgRes = await fetch(primaryUrl);

@@ -731,20 +731,43 @@ export default function App() {
                     </marquee>
                   </div>
 
-                  {/* Super Over 2 Live Screen with Center-Right Flip Timer (Matching Diamond Online exactly) */}
-                  {matchDetails.gmid === 'superover2' && (
-                    <div className="relative bg-black rounded-lg min-h-[180px] sm:min-h-[220px] mb-3 flex items-center justify-end pr-8 sm:pr-14 shadow-2xl border border-slate-800 overflow-hidden">
+                  {/* Super Over & Super Over 2 Live Screen with Center-Right Flip Timer (Matching Diamond Online exactly) */}
+                  {(matchDetails.gmid === 'superover2' || matchDetails.gmid === 'superover') && (
+                    <div className="relative bg-black rounded-lg min-h-[180px] sm:min-h-[220px] mb-3 flex items-center justify-between px-6 sm:px-12 shadow-2xl border border-slate-800 overflow-hidden">
                       <div className="absolute inset-0 bg-gradient-to-r from-black via-slate-950 to-black opacity-95"></div>
                       
-                      {/* Live Flip Counter matching Diamond Image 9 */}
+                      {/* Left: Over Balls Dealt & Round ID */}
+                      <div className="relative z-10 flex flex-col items-start gap-2">
+                        {matchDetails.roundId && (
+                          <div className="text-[11px] font-mono text-slate-300 bg-black/70 px-2.5 py-0.5 rounded border border-slate-700">
+                            Round ID: <span className="text-yellow-400 font-bold">{matchDetails.roundId}</span>
+                          </div>
+                        )}
+                        {matchDetails.cards && matchDetails.cards.length > 0 && (
+                          <div className="flex flex-col gap-1">
+                            <span className="text-[10px] font-black text-amber-300 uppercase tracking-wider">
+                              OVER BALLS DEALT
+                            </span>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {matchDetails.cards.map((b, i) => (
+                                <div key={i} className="px-2 py-0.5 bg-black/90 border border-amber-400 text-amber-300 font-mono font-black text-xs rounded shadow">
+                                  {b}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Right: Live Flip Counter matching Diamond Image 9 */}
                       <div className="relative z-10 flex flex-col items-center gap-1">
                         <FlipClockCounter value={matchDetails.timer !== undefined ? matchDetails.timer : 0} />
                       </div>
                     </div>
                   )}
 
-                  {/* Real Scoreboard ONLY when authentic live score data exists in API and NOT superover2 */}
-                  {matchDetails.scoreboard && matchDetails.gmid !== 'superover2' && (
+                  {/* Real Scoreboard ONLY when authentic live score data exists in API and NOT superover / superover2 */}
+                  {matchDetails.scoreboard && matchDetails.gmid !== 'superover2' && matchDetails.gmid !== 'superover' && (
                     <div className="mb-3">
                       <Scorecard 
                         scoreboard={matchDetails.scoreboard} 
@@ -1311,17 +1334,11 @@ export default function App() {
                       className="w-full shrink-0 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 overflow-hidden flex items-center justify-center relative"
                     >
                       <img 
-                        src={`https://cdn.926assets.com/g1-casino-icons/lc/${t.slug}.jpg`} 
+                        src={`/api/casino/image/${t.slug}`} 
                         alt={t.name}
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         onError={(e) => {
-                          if (!e.target.dataset.triedProxy) {
-                            e.target.dataset.triedProxy = 'true';
-                            e.target.src = `/api/casino/image/${t.slug}`;
-                          } else {
-                            e.target.style.display = 'none';
-                            e.target.parentElement.classList.add('fallback-poster');
-                          }
+                          e.target.src = 'https://cdn.926assets.com/g1-casino-icons/lc/teen20.jpg';
                         }}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         loading="lazy"
