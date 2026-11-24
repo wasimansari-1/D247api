@@ -116,6 +116,25 @@ module.exports = function (syncEngine) {
       .json({ success: false, msg: "Failed to fetch recent results" });
   });
 
+  // Get Authentic Round Detail Popup data directly from Diamond Online (/accstatepopup)
+  router.get("/round-detail/:gameType/:mid", async (req, res) => {
+    const { gameType, mid } = req.params;
+    try {
+      const data = await syncEngine.fetchCasinoRoundDetail(gameType, mid);
+      if (data) {
+        return res.json({ success: true, data });
+      }
+    } catch (err) {
+      console.error(
+        `Error fetching round detail for ${gameType} / ${mid}:`,
+        err.message,
+      );
+    }
+    res
+      .status(500)
+      .json({ success: false, msg: "Failed to fetch round detail" });
+  });
+
   // Dedicated Standalone Live Video Player (Zero-Latency Direct Stream & Fallback)
   router.get(["/player/:slug", "/stream/:slug"], async (req, res) => {
     const slug = req.params.slug;

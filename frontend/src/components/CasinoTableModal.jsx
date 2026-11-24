@@ -53,25 +53,25 @@ function mapLucky15Outcome(val) {
   const str = String(val || "")
     .trim()
     .toLowerCase();
-  if (str === "6" || str.includes("w") || str.includes("wicket")) {
+  if (str === "w" || str.includes("wicket")) {
     return { badge: "W", popup: "WICKET", title: "Wicket" };
   }
-  if (str === "1" || str === "0" || str.includes("0 run")) {
-    return { badge: "0", popup: "0 RUNS", title: "0 Runs" };
-  }
-  if (str === "2" || str === "1 run") {
-    return { badge: "1", popup: "1 RUN", title: "1 Run" };
-  }
-  if (str === "3" || str === "2 runs" || str === "2 run") {
-    return { badge: "2", popup: "2 RUNS", title: "2 Runs" };
+  if (str === "6" || str.includes("6 run")) {
+    return { badge: "6", popup: "6 RUNS", title: "6 Runs" };
   }
   if (str === "4" || str.includes("4 run")) {
     return { badge: "4", popup: "4 RUNS", title: "4 Runs" };
   }
-  if (str === "5" || str.includes("6 run")) {
-    return { badge: "6", popup: "6 RUNS", title: "6 Runs" };
+  if (str === "2" || str.includes("2 run")) {
+    return { badge: "2", popup: "2 RUNS", title: "2 Runs" };
   }
-  return { badge: "0", popup: "0 RUNS", title: "0 Runs" };
+  if (str === "1" || str.includes("1 run")) {
+    return { badge: "1", popup: "1 RUN", title: "1 Run" };
+  }
+  if (str === "0" || str.includes("0 run")) {
+    return { badge: "0", popup: "0 RUN", title: "0 Runs" };
+  }
+  return { badge: "0", popup: "0 RUN", title: "0 Runs" };
 }
 
 export default function CasinoTableModal({ table, onClose }) {
@@ -1828,7 +1828,9 @@ export default function CasinoTableModal({ table, onClose }) {
 
                     {/* 4 Suit Rows */}
                     {["♠", "♥", "♣", "♦"].map((sIcon) => {
-                      const sCards = cards.filter((c) => c.suit === sIcon);
+                      const sCards = cards.filter(
+                        (c) => !c.isHidden && c.suit === sIcon,
+                      );
                       const color = ["♥", "♦"].includes(sIcon)
                         ? "text-red-500"
                         : "text-slate-100";
@@ -1840,15 +1842,17 @@ export default function CasinoTableModal({ table, onClose }) {
                             {sIcon}
                           </span>
                           <div className="flex gap-1">
-                            {sCards.length > 0
-                              ? sCards.map((c, cIdx) =>
-                                  renderCard(
-                                    c,
-                                    `r20-${sIcon}-${cIdx}`,
-                                    c.isHidden,
-                                  ),
-                                )
-                              : null}
+                            {sCards.length > 0 ? (
+                              sCards.map((c, cIdx) =>
+                                renderCard(
+                                  c,
+                                  `r20-${sIcon}-${cIdx}`,
+                                  false,
+                                ),
+                              )
+                            ) : (
+                              <div className="w-5 h-7 border border-dashed border-white/20 rounded-[2px]" />
+                            )}
                           </div>
                         </div>
                       );
@@ -2239,6 +2243,7 @@ export default function CasinoTableModal({ table, onClose }) {
               roundData={roundData}
               timer={timer}
               isSuspended={isSuspended}
+              slug={slug}
             />
           ) : isLucky15 ? (
             <Lucky15Board

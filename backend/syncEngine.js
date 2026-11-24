@@ -866,24 +866,29 @@ class D247SyncEngine {
                 color: "slate",
               };
             }
-            let rank = code.slice(0, -2);
-            let suitCode = code.slice(-2);
+            const upper = String(code).toUpperCase().trim();
             let suit = "♠";
             let color = "black";
-            if (suitCode === "HH") {
+            let rank = upper;
+
+            if (upper.endsWith("HH") || upper.endsWith("H")) {
               suit = "♥";
               color = "red";
-            } else if (suitCode === "DD") {
+              rank = upper.replace(/H+$/, "");
+            } else if (upper.endsWith("DD") || upper.endsWith("D")) {
               suit = "♦";
               color = "red";
-            } else if (suitCode === "CC") {
+              rank = upper.replace(/D+$/, "");
+            } else if (upper.endsWith("CC") || upper.endsWith("C")) {
               suit = "♣";
               color = "black";
-            } else if (suitCode === "SS") {
+              rank = upper.replace(/C+$/, "");
+            } else if (upper.endsWith("SS") || upper.endsWith("S")) {
               suit = "♠";
               color = "black";
+              rank = upper.replace(/S+$/, "");
             }
-            return { type: "cards", code, rank, suit, color, isHidden: false };
+            return { type: "cards", code, rank: rank || "?", suit, color, isHidden: false };
           });
         }
 
@@ -1192,6 +1197,39 @@ class D247SyncEngine {
       console.error(`Error in fetchCasinoRecentResults(${slug}):`, err.message);
     }
     return [];
+  }
+
+  /**
+   * Fetch Authentic Round Result Details directly from Diamond Online (/accstatepopup)
+   * Powers the exact popup on clicking any recent result button
+   */
+  async fetchCasinoRoundDetail(gameType, mid) {
+    const rawSlug = (gameType || "").toLowerCase();
+    const mappedSlug = D247SyncEngine.CASINO_SLUG_MAP?.[rawSlug] || rawSlug;
+    try {
+      const cookie = this.config?.headers?.Cookie || "";
+      const res = await fetch("https://diamondonline7.com/api/front/accstatepopup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Cookie: cookie,
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        },
+        body: JSON.stringify({
+          gmid: 0,
+          mid: String(mid),
+          gtype: mappedSlug,
+          dtype: "cs",
+        }),
+      });
+      const data = await res.json().catch(() => null);
+      if (data && data.success && data.data) {
+        return data.data.t1 || data.data;
+      }
+    } catch (e) {
+      console.error(`[RoundDetail] Error fetching for ${gameType} / ${mid}:`, e.message);
+    }
+    return null;
   }
 
   /**
