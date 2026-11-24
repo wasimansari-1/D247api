@@ -39,8 +39,13 @@ export default function BallByBallBoard({ roundData, timer, isSuspended }) {
                 <span className="bg-[#72bbef]/20 text-[#72bbef] px-2 py-0.5 rounded">Back</span>
               </div>
               {col.map((item, idx) => {
-                const liveR = runners.find(r => (r.name || '').toLowerCase() === item.name.toLowerCase());
+                const liveR = runners.find(r => {
+                  const n = (r.name || '').toLowerCase().trim();
+                  const target = item.name.toLowerCase().trim();
+                  return n === target || n.replace(/s$/, '') === target.replace(/s$/, '');
+                });
                 const rate = liveR?.back > 0 ? liveR.back : item.rate;
+                const isLocked = isSuspended || liveR?.status === 'SUSPENDED';
                 return (
                   <div key={idx} className="p-2.5 px-3 flex items-center justify-between hover:bg-slate-800/40 transition">
                     <div className="flex flex-col">
@@ -48,7 +53,7 @@ export default function BallByBallBoard({ roundData, timer, isSuspended }) {
                       <span className="text-[9px] text-slate-400 font-mono">Min: 50 | Max: 25K</span>
                     </div>
                     <div>
-                      {isSuspended ? (
+                      {isLocked ? (
                         <div className="w-16 py-1.5 bg-[#2b3543] rounded border border-slate-700 text-slate-400 flex items-center justify-center">
                           <Lock size={12} className="text-slate-300" />
                         </div>

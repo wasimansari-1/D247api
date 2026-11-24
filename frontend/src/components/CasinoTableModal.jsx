@@ -44,6 +44,7 @@ import AmarAkbarAnthonyBoard from "./casino/AmarAkbarAnthonyBoard";
 import Race20Board from "./casino/Race20Board";
 import Race2Board from "./casino/Race2Board";
 import DusKaDumBoard from "./casino/DusKaDumBoard";
+import OneCard20Board from "./casino/OneCard20Board";
 import Race20ResultModal from "./casino/Race20ResultModal";
 import ResultDetailModal from "./casino/ResultDetailModal";
 
@@ -118,12 +119,29 @@ export default function CasinoTableModal({ table, onClose }) {
     slug.includes("joker") ||
     nameLow.includes("teenpatti joker") ||
     nameLow.includes("joker 20");
-  const isUnlimitedJoker =
-    slug === "joker120" ||
-    slug === "joker1" ||
-    slug === "teen1" ||
+  const isOneCard20 =
+    slug === "kbc" ||
+    slug === "1card20" ||
+    slug === "card20" ||
     slug === "teen120" ||
-    nameLow.includes("unlimited joker");
+    nameLow.includes("1 card 20") ||
+    nameLow.includes("1 card 20-20");
+  const isOneCard1Day =
+    slug === "card1oneday" ||
+    slug === "teen1" ||
+    slug === "1card1" ||
+    nameLow.includes("one card one day") ||
+    nameLow.includes("1 card master");
+  const isOneCardMeter =
+    slug === "cmeter" ||
+    slug === "cmeter1" ||
+    nameLow.includes("1 card meter");
+  const isUnlimitedJoker =
+    (slug === "joker120" ||
+      slug === "joker1" ||
+      nameLow.includes("unlimited joker")) &&
+    !isOneCard20 &&
+    !isOneCard1Day;
   const isBollywood =
     slug.includes("btable") ||
     slug.includes("bollywood") ||
@@ -132,10 +150,12 @@ export default function CasinoTableModal({ table, onClose }) {
     slug === "superover3" ||
     slug === "minisuperover" ||
     nameLow.includes("mini super");
+  const isBallByBall =
+    slug === "ballbyball" || nameLow.includes("ball by ball");
   const isSuperOver =
-    slug.includes("superover") ||
-    slug.includes("ballbyball") ||
-    nameLow.includes("super over");
+    (slug.includes("superover") || nameLow.includes("super over")) &&
+    !isBallByBall &&
+    !isMiniSuperOver;
   const isUniqueRoulette =
     slug === "ourroullete" ||
     slug === "uroulette" ||
@@ -155,8 +175,6 @@ export default function CasinoTableModal({ table, onClose }) {
     slug === "jacktop" || slug === "teen42" || nameLow.includes("jack");
   const isSicBo = slug.includes("sicbo") || nameLow.includes("sic bo");
   const isLucky15 = slug === "lucky15" || nameLow.includes("lucky 15");
-  const isBallByBall =
-    slug === "ballbyball" || nameLow.includes("ball by ball");
   const isTeen1Day =
     slug === "teen" ||
     slug === "teen1day" ||
@@ -454,6 +472,30 @@ export default function CasinoTableModal({ table, onClose }) {
         letter: isY ? "Y" : "N",
         bg: "bg-emerald-700 text-white font-black",
         title: isY ? "Yes" : "No",
+      };
+    }
+
+    // 1.04 1 Card 20-20 & One Card One Day: P (Player), D (Dealer), T (Tie) (Image 5 Exact Match)
+    if (isOneCard20 || isOneCard1Day) {
+      let char = "P";
+      if (w === "1" || lower.startsWith("p")) char = "P";
+      else if (w === "2" || lower.startsWith("d")) char = "D";
+      else if (w === "3" || lower.startsWith("t")) char = "T";
+      else char = (w.slice(0, 1) || "P").toUpperCase();
+      return {
+        letter: char,
+        bg: "bg-emerald-700 text-white font-black",
+        title: char === "P" ? "Player" : char === "D" ? "Dealer" : "Tie",
+      };
+    }
+
+    // 1.05 1 Card Meter: L (Low), H (High)
+    if (isOneCardMeter) {
+      const isL = w === "1" || lower.startsWith("l");
+      return {
+        letter: isL ? "L" : "H",
+        bg: isL ? "bg-blue-600 text-white font-black" : "bg-amber-600 text-white font-black",
+        title: isL ? "Low" : "High",
       };
     }
 
@@ -1068,25 +1110,16 @@ export default function CasinoTableModal({ table, onClose }) {
                       </div>
                     </div>
 
-                    {/* Left Dealt Balls (Red Circles matching Image 1 right) */}
+                    {/* Left Dealt Balls (Red Circles matching Image 4 right) */}
                     <div className="flex flex-col gap-1.5 mt-2">
-                      {parsedBalls.length > 0
-                        ? parsedBalls.map((b, i) => (
-                            <div
-                              key={i}
-                              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-red-600 border-2 border-white text-white font-mono font-black text-xs sm:text-sm flex items-center justify-center shadow-lg"
-                            >
-                              {b}
-                            </div>
-                          ))
-                        : [0, 3].map((b, i) => (
-                            <div
-                              key={i}
-                              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-red-600 border-2 border-white text-white font-mono font-black text-xs sm:text-sm flex items-center justify-center shadow-lg"
-                            >
-                              {b}
-                            </div>
-                          ))}
+                      {parsedBalls.map((b, i) => (
+                        <div
+                          key={i}
+                          className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-red-600 border-2 border-white text-white font-mono font-black text-xs sm:text-sm flex items-center justify-center shadow-lg"
+                        >
+                          {b}
+                        </div>
+                      ))}
                     </div>
                   </div>
                 );
@@ -1135,45 +1168,89 @@ export default function CasinoTableModal({ table, onClose }) {
               // Andar Bahar Carousel HUD (Image 2 Exact Match)
               if (isAndarBahar) {
                 const cards = roundData?.cards || [];
-                const andarCards = cards.slice(0, 3);
-                const baharCards = cards.slice(3, 6);
+                const jokerCard = cards[0];
+                const dealtCards = cards.slice(1);
+                const andarCards = dealtCards.filter((_, i) => i % 2 === 0);
+                const baharCards = dealtCards.filter((_, i) => i % 2 === 1);
                 return (
-                  <div className="flex flex-col items-start gap-1 bg-black/60 p-2 rounded-lg backdrop-blur-sm border border-white/10">
-                    <span className="text-[10px] font-mono text-yellow-400 font-bold">
-                      Next Card Count: 110 / Bahar
-                    </span>
+                  <div className="flex flex-col items-start gap-1 bg-black/70 p-2 rounded-lg backdrop-blur-sm border border-white/10">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[10px] font-black text-yellow-300 uppercase">
+                        JOKER
+                      </span>
+                      {renderCard(
+                        jokerCard,
+                        "ab-joker",
+                        !jokerCard || jokerCard.isHidden,
+                      )}
+                    </div>
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-1">
                         <span className="text-[10px] font-black text-amber-200 w-12 uppercase">
                           ANDAR
                         </span>
-                        <ChevronLeft size={14} className="text-slate-400" />
-                        <div className="flex gap-1">
+                        <ChevronLeft size={14} className="text-slate-400 shrink-0" />
+                        <div className="flex gap-1 overflow-x-auto max-w-[220px] scrollbar-none">
                           {andarCards.length > 0
                             ? andarCards.map((c, i) =>
                                 renderCard(c, `ab-a-${i}`, !c || c.isHidden),
                               )
-                            : [0, 1, 2].map((i) =>
+                            : [0, 1].map((i) =>
                                 renderCard(null, `ab-a-d-${i}`, true),
                               )}
                         </div>
-                        <ChevronRight size={14} className="text-slate-400" />
+                        <ChevronRight size={14} className="text-slate-400 shrink-0" />
                       </div>
                       <div className="flex items-center gap-1">
                         <span className="text-[10px] font-black text-yellow-400 w-12 uppercase">
                           BAHAR
                         </span>
-                        <ChevronLeft size={14} className="text-slate-400" />
-                        <div className="flex gap-1">
+                        <ChevronLeft size={14} className="text-slate-400 shrink-0" />
+                        <div className="flex gap-1 overflow-x-auto max-w-[220px] scrollbar-none">
                           {baharCards.length > 0
                             ? baharCards.map((c, i) =>
                                 renderCard(c, `ab-b-${i}`, !c || c.isHidden),
                               )
-                            : [0, 1, 2].map((i) =>
+                            : [0, 1].map((i) =>
                                 renderCard(null, `ab-b-d-${i}`, true),
                               )}
                         </div>
-                        <ChevronRight size={14} className="text-slate-400" />
+                        <ChevronRight size={14} className="text-slate-400 shrink-0" />
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              // 1 Card 20-20 & One Card One Day (Player 1 card, Dealer 1 card) (Image 5 Exact Match)
+              if (isOneCard20 || isOneCard1Day) {
+                const cards = roundData?.cards || [];
+                const playerCard = cards[0];
+                const dealerCard = cards[1];
+                return (
+                  <div className="flex flex-col items-start gap-1">
+                    <div>
+                      <div className="text-[10px] font-black text-amber-300 uppercase tracking-wider mb-0.5">
+                        PLAYER
+                      </div>
+                      <div className="flex gap-1">
+                        {renderCard(
+                          playerCard,
+                          "1c-p",
+                          !playerCard || playerCard.isHidden,
+                        )}
+                      </div>
+                    </div>
+                    <div className="mt-0.5">
+                      <div className="text-[10px] font-black text-sky-300 uppercase tracking-wider mb-0.5">
+                        DEALER
+                      </div>
+                      <div className="flex gap-1">
+                        {renderCard(
+                          dealerCard,
+                          "1c-d",
+                          !dealerCard || dealerCard.isHidden,
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1990,13 +2067,18 @@ export default function CasinoTableModal({ table, onClose }) {
                 );
               }
 
-              // Clean Video without card overlay for Baccarat, Lucky 15, Roulette, Sic Bo
+              // Clean Video without card overlay for Baccarat, Lucky 15, Roulette, Sic Bo, Goal, Cricket
               if (
                 isBaccarat ||
                 isLucky15 ||
                 isRoulette ||
                 isUniqueRoulette ||
-                isSicBo
+                isSicBo ||
+                isBallByBall ||
+                isGoal ||
+                isSuperOver ||
+                isMiniSuperOver ||
+                isCMatch20
               ) {
                 return null;
               }
@@ -2280,6 +2362,12 @@ export default function CasinoTableModal({ table, onClose }) {
               timer={timer}
               isSuspended={isSuspended}
             />
+          ) : isOneCard20 || isOneCard1Day ? (
+            <OneCard20Board
+              roundData={roundData}
+              timer={timer}
+              isSuspended={isSuspended}
+            />
           ) : (
             /* Standard Live Runners Exchange Board */
             <div>
@@ -2390,11 +2478,12 @@ export default function CasinoTableModal({ table, onClose }) {
           </button>
         </div>
 
-        {/* 7. Clickable Result Detail Modal (Image 4 Exact Match) */}
+        {/* 7. Clickable Result Detail Modal (Image 1, 3, 4 Exact Match) */}
         {selectedResultModal && (
           <ResultDetailModal
             result={selectedResultModal}
             gameName={table.name}
+            slug={slug}
             onClose={() => setSelectedResultModal(null)}
           />
         )}

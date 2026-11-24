@@ -152,10 +152,10 @@ module.exports = function (syncEngine) {
         let html = await relayRes.text();
         if (html.includes("__STREAM_RELAY_ROUTE__") || html.includes("<html")) {
           // Fix base and asset URLs to point directly to reliable CDN
-          html = html.replace('<base href="/stream-assets/">', '<base href="https://stream.trubets365.com/stream-assets/">');
+          html = html.replace(/<base[^>]+>/gi, '<base href="https://stream.trubets365.com/stream-assets/">');
           html = html.replace(/href="player\//g, 'href="https://stream.trubets365.com/stream-assets/player/');
-          html = html.replace(/src="newplayer\.min\.js/g, 'src="https://stream.trubets365.com/stream-assets/newplayer.min.js');
-          html = html.replace(/src="player\/player\.bundle\.js/g, 'src="https://stream.trubets365.com/stream-assets/player/player.bundle.js');
+          html = html.replace(/src=["'](?:(?:\/stream-assets\/)|(?:\.\/))?newplayer\.min\.js(?:\?[^"']*)?["']/gi, 'src="https://stream.trubets365.com/stream-assets/newplayer.min.js?v=11"');
+          html = html.replace(/src=["'](?:(?:\/stream-assets\/)|(?:\.\/))?player\/player\.bundle\.js(?:\?[^"']*)?["']/gi, 'src="https://stream.trubets365.com/stream-assets/player/player.bundle.js?v=11"');
 
           // Inject unload fix & responsive styling
           const customHead = `

@@ -90,6 +90,43 @@ app.use("/api/casino", casinoRoutes(syncEngine));
 app.use("/api/config", configRoutes(syncEngine));
 app.use("/api/docs", docsRoutes(syncEngine));
 
+// Direct Proxy for Live Stream Assets to prevent Unexpected Token '<'
+app.use(["/stream-assets", "/stream-assets/*"], async (req, res) => {
+  try {
+    const assetPath = req.path.replace(/^\/stream-assets/, "");
+    const upstreamUrl = `https://stream.trubets365.com/stream-assets${assetPath}${req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : ""}`;
+    const proxyRes = await fetch(upstreamUrl, {
+      headers: {
+        "User-Agent": req.headers["user-agent"] || "Mozilla/5.0",
+        Referer: "https://diamondonline7.com/",
+      },
+    });
+    if (!proxyRes.ok) return res.status(proxyRes.status).end();
+    const contentType = proxyRes.headers.get("content-type");
+    if (contentType) res.setHeader("content-type", contentType);
+    res.setHeader("access-control-allow-origin", "*");
+    const buf = await proxyRes.arrayBuffer();
+    return res.send(Buffer.from(buf));
+  } catch (e) {
+    return res.status(502).end();
+  }
+});
+
+app.get(["/newplayer.min.js", "/player.bundle.js"], async (req, res) => {
+  try {
+    const filename = req.path.slice(1);
+    const upstreamUrl = `https://stream.trubets365.com/stream-assets/${filename}${req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : ""}`;
+    const proxyRes = await fetch(upstreamUrl);
+    if (!proxyRes.ok) return res.status(proxyRes.status).end();
+    res.setHeader("content-type", "application/javascript; charset=utf-8");
+    res.setHeader("access-control-allow-origin", "*");
+    const buf = await proxyRes.arrayBuffer();
+    return res.send(Buffer.from(buf));
+  } catch (e) {
+    return res.status(502).end();
+  }
+});
+
 // Fallback index
 app.use((req, res) => {
   const distIndex = path.join(__dirname, "frontend", "dist", "index.html");

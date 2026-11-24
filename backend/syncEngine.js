@@ -107,8 +107,12 @@ const CASINO_SLUG_MAP = {
   joker20: "joker20",
   teenjoker20: "joker20",
   teen20c: "teen20c",
-  teen1: "joker1",
-  teen120: "joker120",
+  teen1: "teen1",
+  teen120: "teen120",
+  card1oneday: "teen1",
+  "1card20": "teen120",
+  card20: "teen120",
+  kbc: "teen120",
   joker: "joker1",
   joker1: "joker1",
   joker120: "joker120",
@@ -171,11 +175,13 @@ const CASINO_SLUG_MAP = {
   race2: "race2",
   trio: "trio",
   notenum: "notenum",
-  kbc: "kbc",
+  kbc: "teen120",
+  "1card20": "teen120",
+  card20: "teen120",
   dum10: "dum10",
   duskadum: "dum10",
-  cmeter: "cmeter1",
-  cmeter1: "cmeter1",
+  cmeter: "cmeter",
+  cmeter1: "cmeter",
   card1oneday: "teen1",
   dolidana: "dolidana",
   mogambo: "mogambo",
@@ -1072,9 +1078,40 @@ class D247SyncEngine {
             else val = rawW;
           } else if (targetSlug === "superover3") {
             const rawW = String(r.win || r.winner || r.nat || "").trim();
-            if (rawW === "1") val = "IND";
-            else if (rawW === "2") val = "AUS";
-            else if (rawW === "3") val = "Tie";
+            if (rawW === "1") val = "I";
+            else if (rawW === "2") val = "A";
+            else if (rawW === "3") val = "T";
+            else val = rawW;
+          } else if (targetSlug === "poison" || targetSlug === "poison20") {
+            const rawW = String(r.win || r.winner || r.nat || "").trim();
+            if (rawW === "1") val = "A";
+            else if (rawW === "2") val = "B";
+            else if (rawW === "3") val = "T";
+            else val = rawW;
+          } else if (targetSlug === "joker20" || targetSlug === "teen20b") {
+            const rawW = String(r.win || r.winner || r.nat || "").trim();
+            if (rawW === "1") val = "A";
+            else if (rawW === "2") val = "B";
+            else if (rawW === "3") val = "T";
+            else val = rawW;
+          } else if (targetSlug === "goal" || targetSlug === "goal2") {
+            val = "R";
+          } else if (targetSlug === "teen9" || targetSlug === "teentest") {
+            const rawW = String(r.win || r.winner || r.nat || "").trim();
+            if (rawW === "1") val = "T";
+            else if (rawW === "2") val = "L";
+            else if (rawW === "3") val = "D";
+            else val = rawW;
+          } else if (targetSlug === "baccarat" || targetSlug === "baccarat2") {
+            const rawW = String(r.win || r.winner || r.nat || "").trim();
+            if (rawW === "1") val = "P";
+            else if (rawW === "2") val = "B";
+            else if (rawW === "3") val = "T";
+            else val = rawW;
+          } else if (targetSlug === "poker" || targetSlug === "poker20") {
+            const rawW = String(r.win || r.winner || r.nat || "").trim();
+            if (rawW === "1") val = "A";
+            else if (rawW === "2") val = "B";
             else val = rawW;
           } else if (targetSlug === "race20") {
             const rawW = String(r.win || r.winner || r.nat || "").trim();
@@ -1095,6 +1132,44 @@ class D247SyncEngine {
             if (rawW === "1") val = "Y";
             else if (rawW === "2") val = "N";
             else val = rawW;
+          } else if (targetSlug === "ballbyball") {
+            const rawW = String(r.win || r.winner || r.nat || "").trim();
+            if (rawW === "1" || rawW === "0") val = "0 RUN";
+            else if (rawW === "2") val = "1 RUN";
+            else if (rawW === "3") val = "2 RUNS";
+            else if (rawW === "4") val = "3 RUNS";
+            else if (rawW === "5") val = "4 RUN";
+            else if (rawW === "6") val = "6 RUNS";
+            else if (rawW === "17") val = "BOUNDARY";
+            else if (rawW === "18" || rawW.toUpperCase() === "W") val = "WICKET";
+            else if (rawW === "19") val = "EXTRA RUNS";
+            else val = rawW;
+          } else if (
+            targetSlug === "teen120" ||
+            targetSlug === "kbc" ||
+            targetSlug === "1card20"
+          ) {
+            const rawW = String(r.win || r.winner || r.nat || "").trim();
+            if (rawW === "1" || rawW.toLowerCase().includes("player")) val = "P";
+            else if (rawW === "2" || rawW.toLowerCase().includes("dealer")) val = "D";
+            else if (rawW === "3" || rawW.toLowerCase().includes("tie")) val = "T";
+            else if (rawW === "4" || rawW.toLowerCase().includes("pair")) val = "Pair";
+            else val = rawW;
+          } else if (targetSlug === "teen1" || targetSlug === "card1oneday") {
+            const rawW = String(r.win || r.winner || r.nat || "").trim();
+            if (rawW === "1" || rawW.toLowerCase().includes("player")) val = "P";
+            else if (rawW === "2" || rawW.toLowerCase().includes("dealer")) val = "D";
+            else val = rawW;
+          } else if (targetSlug === "cmeter" || targetSlug === "cmeter1") {
+            const rawW = String(r.win || r.winner || r.nat || "").trim();
+            if (rawW === "1" || rawW.toLowerCase().includes("low")) val = "L";
+            else if (rawW === "2" || rawW.toLowerCase().includes("high")) val = "H";
+            else val = rawW;
+          } else if (targetSlug === "ab3" || targetSlug === "ab4") {
+            const rawW = String(r.win || r.winner || r.nat || "").trim();
+            if (rawW === "1" || rawW.toLowerCase().includes("andar")) val = "A";
+            else if (rawW === "2" || rawW.toLowerCase().includes("bahar")) val = "B";
+            else val = rawW ? `Card ${rawW}` : "Result";
           } else {
             val = String(
               r.win !== undefined && r.win !== null && r.win !== ""
