@@ -91,7 +91,7 @@ app.use("/api/config", configRoutes(syncEngine));
 app.use("/api/docs", docsRoutes(syncEngine));
 
 // Direct Proxy for Live Stream Assets to prevent Unexpected Token '<'
-app.use(["/stream-assets", "/stream-assets/*"], async (req, res) => {
+app.use("/stream-assets", async (req, res) => {
   try {
     const assetPath = req.path.replace(/^\/stream-assets/, "");
     const upstreamUrl = `https://stream.trubets365.com/stream-assets${assetPath}${req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : ""}`;
