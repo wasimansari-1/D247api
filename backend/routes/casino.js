@@ -171,42 +171,16 @@ module.exports = function (syncEngine) {
       if (relayRes.ok) {
         let html = await relayRes.text();
         if (html.includes("__STREAM_RELAY_ROUTE__") || html.includes("<html")) {
-          // Pre-resolve relay route to eliminate client lookup failure
-          let routeData = null;
-          try {
-            const rRes = await fetch(
-              `https://stream.trubets365.com/api/relay/route/${encodeURIComponent(targetSlug)}`,
-              { headers: { Accept: "application/json" } },
-            );
-            if (rRes.ok) routeData = await rRes.json();
-          } catch (_) {}
+          // 1. Rewrite base to https://stream.trubets365.com/ so that /api/relay/route/${slug} resolves natively to 200 OK JSON!
+          html = html.replace(/<base[^>]+>/gi, '<base href="https://stream.trubets365.com/">');
 
-          if (!routeData) {
-            routeData = {
-              ok: true,
-              status: "live",
-              targetWsid: targetSlug,
-              wsid: targetSlug,
-              nodeId: "stream-c",
-              path: `/stream/c/${encodeURIComponent(targetSlug)}`,
-              url: `wss://stream1.trubets365.com/stream/c/${encodeURIComponent(targetSlug)}`,
-            };
-          } else {
-            routeData.wsid = targetSlug;
-            routeData.targetWsid = targetSlug;
-            if (!routeData.url && routeData.path) {
-              routeData.url = `wss://stream1.trubets365.com${routeData.path}`;
-            }
-          }
-
-          // Fix base and asset URLs to point directly to reliable CDN
-          html = html.replace(/<base[^>]+>/gi, '<base href="https://stream.trubets365.com/stream-assets/">');
-          html = html.replace(/href="player\//g, 'href="https://stream.trubets365.com/stream-assets/player/');
+          // 2. Rewrite asset paths to reliable CDN
+          html = html.replace(/href=["'](?:(?:\/stream-assets\/)|(?:\.\/))?player\//gi, 'href="https://stream.trubets365.com/stream-assets/player/');
           html = html.replace(/src=["'](?:(?:\/stream-assets\/)|(?:\.\/))?newplayer\.min\.js(?:\?[^"']*)?["']/gi, 'src="https://stream.trubets365.com/stream-assets/newplayer.min.js?v=11"');
           html = html.replace(/src=["'](?:(?:\/stream-assets\/)|(?:\.\/))?player\/player\.bundle\.js(?:\?[^"']*)?["']/gi, 'src="https://stream.trubets365.com/stream-assets/player/player.bundle.js?v=11"');
           html = html.replace(/gameType:\s*["']lucky7["']/gi, `gameType:"${targetSlug}"`);
 
-          // Inject pre-resolved route, unload fix & responsive styling
+          // 3. Clean Responsive Styling & Configuration (NO monkey-patching of fetch/WS to guarantee ZERO recursion)
           const customHead = `
             <style>
               html, body { width: 100% !important; height: 100% !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; background: #000 !important; }
@@ -215,37 +189,6 @@ module.exports = function (syncEngine) {
             <script>
               window.__STREAM_PLAYER_OVERRIDE_GAMETYPE__ = "${targetSlug}";
               window.__STREAM_RELAY_WSID__ = "${targetSlug}";
-              window.__STREAM_RELAY_ROUTE__ = ${JSON.stringify(routeData)};
-              window.webSocketURL = "${routeData.url}";
-
-              // 0. Pre-intercept fetch so route lookup never fails with '<' HTML
-
-              // 0. Pre-intercept fetch so route lookup never fails with '<' HTML
-              try {
-                var _origFetch = window.fetch;
-                window.fetch = function(url, opts) {
-                  var uStr = String(url || '');
-                  if (uStr.includes('relay/route') || uStr.includes('/route/')) {
-                    return Promise.resolve(new Response(JSON.stringify(${JSON.stringify(routeData)}), {
-                      status: 200,
-                      headers: { 'Content-Type': 'application/json' }
-                    }));
-                  }
-                  return _origFetch.apply(this, arguments);
-                };
-              } catch (_) {}
-
-              // 0.1. Pre-intercept WebSocket so connection NEVER defaults to localhost:5005 or lucky7
-              try {
-                var _OrigWS = window.WebSocket;
-                window.WebSocket = function(url, proto) {
-                  var finalUrl = String(url || '');
-                  if (finalUrl.includes('5005') || finalUrl.includes('/stream/lucky7') || !finalUrl.includes('wss://')) {
-                    finalUrl = "${routeData.url}";
-                  }
-                  return proto ? new _OrigWS(finalUrl, proto) : new _OrigWS(finalUrl);
-                };
-              } catch (_) {}
 
               // 1. Lock window.STREAM_PLAYER_SETTINGS to prevent player.bundle.js from defaulting to lucky7
               var _currentSettings = {
@@ -255,69 +198,8 @@ module.exports = function (syncEngine) {
                 gameType: "${targetSlug}",
                 wsid: "${targetSlug}",
                 type: "front",
-                backgroundUrl: "/stream-assets/player/assets/videobg.jpg?v=1"
+                backgroundUrl: "https://stream.trubets365.com/stream-assets/player/assets/videobg.jpg?v=1"
               };
-              try {
-                var _origFetch = window.fetch;
-                window.fetch = function(url, opts) {
-                  var uStr = String(url || '');
-                  if (uStr.includes('relay/route') || uStr.includes('/route/')) {
-                    return Promise.resolve(new Response(JSON.stringify(${JSON.stringify(routeData)}), {
-                      status: 200,
-                      headers: { 'Content-Type': 'application/json' }
-                    }));
-                  }
-                  return _origFetch.apply(this, arguments);
-                };
-              } catch (_) {}
-
-              // 0.1. Pre-intercept WebSocket so connection NEVER defaults to localhost:5005 or lucky7
-              try {
-                var _OrigWS = window.WebSocket;
-                window.WebSocket = function(url, proto) {
-                  var finalUrl = String(url || '');
-                  if (finalUrl.includes('5005') || finalUrl.includes('/stream/lucky7') || !finalUrl.includes('wss://')) {
-                    finalUrl = "${routeData.url}";
-                  }
-                  return proto ? new _OrigWS(finalUrl, proto) : new _OrigWS(finalUrl);
-                };
-              } catch (_) {}
-
-              // 1. Lock window.STREAM_PLAYER_SETTINGS to prevent player.bundle.js from defaulting to lucky7
-              var _currentSettings = {
-                videoPlayerId: "stream-player",
-                groupId: "e89f0ed4-b154-457f-9726-9ee50f4487f9",
-                ptype: "nano",
-                gameType: "${targetSlug}",
-                wsid: "${targetSlug}",
-                type: "front",
-                backgroundUrl: "/stream-assets/player/assets/videobg.jpg?v=1"
-              };
-              try {
-                Object.defineProperty(window, 'STREAM_PLAYER_SETTINGS', {
-                  get: function() { return _currentSettings; },
-                  set: function(val) {
-                    if (val && typeof val === 'object') {
-                      val.gameType = "${targetSlug}";
-                      val.wsid = "${targetSlug}";
-                      _currentSettings = val;
-                    }
-                  },
-                  configurable: true
-                });
-              } catch (_) {
-                window.STREAM_PLAYER_SETTINGS = _currentSettings;
-              }
-
-              // 2. Synchronize location query params so URLSearchParams gets targetSlug
-              try {
-                if (!window.location.search.includes('gameType=')) {
-                  var newUrl = window.location.pathname + '?gameType=${targetSlug}&id=${targetSlug}';
-                  window.history.replaceState(null, '', newUrl);
-                }
-              } catch (_) {}
-
-              // 3. Pagehide / unload fix for Chrome permissions policy
               try {
                 Object.defineProperty(window, 'STREAM_PLAYER_SETTINGS', {
                   get: function() { return _currentSettings; },
