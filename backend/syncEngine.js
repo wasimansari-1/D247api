@@ -93,47 +93,47 @@ const CASINO_SLUG_MAP = {
   abj: "abj",
 
   // Teen Patti & Joker Games (Exact Diamond Online Mapping)
-  'teen': 'teen',
-  'teen20': 'teen20',
-  'teen3': 'teen3',
-  'instantteen3': 'teen3',
-  'teen33': 'teen33',
-  'teen202': 'patti2',
-  'instantteen2': 'patti2',
-  'teen2024': 'patti2',
-  'patti2': 'patti2',
-  'teen20b': 'joker20',
-  'teen20b_dup': 'joker20',
-  'joker20': 'joker20',
-  'teenjoker20': 'joker20',
-  'teen20c': 'teen20c',
-  'teen1': 'joker1',
-  'teen120': 'joker120',
-  'joker': 'joker1',
-  'joker1': 'joker1',
-  'joker120': 'joker120',
-  'unlimitedjoker': 'joker120',
-  'unlimitedjoker20': 'joker120',
-  'unlimitedjokeroneday': 'joker1',
-  'unlimitedjoker1day': 'joker1',
-  'teen41': 'teen41',
-  'teen42': 'teen42',
-  'queentop': 'teen41',
-  'queen41': 'teen41',
-  'jacktop': 'teen42',
-  'jack42': 'teen42',
-  'poison': 'poison',
-  'poison20': 'poison20',
-  'poison1day': 'poison',
-  'teenunique': 'teenunique',
-  'teen6': 'teen6',
-  'teenmuf': 'teenmuf',
-  'teensin': 'teensin',
-  'teentest': 'teen9',
-  'teen8': 'teensin',
-  'teen9': 'teen9',
-  'vteen': 'teen',
-  'muflis': 'teenmuf',
+  teen: "teen",
+  teen20: "teen20",
+  teen3: "teen3",
+  instantteen3: "teen3",
+  teen33: "teen33",
+  teen202: "patti2",
+  instantteen2: "patti2",
+  teen2024: "patti2",
+  patti2: "patti2",
+  teen20b: "joker20",
+  teen20b_dup: "joker20",
+  joker20: "joker20",
+  teenjoker20: "joker20",
+  teen20c: "teen20c",
+  teen1: "joker1",
+  teen120: "joker120",
+  joker: "joker1",
+  joker1: "joker1",
+  joker120: "joker120",
+  unlimitedjoker: "joker120",
+  unlimitedjoker20: "joker120",
+  unlimitedjokeroneday: "joker1",
+  unlimitedjoker1day: "joker1",
+  teen41: "teen41",
+  teen42: "teen42",
+  queentop: "teen41",
+  queen41: "teen41",
+  jacktop: "teen42",
+  jack42: "teen42",
+  poison: "poison",
+  poison20: "poison20",
+  poison1day: "poison",
+  teenunique: "teenunique",
+  teen6: "teen6",
+  teenmuf: "teenmuf",
+  teensin: "teensin",
+  teentest: "teen9",
+  teen8: "teensin",
+  teen9: "teen9",
+  vteen: "teen",
+  muflis: "teenmuf",
 
   // Cards & Baccarat
   baccarat: "baccarat",
@@ -879,7 +879,7 @@ class D247SyncEngine {
         }
 
         // 2 Bollywood Casino & Bollywood Casino only deals 1 card (Image 3)
-        if (sLower.includes('btable') || sLower.includes('bollywood')) {
+        if (sLower.includes("btable") || sLower.includes("bollywood")) {
           if (parsedItems.length > 0) {
             parsedItems = [parsedItems[0]];
           }
@@ -939,23 +939,38 @@ class D247SyncEngine {
 
         // Cricket Live Scorecard calculation for Super Over / Mini Super Over
         let cricketScore = null;
-        if (sLower.includes('superover') || sLower.includes('ballbyball') || dealType === 'cricket_ball') {
-          const ballArray = cardStrings.filter(c => c && c !== '1' && c !== '?');
+        if (
+          sLower.includes("superover") ||
+          sLower.includes("ballbyball") ||
+          dealType === "cricket_ball"
+        ) {
+          const ballArray = cardStrings.filter(
+            (c) => c && c !== "1" && c !== "?",
+          );
           let runs = 0;
           let wickets = 0;
           for (const b of ballArray) {
-            if (b.toLowerCase().includes('w')) {
+            if (b.toLowerCase().includes("w")) {
               wickets++;
             } else {
               const r = parseInt(b);
               if (!isNaN(r)) runs += r;
-              else if (b.includes('A') || b.includes('K') || b.includes('Q') || b.includes('J')) {
+              else if (
+                b.includes("A") ||
+                b.includes("K") ||
+                b.includes("Q") ||
+                b.includes("J")
+              ) {
                 runs += 4;
               }
             }
           }
-          const overs = Math.floor(ballArray.length / 6) + '.' + (ballArray.length % 6);
-          const crr = ballArray.length > 0 ? ((runs / ballArray.length) * 6).toFixed(2) : '0.00';
+          const overs =
+            Math.floor(ballArray.length / 6) + "." + (ballArray.length % 6);
+          const crr =
+            ballArray.length > 0
+              ? ((runs / ballArray.length) * 6).toFixed(2)
+              : "0.00";
           const isSO2 = sLower.includes('superover2');
           cricketScore = {
             team1: isSO2 ? 'ENG' : 'IND',
@@ -1008,8 +1023,8 @@ class D247SyncEngine {
             r.win !== undefined && r.win !== null && r.win !== ""
               ? r.win
               : r.nat !== undefined && r.nat !== null
-              ? r.nat
-              : r.winner || r.result || ""
+                ? r.nat
+                : r.winner || r.result || "",
           );
           return {
             mid: String(r.mid || ""),

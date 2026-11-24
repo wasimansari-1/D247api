@@ -43,8 +43,8 @@ export default function CasinoTableModal({ table, onClose }) {
   const [ballByBallPopup, setBallByBallPopup] = useState(null);
   const [selectedResultModal, setSelectedResultModal] = useState(null);
 
-  const slug = (table?.slug || table?.id || '').toLowerCase();
-  const nameLow = (table?.name || '').toLowerCase();
+  const slug = (table?.slug || table?.id || "").toLowerCase();
+  const nameLow = (table?.name || "").toLowerCase();
 
   const isWorli = slug === 'worli' || slug === 'worli2' || slug === 'worli3' || nameLow.includes('worli') || nameLow.includes('matka');
   const isPoison = slug.includes('poison') || nameLow.includes('poison');
@@ -270,31 +270,66 @@ export default function CasinoTableModal({ table, onClose }) {
 
     // 5. Lucky 15: Cricket outcomes 0, 1, 2, 4, 6, W
     if (isLucky15 || lower.includes("run") || lower.includes("wicket")) {
-      if (lower.includes("w") || w === "W" || w === "w" || lower.includes("wicket")) {
-        return { letter: "W", bg: "bg-red-700 text-white font-black", title: "Wicket" };
+      if (
+        lower.includes("w") ||
+        w === "W" ||
+        w === "w" ||
+        lower.includes("wicket")
+      ) {
+        return {
+          letter: "W",
+          bg: "bg-red-700 text-white font-black",
+          title: "Wicket",
+        };
       }
       if (w === "6" || lower.includes("6")) {
-        return { letter: "6", bg: "bg-emerald-600 text-white font-black", title: "6 Runs" };
+        return {
+          letter: "6",
+          bg: "bg-emerald-600 text-white font-black",
+          title: "6 Runs",
+        };
       }
       if (w === "4" || lower.includes("4")) {
-        return { letter: "4", bg: "bg-sky-600 text-white font-black", title: "4 Runs" };
+        return {
+          letter: "4",
+          bg: "bg-sky-600 text-white font-black",
+          title: "4 Runs",
+        };
       }
-      return { letter: w || "0", bg: "bg-slate-700 text-white font-bold font-mono", title: w };
+      return {
+        letter: w || "0",
+        bg: "bg-slate-700 text-white font-bold font-mono",
+        title: w,
+      };
     }
 
     // 6. Roulette: Numbers 0..36 with Green, Red, Black
     if (isRoulette || isUniqueRoulette) {
       const num = parseInt(w);
       if (!isNaN(num)) {
-        const RED_ROULETTE = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
+        const RED_ROULETTE = [
+          1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36,
+        ];
         const display = String(w).trim().padStart(2, "0");
         if (num === 0 || w === "0" || w === "00") {
-          return { letter: display, bg: "bg-emerald-600 text-white font-mono font-black", title: `Result: ${display}` };
+          return {
+            letter: display,
+            bg: "bg-emerald-600 text-white font-mono font-black",
+            title: `Result: ${display}`,
+          };
         }
         if (RED_ROULETTE.includes(num)) {
-          return { letter: display, bg: "bg-red-600 text-white font-mono font-black", title: `Result: ${display}` };
+          return {
+            letter: display,
+            bg: "bg-red-600 text-white font-mono font-black",
+            title: `Result: ${display}`,
+          };
         }
-        return { letter: display, bg: "bg-black text-white font-mono font-black border border-slate-700", title: `Result: ${display}` };
+        return {
+          letter: display,
+          bg: "bg-black text-white font-mono font-black border border-slate-700",
+          title: `Result: ${display}`,
+        };
       }
     }
 
@@ -434,19 +469,60 @@ export default function CasinoTableModal({ table, onClose }) {
         {isWorli && (
           <div className="bg-[#0b1f36] px-2 py-1.5 border-b border-sky-900/60 flex items-center gap-2 overflow-x-auto scrollbar-none select-none">
             {[
-              { name: 'ASIA CLOSE', time: '00:47:57', date: '24 NOV 26 04:00 PM' },
-              { name: 'TAJ OPEN', time: '01:47:57', date: '24 NOV 26 05:00 PM' },
-              { name: 'TAJ CLOSE', time: '02:47:57', date: '24 NOV 26 06:00 PM' },
-              { name: 'GULF OPEN', time: '03:47:57', date: '24 NOV 26 07:00 PM' },
-              { name: 'GULF CLOSE', time: '04:47:57', date: '24 NOV 26 08:00 PM' },
-              { name: 'DIAMOND OPEN', time: '05:47:57', date: '24 NOV 26 09:00 PM' },
-              { name: 'DIAMOND CLOSE', time: '06:47:57', date: '24 NOV 26 10:00 PM' },
-              { name: 'WORLD OPEN', time: '07:47:57', date: '24 NOV 26 11:00 PM' },
+              {
+                name: "ASIA CLOSE",
+                time: "00:47:57",
+                date: "24 NOV 26 04:00 PM",
+              },
+              {
+                name: "TAJ OPEN",
+                time: "01:47:57",
+                date: "24 NOV 26 05:00 PM",
+              },
+              {
+                name: "TAJ CLOSE",
+                time: "02:47:57",
+                date: "24 NOV 26 06:00 PM",
+              },
+              {
+                name: "GULF OPEN",
+                time: "03:47:57",
+                date: "24 NOV 26 07:00 PM",
+              },
+              {
+                name: "GULF CLOSE",
+                time: "04:47:57",
+                date: "24 NOV 26 08:00 PM",
+              },
+              {
+                name: "DIAMOND OPEN",
+                time: "05:47:57",
+                date: "24 NOV 26 09:00 PM",
+              },
+              {
+                name: "DIAMOND CLOSE",
+                time: "06:47:57",
+                date: "24 NOV 26 10:00 PM",
+              },
+              {
+                name: "WORLD OPEN",
+                time: "07:47:57",
+                date: "24 NOV 26 11:00 PM",
+              },
             ].map((m, idx) => (
-              <div key={idx} className="bg-[#14324f] px-2.5 py-1 rounded border border-sky-500/40 shrink-0 text-center font-mono">
-                <div className="text-sky-300 font-black text-[10px] leading-tight">{m.name}</div>
-                <div className="text-yellow-400 font-bold text-[10px] leading-tight">⏱ {m.time}</div>
-                <div className="text-[8px] text-slate-400 leading-none">{m.date}</div>
+              <div
+                key={idx}
+                className="bg-[#14324f] px-2.5 py-1 rounded border border-sky-500/40 shrink-0 text-center font-mono"
+              >
+                <div className="text-sky-300 font-black text-[10px] leading-tight">
+                  {m.name}
+                </div>
+                <div className="text-yellow-400 font-bold text-[10px] leading-tight">
+                  ⏱ {m.time}
+                </div>
+                <div className="text-[8px] text-slate-400 leading-none">
+                  {m.date}
+                </div>
               </div>
             ))}
           </div>
@@ -594,22 +670,34 @@ export default function CasinoTableModal({ table, onClose }) {
                     </span>
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-1">
-                        <span className="text-[10px] font-black text-amber-200 w-12 uppercase">ANDAR</span>
+                        <span className="text-[10px] font-black text-amber-200 w-12 uppercase">
+                          ANDAR
+                        </span>
                         <ChevronLeft size={14} className="text-slate-400" />
                         <div className="flex gap-1">
                           {andarCards.length > 0
-                            ? andarCards.map((c, i) => renderCard(c, `ab-a-${i}`, !c || c.isHidden))
-                            : [0, 1, 2].map((i) => renderCard(null, `ab-a-d-${i}`, true))}
+                            ? andarCards.map((c, i) =>
+                                renderCard(c, `ab-a-${i}`, !c || c.isHidden),
+                              )
+                            : [0, 1, 2].map((i) =>
+                                renderCard(null, `ab-a-d-${i}`, true),
+                              )}
                         </div>
                         <ChevronRight size={14} className="text-slate-400" />
                       </div>
                       <div className="flex items-center gap-1">
-                        <span className="text-[10px] font-black text-yellow-400 w-12 uppercase">BAHAR</span>
+                        <span className="text-[10px] font-black text-yellow-400 w-12 uppercase">
+                          BAHAR
+                        </span>
                         <ChevronLeft size={14} className="text-slate-400" />
                         <div className="flex gap-1">
                           {baharCards.length > 0
-                            ? baharCards.map((c, i) => renderCard(c, `ab-b-${i}`, !c || c.isHidden))
-                            : [0, 1, 2].map((i) => renderCard(null, `ab-b-d-${i}`, true))}
+                            ? baharCards.map((c, i) =>
+                                renderCard(c, `ab-b-${i}`, !c || c.isHidden),
+                              )
+                            : [0, 1, 2].map((i) =>
+                                renderCard(null, `ab-b-d-${i}`, true),
+                              )}
                         </div>
                         <ChevronRight size={14} className="text-slate-400" />
                       </div>
@@ -684,7 +772,13 @@ export default function CasinoTableModal({ table, onClose }) {
                         PLAYER A
                       </div>
                       <div className="flex gap-1">
-                        {[0, 1, 2].map(idx => renderCard(playerA[idx], `qa-${idx}`, !playerA[idx] || playerA[idx].isHidden))}
+                        {[0, 1, 2].map((idx) =>
+                          renderCard(
+                            playerA[idx],
+                            `qa-${idx}`,
+                            !playerA[idx] || playerA[idx].isHidden,
+                          ),
+                        )}
                       </div>
                     </div>
                     <div className="mt-0.5">
@@ -692,7 +786,13 @@ export default function CasinoTableModal({ table, onClose }) {
                         PLAYER B
                       </div>
                       <div className="flex gap-1">
-                        {[0, 1, 2].map(idx => renderCard(playerB[idx], `qb-${idx}`, !playerB[idx] || playerB[idx].isHidden))}
+                        {[0, 1, 2].map((idx) =>
+                          renderCard(
+                            playerB[idx],
+                            `qb-${idx}`,
+                            !playerB[idx] || playerB[idx].isHidden,
+                          ),
+                        )}
                       </div>
                     </div>
                   </div>
@@ -711,7 +811,13 @@ export default function CasinoTableModal({ table, onClose }) {
                         PLAYER A
                       </div>
                       <div className="flex gap-1">
-                        {[0, 1, 2].map(idx => renderCard(playerA[idx], `ja-${idx}`, !playerA[idx] || playerA[idx].isHidden))}
+                        {[0, 1, 2].map((idx) =>
+                          renderCard(
+                            playerA[idx],
+                            `ja-${idx}`,
+                            !playerA[idx] || playerA[idx].isHidden,
+                          ),
+                        )}
                       </div>
                     </div>
                     <div className="mt-0.5">
@@ -719,7 +825,13 @@ export default function CasinoTableModal({ table, onClose }) {
                         PLAYER B
                       </div>
                       <div className="flex gap-1">
-                        {[0, 1, 2].map(idx => renderCard(playerB[idx], `jb-${idx}`, !playerB[idx] || playerB[idx].isHidden))}
+                        {[0, 1, 2].map((idx) =>
+                          renderCard(
+                            playerB[idx],
+                            `jb-${idx}`,
+                            !playerB[idx] || playerB[idx].isHidden,
+                          ),
+                        )}
                       </div>
                     </div>
                   </div>
@@ -749,7 +861,11 @@ export default function CasinoTableModal({ table, onClose }) {
                         POISON
                       </div>
                       <div className="flex gap-1">
-                        {renderCard(poisonCard, 'poison-card', !poisonCard || poisonCard.isHidden)}
+                        {renderCard(
+                          poisonCard,
+                          "poison-card",
+                          !poisonCard || poisonCard.isHidden,
+                        )}
                       </div>
                     </div>
                     <div className="mt-0.5">
@@ -757,7 +873,13 @@ export default function CasinoTableModal({ table, onClose }) {
                         PLAYER A
                       </div>
                       <div className="flex gap-1">
-                        {[0, 1, 2].map(idx => renderCard(playerA[idx], `pa-${idx}`, !playerA[idx] || playerA[idx].isHidden))}
+                        {[0, 1, 2].map((idx) =>
+                          renderCard(
+                            playerA[idx],
+                            `pa-${idx}`,
+                            !playerA[idx] || playerA[idx].isHidden,
+                          ),
+                        )}
                       </div>
                     </div>
                     <div className="mt-0.5">
@@ -765,7 +887,13 @@ export default function CasinoTableModal({ table, onClose }) {
                         PLAYER B
                       </div>
                       <div className="flex gap-1">
-                        {[0, 1, 2].map(idx => renderCard(playerB[idx], `pb-${idx}`, !playerB[idx] || playerB[idx].isHidden))}
+                        {[0, 1, 2].map((idx) =>
+                          renderCard(
+                            playerB[idx],
+                            `pb-${idx}`,
+                            !playerB[idx] || playerB[idx].isHidden,
+                          ),
+                        )}
                       </div>
                     </div>
                   </div>
@@ -785,7 +913,11 @@ export default function CasinoTableModal({ table, onClose }) {
                         JOKER
                       </div>
                       <div className="flex gap-1">
-                        {renderCard(jokerCard, 'joker-card', !jokerCard || jokerCard.isHidden)}
+                        {renderCard(
+                          jokerCard,
+                          "joker-card",
+                          !jokerCard || jokerCard.isHidden,
+                        )}
                       </div>
                     </div>
                     <div className="mt-0.5">
@@ -793,7 +925,13 @@ export default function CasinoTableModal({ table, onClose }) {
                         PLAYER A
                       </div>
                       <div className="flex gap-1">
-                        {[0, 1, 2].map(idx => renderCard(playerA[idx], `pa-${idx}`, !playerA[idx] || playerA[idx].isHidden))}
+                        {[0, 1, 2].map((idx) =>
+                          renderCard(
+                            playerA[idx],
+                            `pa-${idx}`,
+                            !playerA[idx] || playerA[idx].isHidden,
+                          ),
+                        )}
                       </div>
                     </div>
                     <div className="mt-0.5">
@@ -801,7 +939,13 @@ export default function CasinoTableModal({ table, onClose }) {
                         PLAYER B
                       </div>
                       <div className="flex gap-1">
-                        {[0, 1, 2].map(idx => renderCard(playerB[idx], `pb-${idx}`, !playerB[idx] || playerB[idx].isHidden))}
+                        {[0, 1, 2].map((idx) =>
+                          renderCard(
+                            playerB[idx],
+                            `pb-${idx}`,
+                            !playerB[idx] || playerB[idx].isHidden,
+                          ),
+                        )}
                       </div>
                     </div>
                   </div>
@@ -814,7 +958,13 @@ export default function CasinoTableModal({ table, onClose }) {
                 return (
                   <div className="flex flex-col items-start gap-1">
                     <div className="flex gap-1">
-                      {[0, 1, 2].map(idx => renderCard(cards[idx], `worli-${idx}`, !cards[idx] || cards[idx].isHidden))}
+                      {[0, 1, 2].map((idx) =>
+                        renderCard(
+                          cards[idx],
+                          `worli-${idx}`,
+                          !cards[idx] || cards[idx].isHidden,
+                        ),
+                      )}
                     </div>
                   </div>
                 );
@@ -862,7 +1012,9 @@ export default function CasinoTableModal({ table, onClose }) {
               if (roundData?.cards && roundData.cards.length > 0) {
                 return (
                   <div className="flex gap-1">
-                    {roundData.cards.slice(0, 4).map((c, i) => renderCard(c, `gen-${i}`))}
+                    {roundData.cards
+                      .slice(0, 4)
+                      .map((c, i) => renderCard(c, `gen-${i}`))}
                   </div>
                 );
               }
@@ -930,19 +1082,47 @@ export default function CasinoTableModal({ table, onClose }) {
         {/* 5. Real Live Betting Odds Board */}
         <div className="flex-1 overflow-y-auto p-3 sm:p-4 bg-[#0b1726]">
           {isWorli ? (
-            <WorliMatkaBoard roundData={roundData} timer={timer} isSuspended={isSuspended} />
+            <WorliMatkaBoard
+              roundData={roundData}
+              timer={timer}
+              isSuspended={isSuspended}
+            />
           ) : isPoison ? (
-            <PoisonTeenPattiBoard roundData={roundData} timer={timer} isSuspended={isSuspended} />
+            <PoisonTeenPattiBoard
+              roundData={roundData}
+              timer={timer}
+              isSuspended={isSuspended}
+            />
           ) : isUniqueTeen ? (
-            <UniqueTeenPattiBoard roundData={roundData} timer={timer} isSuspended={isSuspended} />
+            <UniqueTeenPattiBoard
+              roundData={roundData}
+              timer={timer}
+              isSuspended={isSuspended}
+            />
           ) : isTeenPattiJoker ? (
-            <TeenPattiJoker20Board roundData={roundData} timer={timer} isSuspended={isSuspended} />
+            <TeenPattiJoker20Board
+              roundData={roundData}
+              timer={timer}
+              isSuspended={isSuspended}
+            />
           ) : isUnlimitedJoker ? (
-            <UnlimitedJokerBoard roundData={roundData} timer={timer} isSuspended={isSuspended} />
+            <UnlimitedJokerBoard
+              roundData={roundData}
+              timer={timer}
+              isSuspended={isSuspended}
+            />
           ) : isBollywood ? (
-            <BollywoodCasinoBoard roundData={roundData} timer={timer} isSuspended={isSuspended} />
+            <BollywoodCasinoBoard
+              roundData={roundData}
+              timer={timer}
+              isSuspended={isSuspended}
+            />
           ) : isMiniSuperOver ? (
-            <MiniSuperOverBoard roundData={roundData} timer={timer} isSuspended={isSuspended} />
+            <MiniSuperOverBoard
+              roundData={roundData}
+              timer={timer}
+              isSuspended={isSuspended}
+            />
           ) : isSuperOver ? (
             <SuperOverBoard roundData={roundData} timer={timer} isSuspended={isSuspended} slug={slug} />
           ) : isBallByBall ? (
@@ -952,19 +1132,49 @@ export default function CasinoTableModal({ table, onClose }) {
           ) : isTeen20 ? (
             <TeenPatti20Board roundData={roundData} timer={timer} isSuspended={isSuspended} />
           ) : isUniqueRoulette ? (
-            <UniqueRouletteBoard roundData={roundData} timer={timer} isSuspended={isSuspended} recentResults={recentResults} />
+            <UniqueRouletteBoard
+              roundData={roundData}
+              timer={timer}
+              isSuspended={isSuspended}
+              recentResults={recentResults}
+            />
           ) : isLucky6 ? (
-            <Lucky6Board roundData={roundData} timer={timer} isSuspended={isSuspended} />
+            <Lucky6Board
+              roundData={roundData}
+              timer={timer}
+              isSuspended={isSuspended}
+            />
           ) : isRoulette ? (
-            <RouletteBoard roundData={roundData} timer={timer} isSuspended={isSuspended} />
+            <RouletteBoard
+              roundData={roundData}
+              timer={timer}
+              isSuspended={isSuspended}
+            />
           ) : isGoal ? (
-            <GoalBoard roundData={roundData} timer={timer} isSuspended={isSuspended} />
+            <GoalBoard
+              roundData={roundData}
+              timer={timer}
+              isSuspended={isSuspended}
+            />
           ) : isAndarBahar ? (
-            <AndarBaharBoard roundData={roundData} timer={timer} isSuspended={isSuspended} />
+            <AndarBaharBoard
+              roundData={roundData}
+              timer={timer}
+              isSuspended={isSuspended}
+            />
           ) : isQueenTop || isJackTop ? (
-            <QueenJackTopBoard roundData={roundData} timer={timer} isSuspended={isSuspended} title={table.name} />
+            <QueenJackTopBoard
+              roundData={roundData}
+              timer={timer}
+              isSuspended={isSuspended}
+              title={table.name}
+            />
           ) : isSicBo ? (
-            <SicBoBoard roundData={roundData} timer={timer} isSuspended={isSuspended} />
+            <SicBoBoard
+              roundData={roundData}
+              timer={timer}
+              isSuspended={isSuspended}
+            />
           ) : (
             /* Standard Live Runners Exchange Board */
             <div>
