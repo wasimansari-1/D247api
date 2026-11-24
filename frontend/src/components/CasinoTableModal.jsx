@@ -12,36 +12,36 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import WorliMatkaBoard from './casino/WorliMatkaBoard';
-import PoisonTeenPattiBoard from './casino/PoisonTeenPattiBoard';
-import TeenPattiJoker20Board from './casino/TeenPattiJoker20Board';
-import UnlimitedJokerBoard from './casino/UnlimitedJokerBoard';
-import BollywoodCasinoBoard from './casino/BollywoodCasinoBoard';
-import MiniSuperOverBoard from './casino/MiniSuperOverBoard';
-import SuperOverBoard from './casino/SuperOverBoard';
-import UniqueTeenPattiBoard from './casino/UniqueTeenPattiBoard';
-import UniqueRouletteBoard from './casino/UniqueRouletteBoard';
-import RouletteBoard from './casino/RouletteBoard';
-import Lucky6Board from './casino/Lucky6Board';
-import GoalBoard from './casino/GoalBoard';
-import AndarBaharBoard from './casino/AndarBaharBoard';
-import QueenJackTopBoard from './casino/QueenJackTopBoard';
-import SicBoBoard from './casino/SicBoBoard';
-import BallByBallBoard from './casino/BallByBallBoard';
-import TeenPatti1DayBoard from './casino/TeenPatti1DayBoard';
-import TeenPatti20Board from './casino/TeenPatti20Board';
-import TeenPattiTestBoard from './casino/TeenPattiTestBoard';
-import TeenPattiOpenBoard from './casino/TeenPattiOpenBoard';
-import Poker1DayBoard from './casino/Poker1DayBoard';
-import Poker20Board from './casino/Poker20Board';
-import Poker6Board from './casino/Poker6Board';
-import BaccaratBoard from './casino/BaccaratBoard';
-import Lucky15Board from './casino/Lucky15Board';
-import DragonTigerBoard from './casino/DragonTigerBoard';
-import Lucky7Board from './casino/Lucky7Board';
-import CricketMatch20Board from './casino/CricketMatch20Board';
-import AmarAkbarAnthonyBoard from './casino/AmarAkbarAnthonyBoard';
-import ResultDetailModal from './casino/ResultDetailModal';
+import WorliMatkaBoard from "./casino/WorliMatkaBoard";
+import PoisonTeenPattiBoard from "./casino/PoisonTeenPattiBoard";
+import TeenPattiJoker20Board from "./casino/TeenPattiJoker20Board";
+import UnlimitedJokerBoard from "./casino/UnlimitedJokerBoard";
+import BollywoodCasinoBoard from "./casino/BollywoodCasinoBoard";
+import MiniSuperOverBoard from "./casino/MiniSuperOverBoard";
+import SuperOverBoard from "./casino/SuperOverBoard";
+import UniqueTeenPattiBoard from "./casino/UniqueTeenPattiBoard";
+import UniqueRouletteBoard from "./casino/UniqueRouletteBoard";
+import RouletteBoard from "./casino/RouletteBoard";
+import Lucky6Board from "./casino/Lucky6Board";
+import GoalBoard from "./casino/GoalBoard";
+import AndarBaharBoard from "./casino/AndarBaharBoard";
+import QueenJackTopBoard from "./casino/QueenJackTopBoard";
+import SicBoBoard from "./casino/SicBoBoard";
+import BallByBallBoard from "./casino/BallByBallBoard";
+import TeenPatti1DayBoard from "./casino/TeenPatti1DayBoard";
+import TeenPatti20Board from "./casino/TeenPatti20Board";
+import TeenPattiTestBoard from "./casino/TeenPattiTestBoard";
+import TeenPattiOpenBoard from "./casino/TeenPattiOpenBoard";
+import Poker1DayBoard from "./casino/Poker1DayBoard";
+import Poker20Board from "./casino/Poker20Board";
+import Poker6Board from "./casino/Poker6Board";
+import BaccaratBoard from "./casino/BaccaratBoard";
+import Lucky15Board from "./casino/Lucky15Board";
+import DragonTigerBoard from "./casino/DragonTigerBoard";
+import Lucky7Board from "./casino/Lucky7Board";
+import CricketMatch20Board from "./casino/CricketMatch20Board";
+import AmarAkbarAnthonyBoard from "./casino/AmarAkbarAnthonyBoard";
+import ResultDetailModal from "./casino/ResultDetailModal";
 
 // Authentic Lucky 15 Runner Index to Outcome Mapper
 function mapLucky15Outcome(val) {
@@ -82,37 +82,116 @@ export default function CasinoTableModal({ table, onClose }) {
   const slug = (table?.slug || table?.id || "").toLowerCase();
   const nameLow = (table?.name || "").toLowerCase();
 
-  const isCMatch20 = slug === 'cmatch20' || nameLow.includes('cricket match 20') || nameLow.includes('cmatch');
-  const isAAA = slug === 'aaa' || slug === 'aaa2' || slug === 'vaaa' || nameLow.includes('amar akbar anthony') || nameLow.includes('amar');
-  const isWorli = slug === 'worli' || slug === 'worli2' || slug === 'worli3' || nameLow.includes('worli') || nameLow.includes('matka');
-  const isPoison = slug.includes('poison') || nameLow.includes('poison');
-  const isUniqueTeen = slug.includes('unique') && (slug.includes('teen') || slug.includes('patti') || nameLow.includes('unique teen'));
-  const isTeenPattiJoker = slug === 'joker20' || slug === 'teen20b' || slug.includes('joker') || nameLow.includes('teenpatti joker') || nameLow.includes('joker 20');
-  const isUnlimitedJoker = slug === 'joker120' || slug === 'joker1' || slug === 'teen1' || slug === 'teen120' || nameLow.includes('unlimited joker');
-  const isBollywood = slug.includes('btable') || slug.includes('bollywood') || nameLow.includes('bollywood');
-  const isMiniSuperOver = slug === 'superover3' || slug === 'minisuperover' || nameLow.includes('mini super');
-  const isSuperOver = slug.includes('superover') || slug.includes('ballbyball') || nameLow.includes('super over');
-  const isUniqueRoulette = slug === 'ourroullete' || slug === 'uroulette' || nameLow.includes('unique roulette');
-  const isLucky6 = slug === 'lucky6' || slug === 'lucky5' || nameLow.includes('lucky 6');
-  const isRoulette = slug.includes('roulette') || nameLow.includes('roulette');
-  const isGoal = slug === 'goal' || slug === 'goal2' || nameLow.includes('goal');
-  const isAndarBahar = slug.includes('ab') || nameLow.includes('andar bahar') || slug.includes('andar');
-  const isQueenTop = slug === 'queentop' || slug === 'teen41' || nameLow.includes('queen');
-  const isJackTop = slug === 'jacktop' || slug === 'teen42' || nameLow.includes('jack');
-  const isSicBo = slug.includes('sicbo') || nameLow.includes('sic bo');
-  const isLucky15 = slug === 'lucky15' || nameLow.includes('lucky 15');
-  const isBallByBall = slug === 'ballbyball' || nameLow.includes('ball by ball');
-  const isTeen1Day = slug === 'teen' || slug === 'teen1day' || nameLow.includes('teenpatti 1day') || nameLow.includes('teenpatti 1-day');
-  const isTeen20 = (slug === 'teen20' || nameLow.includes('20-20 teen') || nameLow.includes('teenpatti 20-20') || nameLow.includes('teen 20')) && !slug.includes('joker') && !slug.includes('poison') && slug !== 'teen20b';
-  const isTeenTest = slug === 'teentest' || slug === 'teen9' || nameLow.includes('teenpatti test') || nameLow.includes('teen test');
-  const isTeenOpen = slug === 'teensin' || slug === 'teen8' || nameLow.includes('open teen') || nameLow.includes('teenpatti open');
-  const isPoker1Day = slug === 'poker' || slug === 'poker1day' || nameLow.includes('poker 1 day') || nameLow.includes('poker 1day');
-  const isPoker20 = slug === 'poker20' || nameLow.includes('20-20 poker') || nameLow.includes('poker 20');
-  const isPoker6 = slug === 'poker6' || nameLow.includes('poker 6');
-  const isBaccarat = slug.includes('baccarat') || nameLow.includes('baccarat');
-  const isDragonTiger = slug.includes('dt') || slug.includes('dragon') || nameLow.includes('dragon tiger');
-  const isLucky7 = slug.includes('lucky7') || nameLow.includes('lucky 7') || nameLow.includes('lucky-7');
-  const isSuspended = timer <= 0 || roundData?.status === 'SUSPENDED';
+  const isCMatch20 =
+    slug === "cmatch20" ||
+    nameLow.includes("cricket match 20") ||
+    nameLow.includes("cmatch");
+  const isAAA =
+    slug === "aaa" ||
+    slug === "aaa2" ||
+    slug === "vaaa" ||
+    nameLow.includes("amar akbar anthony") ||
+    nameLow.includes("amar");
+  const isWorli =
+    slug === "worli" ||
+    slug === "worli2" ||
+    slug === "worli3" ||
+    nameLow.includes("worli") ||
+    nameLow.includes("matka");
+  const isPoison = slug.includes("poison") || nameLow.includes("poison");
+  const isUniqueTeen =
+    slug.includes("unique") &&
+    (slug.includes("teen") ||
+      slug.includes("patti") ||
+      nameLow.includes("unique teen"));
+  const isTeenPattiJoker =
+    slug === "joker20" ||
+    slug === "teen20b" ||
+    slug.includes("joker") ||
+    nameLow.includes("teenpatti joker") ||
+    nameLow.includes("joker 20");
+  const isUnlimitedJoker =
+    slug === "joker120" ||
+    slug === "joker1" ||
+    slug === "teen1" ||
+    slug === "teen120" ||
+    nameLow.includes("unlimited joker");
+  const isBollywood =
+    slug.includes("btable") ||
+    slug.includes("bollywood") ||
+    nameLow.includes("bollywood");
+  const isMiniSuperOver =
+    slug === "superover3" ||
+    slug === "minisuperover" ||
+    nameLow.includes("mini super");
+  const isSuperOver =
+    slug.includes("superover") ||
+    slug.includes("ballbyball") ||
+    nameLow.includes("super over");
+  const isUniqueRoulette =
+    slug === "ourroullete" ||
+    slug === "uroulette" ||
+    nameLow.includes("unique roulette");
+  const isLucky6 =
+    slug === "lucky6" || slug === "lucky5" || nameLow.includes("lucky 6");
+  const isRoulette = slug.includes("roulette") || nameLow.includes("roulette");
+  const isGoal =
+    slug === "goal" || slug === "goal2" || nameLow.includes("goal");
+  const isAndarBahar =
+    slug.includes("ab") ||
+    nameLow.includes("andar bahar") ||
+    slug.includes("andar");
+  const isQueenTop =
+    slug === "queentop" || slug === "teen41" || nameLow.includes("queen");
+  const isJackTop =
+    slug === "jacktop" || slug === "teen42" || nameLow.includes("jack");
+  const isSicBo = slug.includes("sicbo") || nameLow.includes("sic bo");
+  const isLucky15 = slug === "lucky15" || nameLow.includes("lucky 15");
+  const isBallByBall =
+    slug === "ballbyball" || nameLow.includes("ball by ball");
+  const isTeen1Day =
+    slug === "teen" ||
+    slug === "teen1day" ||
+    nameLow.includes("teenpatti 1day") ||
+    nameLow.includes("teenpatti 1-day");
+  const isTeen20 =
+    (slug === "teen20" ||
+      nameLow.includes("20-20 teen") ||
+      nameLow.includes("teenpatti 20-20") ||
+      nameLow.includes("teen 20")) &&
+    !slug.includes("joker") &&
+    !slug.includes("poison") &&
+    slug !== "teen20b";
+  const isTeenTest =
+    slug === "teentest" ||
+    slug === "teen9" ||
+    nameLow.includes("teenpatti test") ||
+    nameLow.includes("teen test");
+  const isTeenOpen =
+    slug === "teensin" ||
+    slug === "teen8" ||
+    nameLow.includes("open teen") ||
+    nameLow.includes("teenpatti open");
+  const isPoker1Day =
+    slug === "poker" ||
+    slug === "poker1day" ||
+    nameLow.includes("poker 1 day") ||
+    nameLow.includes("poker 1day");
+  const isPoker20 =
+    slug === "poker20" ||
+    nameLow.includes("20-20 poker") ||
+    nameLow.includes("poker 20");
+  const isPoker6 = slug === "poker6" || nameLow.includes("poker 6");
+  const isBaccarat = slug.includes("baccarat") || nameLow.includes("baccarat");
+  const isDragonTiger =
+    slug.includes("dt") ||
+    slug.includes("dragon") ||
+    nameLow.includes("dragon tiger");
+  const isLucky7 =
+    slug.includes("lucky7") ||
+    nameLow.includes("lucky 7") ||
+    nameLow.includes("lucky-7");
+  const isSuspended = timer <= 0 || roundData?.status === "SUSPENDED";
 
   // Fetch live stream URL from Diamond / D247 API
   useEffect(() => {
@@ -205,12 +284,16 @@ export default function CasinoTableModal({ table, onClose }) {
                     setTimeout(() => setLucky15Popup(null), 2000);
                   }
                   if (isBallByBall) {
-                    const txt = outcome.toUpperCase().includes('W') ? 'WICKET' : `${outcome} RUN`;
+                    const txt = outcome.toUpperCase().includes("W")
+                      ? "WICKET"
+                      : `${outcome} RUN`;
                     setBallByBallPopup(txt);
                     setTimeout(() => setBallByBallPopup(null), 2000);
                   }
                   if (isCMatch20) {
-                    const txt = outcome.toUpperCase().includes('W') ? 'WICKET' : `${outcome} RUNS`;
+                    const txt = outcome.toUpperCase().includes("W")
+                      ? "WICKET"
+                      : `${outcome} RUNS`;
                     setCmatch20Popup(txt);
                     setTimeout(() => setCmatch20Popup(null), 2000);
                   }
@@ -293,35 +376,71 @@ export default function CasinoTableModal({ table, onClose }) {
 
     // 1.1 Baccarat: P (Blue), B (Red), T (Green) (Image 1 Exact Match)
     if (isBaccarat) {
-      if (lower.startsWith('p') || w === '1') {
-        return { letter: 'P', bg: 'bg-blue-600 text-white font-black', title: 'Player' };
+      if (lower.startsWith("p") || w === "1") {
+        return {
+          letter: "P",
+          bg: "bg-blue-600 text-white font-black",
+          title: "Player",
+        };
       }
-      if (lower.startsWith('b') || w === '2') {
-        return { letter: 'B', bg: 'bg-red-600 text-white font-black', title: 'Banker' };
+      if (lower.startsWith("b") || w === "2") {
+        return {
+          letter: "B",
+          bg: "bg-red-600 text-white font-black",
+          title: "Banker",
+        };
       }
-      return { letter: 'T', bg: 'bg-emerald-600 text-white font-black', title: 'Tie' };
+      return {
+        letter: "T",
+        bg: "bg-emerald-600 text-white font-black",
+        title: "Tie",
+      };
     }
 
     // 1.2 Dragon Tiger: D (Red), T (Yellow), Tie (Green)
     if (isDragonTiger) {
-      if (lower.startsWith('d') || w === '1') {
-        return { letter: 'D', bg: 'bg-red-600 text-white font-black', title: 'Dragon' };
+      if (lower.startsWith("d") || w === "1") {
+        return {
+          letter: "D",
+          bg: "bg-red-600 text-white font-black",
+          title: "Dragon",
+        };
       }
-      if (lower.startsWith('t') || w === '2') {
-        return { letter: 'T', bg: 'bg-amber-600 text-white font-black', title: 'Tiger' };
+      if (lower.startsWith("t") || w === "2") {
+        return {
+          letter: "T",
+          bg: "bg-amber-600 text-white font-black",
+          title: "Tiger",
+        };
       }
-      return { letter: 'Tie', bg: 'bg-emerald-600 text-white font-black', title: 'Tie' };
+      return {
+        letter: "Tie",
+        bg: "bg-emerald-600 text-white font-black",
+        title: "Tie",
+      };
     }
 
     // 1.3 Lucky 7: L (Green), H (Amber), 7 (Red)
     if (isLucky7) {
-      if (lower.includes('low') || lower.startsWith('l') || w === '1') {
-        return { letter: 'L', bg: 'bg-emerald-600 text-white font-black', title: 'Low' };
+      if (lower.includes("low") || lower.startsWith("l") || w === "1") {
+        return {
+          letter: "L",
+          bg: "bg-emerald-600 text-white font-black",
+          title: "Low",
+        };
       }
-      if (lower.includes('high') || lower.startsWith('h') || w === '2') {
-        return { letter: 'H', bg: 'bg-amber-600 text-white font-black', title: 'High' };
+      if (lower.includes("high") || lower.startsWith("h") || w === "2") {
+        return {
+          letter: "H",
+          bg: "bg-amber-600 text-white font-black",
+          title: "High",
+        };
       }
-      return { letter: '7', bg: 'bg-red-600 text-white font-black', title: '7' };
+      return {
+        letter: "7",
+        bg: "bg-red-600 text-white font-black",
+        title: "7",
+      };
     }
 
     // 2. Lucky 6: L, O, H, E, B, R badges (Image 2 Exact Match)
@@ -402,8 +521,10 @@ export default function CasinoTableModal({ table, onClose }) {
     if (isAAA) {
       let char = "A";
       if (w === "1" || lower === "a" || lower.includes("amar")) char = "A";
-      else if (w === "2" || lower === "b" || lower.includes("akbar")) char = "B";
-      else if (w === "3" || lower === "c" || lower.includes("anthony")) char = "C";
+      else if (w === "2" || lower === "b" || lower.includes("akbar"))
+        char = "B";
+      else if (w === "3" || lower === "c" || lower.includes("anthony"))
+        char = "C";
       return {
         letter: char,
         bg: "bg-emerald-700 text-white font-black",
@@ -457,7 +578,12 @@ export default function CasinoTableModal({ table, onClose }) {
         char = "A";
       } else if (w === "2" || lower === "b" || lower.includes("player b")) {
         char = "B";
-      } else if (lower.includes("tie") || lower === "t" || w === "0" || w === "3") {
+      } else if (
+        lower.includes("tie") ||
+        lower === "t" ||
+        w === "0" ||
+        w === "3"
+      ) {
         char = "T";
       } else {
         char = w.slice(0, 1).toUpperCase() || "A";
@@ -732,7 +858,9 @@ export default function CasinoTableModal({ table, onClose }) {
             <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none animate-in zoom-in-75 fade-in duration-300">
               <div className="relative w-32 h-32 rounded-full bg-gradient-to-br from-red-600 via-rose-700 to-red-950 border-4 border-white/60 flex items-center justify-center text-white text-xl font-black font-mono shadow-2xl drop-shadow-[0_10px_25px_rgba(0,0,0,0.9)] tracking-wider">
                 <div className="absolute inset-y-0 w-1 border-r border-dashed border-white/40 left-1/2 -translate-x-1/2 pointer-events-none"></div>
-                <span className="relative z-10 text-center uppercase drop-shadow">{lucky15Popup}</span>
+                <span className="relative z-10 text-center uppercase drop-shadow">
+                  {lucky15Popup}
+                </span>
               </div>
             </div>
           )}
@@ -751,7 +879,9 @@ export default function CasinoTableModal({ table, onClose }) {
             <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none animate-in zoom-in-50 fade-in duration-300">
               <div className="relative w-36 h-36 rounded-full bg-gradient-to-br from-red-600 via-rose-700 to-red-950 border-4 border-white/60 flex flex-col items-center justify-center text-white font-mono shadow-2xl drop-shadow-[0_10px_25px_rgba(0,0,0,0.9)] tracking-wider ring-2 ring-red-900">
                 <div className="absolute inset-y-0 w-1 border-r border-dashed border-white/40 left-1/2 -translate-x-1/2 pointer-events-none"></div>
-                <span className="relative z-10 text-2xl font-black drop-shadow text-center uppercase">{cmatch20Popup}</span>
+                <span className="relative z-10 text-2xl font-black drop-shadow text-center uppercase">
+                  {cmatch20Popup}
+                </span>
               </div>
             </div>
           )}
@@ -1427,7 +1557,11 @@ export default function CasinoTableModal({ table, onClose }) {
                         DRAGON
                       </div>
                       <div className="flex gap-1">
-                        {renderCard(cards[0], 'dt-d-0', !cards[0] || cards[0].isHidden)}
+                        {renderCard(
+                          cards[0],
+                          "dt-d-0",
+                          !cards[0] || cards[0].isHidden,
+                        )}
                       </div>
                     </div>
                     <div className="mt-0.5">
@@ -1435,7 +1569,11 @@ export default function CasinoTableModal({ table, onClose }) {
                         TIGER
                       </div>
                       <div className="flex gap-1">
-                        {renderCard(cards[1], 'dt-t-1', !cards[1] || cards[1].isHidden)}
+                        {renderCard(
+                          cards[1],
+                          "dt-t-1",
+                          !cards[1] || cards[1].isHidden,
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1447,13 +1585,19 @@ export default function CasinoTableModal({ table, onClose }) {
                 const c = roundData?.cards?.[0];
                 return (
                   <div className="flex flex-col items-start gap-1">
-                    {renderCard(c, 'l7-card', !c || c.isHidden)}
+                    {renderCard(c, "l7-card", !c || c.isHidden)}
                   </div>
                 );
               }
 
               // Clean Video without card overlay for Baccarat, Lucky 15, Roulette, Sic Bo
-              if (isBaccarat || isLucky15 || isRoulette || isUniqueRoulette || isSicBo) {
+              if (
+                isBaccarat ||
+                isLucky15 ||
+                isRoulette ||
+                isUniqueRoulette ||
+                isSicBo
+              ) {
                 return null;
               }
 
@@ -1600,13 +1744,29 @@ export default function CasinoTableModal({ table, onClose }) {
               isSuspended={isSuspended}
             />
           ) : isBaccarat ? (
-            <BaccaratBoard roundData={roundData} timer={timer} isSuspended={isSuspended} />
+            <BaccaratBoard
+              roundData={roundData}
+              timer={timer}
+              isSuspended={isSuspended}
+            />
           ) : isLucky15 ? (
-            <Lucky15Board roundData={roundData} timer={timer} isSuspended={isSuspended} />
+            <Lucky15Board
+              roundData={roundData}
+              timer={timer}
+              isSuspended={isSuspended}
+            />
           ) : isDragonTiger ? (
-            <DragonTigerBoard roundData={roundData} timer={timer} isSuspended={isSuspended} />
+            <DragonTigerBoard
+              roundData={roundData}
+              timer={timer}
+              isSuspended={isSuspended}
+            />
           ) : isLucky7 ? (
-            <Lucky7Board roundData={roundData} timer={timer} isSuspended={isSuspended} />
+            <Lucky7Board
+              roundData={roundData}
+              timer={timer}
+              isSuspended={isSuspended}
+            />
           ) : isTeenTest ? (
             <TeenPattiTestBoard
               roundData={roundData}
