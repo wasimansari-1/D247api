@@ -41,6 +41,10 @@ import DragonTigerBoard from "./casino/DragonTigerBoard";
 import Lucky7Board from "./casino/Lucky7Board";
 import CricketMatch20Board from "./casino/CricketMatch20Board";
 import AmarAkbarAnthonyBoard from "./casino/AmarAkbarAnthonyBoard";
+import Race20Board from "./casino/Race20Board";
+import Race2Board from "./casino/Race2Board";
+import DusKaDumBoard from "./casino/DusKaDumBoard";
+import Race20ResultModal from "./casino/Race20ResultModal";
 import ResultDetailModal from "./casino/ResultDetailModal";
 
 // Authentic Lucky 15 Runner Index to Outcome Mapper
@@ -78,6 +82,8 @@ export default function CasinoTableModal({ table, onClose }) {
   const [ballByBallPopup, setBallByBallPopup] = useState(null);
   const [cmatch20Popup, setCmatch20Popup] = useState(null);
   const [selectedResultModal, setSelectedResultModal] = useState(null);
+  const [selectedRace20Result, setSelectedRace20Result] = useState(null);
+  const [dumCardIndex, setDumCardIndex] = useState(0);
 
   const slug = (table?.slug || table?.id || "").toLowerCase();
   const nameLow = (table?.name || "").toLowerCase();
@@ -191,6 +197,19 @@ export default function CasinoTableModal({ table, onClose }) {
     slug.includes("lucky7") ||
     nameLow.includes("lucky 7") ||
     nameLow.includes("lucky-7");
+  const isRace20 =
+    slug === "race20" ||
+    nameLow.includes("race 20") ||
+    nameLow.includes("race-20");
+  const isRace2 =
+    slug === "race2" ||
+    nameLow.includes("race to 2nd") ||
+    nameLow.includes("race 2");
+  const isDusKaDum =
+    slug === "dum10" ||
+    nameLow.includes("dus ka dum") ||
+    nameLow.includes("duskadum") ||
+    slug.includes("dum");
   const isSuspended = timer <= 0 || roundData?.status === "SUSPENDED";
 
   // Fetch live stream URL from Diamond / D247 API
@@ -371,6 +390,68 @@ export default function CasinoTableModal({ table, onClose }) {
         letter: "R",
         bg: "bg-emerald-600 text-white font-bold",
         title: w || "Result",
+      };
+    }
+
+    // 1.01 Race 20: Suit Badges (Spade ♠ Black, Heart ♥ Red, Club ♣ Black, Diamond ♦ Red) (Image 9 & 10 Exact Match)
+    if (isRace20) {
+      if (w === "1" || w === "♠" || lower.includes("spade")) {
+        return {
+          letter: "♠",
+          bg: "bg-slate-950 text-white font-black text-sm",
+          title: "Spade",
+        };
+      }
+      if (w === "2" || w === "♥" || lower.includes("heart")) {
+        return {
+          letter: "♥",
+          bg: "bg-red-600 text-white font-black text-sm",
+          title: "Heart",
+        };
+      }
+      if (w === "3" || w === "♣" || lower.includes("club")) {
+        return {
+          letter: "♣",
+          bg: "bg-slate-950 text-white font-black text-sm",
+          title: "Club",
+        };
+      }
+      if (w === "4" || w === "♦" || lower.includes("diamond")) {
+        return {
+          letter: "♦",
+          bg: "bg-red-600 text-white font-black text-sm",
+          title: "Diamond",
+        };
+      }
+      return {
+        letter: w || "♥",
+        bg: "bg-red-600 text-white font-black",
+        title: w,
+      };
+    }
+
+    // 1.02 Race to 2nd: Green circular badges A, B, C, D (Image 3 Exact Match)
+    if (isRace2) {
+      let char = "A";
+      if (w === "1" || lower === "a") char = "A";
+      else if (w === "2" || lower === "b") char = "B";
+      else if (w === "3" || lower === "c") char = "C";
+      else if (w === "4" || lower === "d") char = "D";
+      else char = (w.slice(0, 1) || "A").toUpperCase();
+      return {
+        letter: char,
+        bg: "bg-emerald-700 text-white font-black",
+        title: `Player ${char}`,
+      };
+    }
+
+    // 1.03 Dus Ka Dum: Green circular badges Y (Yes) and N (No) (Image 4 & 5 Exact Match)
+    if (isDusKaDum) {
+      const isY = w === "1" || lower === "y" || lower === "yes";
+      return {
+        letter: isY ? "Y" : "N",
+        bg: "bg-emerald-700 text-white font-black",
+        title: isY ? "Yes" : "No",
       };
     }
 
@@ -1590,6 +1671,284 @@ export default function CasinoTableModal({ table, onClose }) {
                 );
               }
 
+              // Race 20 Table (Cards & Points Header + 4 Suit Rows) (Image 9 & 10 Exact Match)
+              if (isRace20) {
+                const cards = roundData?.cards || [];
+                const totalCardsCount = cards.filter((c) => !c.isHidden).length;
+                const totalPointsCount = cards.reduce((acc, c) => {
+                  if (!c || c.isHidden) return acc;
+                  const r = (c.rank || "").toUpperCase();
+                  if (["K"].includes(r)) return acc + 13;
+                  if (["Q"].includes(r)) return acc + 12;
+                  if (["J"].includes(r)) return acc + 11;
+                  if (["A"].includes(r)) return acc + 1;
+                  const num = parseInt(r);
+                  return acc + (isNaN(num) ? 0 : num);
+                }, 0);
+
+                return (
+                  <div className="flex flex-col items-start gap-1">
+                    {/* Top Cards & Points Box (Image 9 & 10) */}
+                    <div className="flex items-center gap-1.5 border border-yellow-400 bg-black/75 rounded px-2 py-0.5 mb-0.5 shadow">
+                      <div className="flex flex-col items-center leading-none pr-1.5 border-r border-yellow-400/50">
+                        <span className="text-[8px] font-bold text-yellow-300">
+                          Cards
+                        </span>
+                        <span className="text-[11px] font-black text-white font-mono">
+                          {totalCardsCount || 5}
+                        </span>
+                      </div>
+                      <div className="flex flex-col items-center leading-none">
+                        <span className="text-[8px] font-bold text-yellow-300">
+                          Points
+                        </span>
+                        <span className="text-[11px] font-black text-white font-mono">
+                          {totalPointsCount || 31}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 4 Suit Rows */}
+                    {["♠", "♥", "♣", "♦"].map((sIcon) => {
+                      const sCards = cards.filter((c) => c.suit === sIcon);
+                      const color = ["♥", "♦"].includes(sIcon)
+                        ? "text-red-500"
+                        : "text-slate-100";
+                      return (
+                        <div key={sIcon} className="flex items-center gap-1">
+                          <span
+                            className={`text-xs font-black w-3 text-center ${color}`}
+                          >
+                            {sIcon}
+                          </span>
+                          <div className="flex gap-1">
+                            {sCards.length > 0
+                              ? sCards.map((c, cIdx) =>
+                                  renderCard(
+                                    c,
+                                    `r20-${sIcon}-${cIdx}`,
+                                    c.isHidden,
+                                  ),
+                                )
+                              : null}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              }
+
+              // Dus Ka Dum (Yellow Stats Box + Horizontal Scrollable Cards Carousel) (Image 4 & 5 Exact Match)
+              if (isDusKaDum) {
+                const cards = roundData?.cards || [];
+                const dumTotal = cards.reduce((acc, c) => {
+                  if (!c || c.isHidden) return acc;
+                  const r = (c.rank || "").toUpperCase();
+                  if (["K", "Q", "J"].includes(r)) return acc + 10;
+                  if (["A"].includes(r)) return acc + 1;
+                  const num = parseInt(r);
+                  return acc + (isNaN(num) ? 0 : num);
+                }, 0);
+
+                return (
+                  <div className="flex flex-col items-start gap-1">
+                    {/* Yellow Status Bar */}
+                    <div className="flex items-center gap-2 border border-yellow-400 bg-black/75 rounded px-2 py-0.5 mb-1 shadow text-[10px] font-bold text-yellow-300">
+                      <div>
+                        Curr. Total:{" "}
+                        <span className="font-black text-white font-mono">
+                          {dumTotal || 10}
+                        </span>
+                      </div>
+                      <span className="text-yellow-400/50">|</span>
+                      <div>
+                        Card #:{" "}
+                        <span className="font-black text-white font-mono">
+                          {cards.length || 1}
+                        </span>
+                      </div>
+                      <span className="text-yellow-400/50">|</span>
+                      <div className="truncate max-w-[130px] font-extrabold">
+                        {roundData?.activeMarket || "Next Total 20 or More"}
+                      </div>
+                    </div>
+
+                    {/* Dealt Cards Carousel (Image 5 Exact Match) */}
+                    <div className="flex items-center gap-1">
+                      {cards.length > 3 && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setDumCardIndex((prev) => Math.max(0, prev - 1))
+                          }
+                          className="p-1 bg-black/80 hover:bg-black text-white rounded border border-white/20 shadow z-10 transition active:scale-95"
+                        >
+                          <ChevronLeft size={14} />
+                        </button>
+                      )}
+                      <div className="flex gap-1 overflow-hidden">
+                        {(cards.length > 0
+                          ? cards.slice(dumCardIndex, dumCardIndex + 4)
+                          : [0, 1, 2]
+                        ).map((c, i) =>
+                          renderCard(
+                            c,
+                            `dum-${dumCardIndex + i}`,
+                            !c || c.isHidden,
+                          ),
+                        )}
+                      </div>
+                      {cards.length > 3 && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setDumCardIndex((prev) =>
+                              Math.min(
+                                Math.max(0, cards.length - 3),
+                                prev + 1,
+                              ),
+                            )
+                          }
+                          className="p-1 bg-black/80 hover:bg-black text-white rounded border border-white/20 shadow z-10 transition active:scale-95"
+                        >
+                          <ChevronRight size={14} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              }
+
+              // Race to 2nd (Player A Dealt Card)
+              if (isRace2) {
+                const cards = roundData?.cards || [];
+                return (
+                  <div className="flex flex-col items-start gap-1">
+                    <div className="text-[10px] font-black text-amber-300 uppercase tracking-wider mb-0.5">
+                      PLAYER A
+                    </div>
+                    <div className="flex gap-1">
+                      {renderCard(
+                        cards[0],
+                        "r2-a",
+                        !cards[0] || cards[0].isHidden,
+                      )}
+                    </div>
+                  </div>
+                );
+              }
+
+              // Teenpatti Test (Tiger, Lion, Dragon Cards) (Image 6 Exact Match)
+              if (isTeenTest) {
+                const cards = roundData?.cards || [];
+                const tiger = cards.slice(0, 3);
+                const lion = cards.slice(3, 6);
+                const dragon = cards.slice(6, 9);
+                return (
+                  <div className="flex flex-col items-start gap-1">
+                    <div>
+                      <div className="text-[10px] font-black text-amber-300 uppercase tracking-wider mb-0.5">
+                        TIGER
+                      </div>
+                      <div className="flex gap-1">
+                        {[0, 1, 2].map((idx) =>
+                          renderCard(
+                            tiger[idx],
+                            `tt-t-${idx}`,
+                            !tiger[idx] || tiger[idx].isHidden,
+                          ),
+                        )}
+                      </div>
+                    </div>
+                    <div className="mt-0.5">
+                      <div className="text-[10px] font-black text-sky-300 uppercase tracking-wider mb-0.5">
+                        LION
+                      </div>
+                      <div className="flex gap-1">
+                        {[0, 1, 2].map((idx) =>
+                          renderCard(
+                            lion[idx],
+                            `tt-l-${idx}`,
+                            !lion[idx] || lion[idx].isHidden,
+                          ),
+                        )}
+                      </div>
+                    </div>
+                    <div className="mt-0.5">
+                      <div className="text-[10px] font-black text-rose-400 uppercase tracking-wider mb-0.5">
+                        DRAGON
+                      </div>
+                      <div className="flex gap-1">
+                        {[0, 1, 2].map((idx) =>
+                          renderCard(
+                            dragon[idx],
+                            `tt-d-${idx}`,
+                            !dragon[idx] || dragon[idx].isHidden,
+                          ),
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              // Poker 1 Day (Player A, Player B, Board Cards) (Image 8 Exact Match)
+              if (isPoker1Day) {
+                const cards = roundData?.cards || [];
+                const playerA = cards.slice(0, 2);
+                const playerB = cards.slice(2, 4);
+                const board = cards.slice(4, 9);
+                return (
+                  <div className="flex flex-col items-start gap-1">
+                    <div className="flex items-center gap-3">
+                      <div>
+                        <div className="text-[10px] font-black text-amber-300 uppercase tracking-wider mb-0.5">
+                          PLAYER A
+                        </div>
+                        <div className="flex gap-1">
+                          {[0, 1].map((idx) =>
+                            renderCard(
+                              playerA[idx],
+                              `p1-a-${idx}`,
+                              !playerA[idx] || playerA[idx].isHidden,
+                            ),
+                          )}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] font-black text-sky-300 uppercase tracking-wider mb-0.5">
+                          PLAYER B
+                        </div>
+                        <div className="flex gap-1">
+                          {[0, 1].map((idx) =>
+                            renderCard(
+                              playerB[idx],
+                              `p1-b-${idx}`,
+                              !playerB[idx] || playerB[idx].isHidden,
+                            ),
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-0.5">
+                      <div className="text-[10px] font-black text-white uppercase tracking-wider mb-0.5">
+                        BOARD
+                      </div>
+                      <div className="flex gap-1">
+                        {[0, 1, 2, 3, 4].map((idx) =>
+                          renderCard(
+                            board[idx],
+                            `p1-bd-${idx}`,
+                            !board[idx] || board[idx].isHidden,
+                          ),
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
               // Clean Video without card overlay for Baccarat, Lucky 15, Roulette, Sic Bo
               if (
                 isBaccarat ||
@@ -1649,7 +2008,13 @@ export default function CasinoTableModal({ table, onClose }) {
                   return (
                     <div
                       key={idx}
-                      onClick={() => setSelectedResultModal(r)}
+                      onClick={() => {
+                        if (isRace20) {
+                          setSelectedRace20Result(r);
+                        } else {
+                          setSelectedResultModal(r);
+                        }
+                      }}
                       title={`Round: #${r.mid} | Winner: ${r.nat} (Click for details)`}
                       className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black shadow-sm shrink-0 cursor-pointer hover:scale-125 transition-transform ${b.bg}`}
                     >
@@ -1665,9 +2030,12 @@ export default function CasinoTableModal({ table, onClose }) {
             )}
           </div>
           <button
-            onClick={() =>
-              recentResults[0] && setSelectedResultModal(recentResults[0])
-            }
+            onClick={() => {
+              if (recentResults[0]) {
+                if (isRace20) setSelectedRace20Result(recentResults[0]);
+                else setSelectedResultModal(recentResults[0]);
+              }
+            }}
             className="text-[10px] font-bold text-slate-400 hover:text-yellow-400 hover:underline shrink-0 ml-3"
           >
             View All
@@ -1853,6 +2221,24 @@ export default function CasinoTableModal({ table, onClose }) {
               timer={timer}
               isSuspended={isSuspended}
             />
+          ) : isRace20 ? (
+            <Race20Board
+              roundData={roundData}
+              timer={timer}
+              isSuspended={isSuspended}
+            />
+          ) : isRace2 ? (
+            <Race2Board
+              roundData={roundData}
+              timer={timer}
+              isSuspended={isSuspended}
+            />
+          ) : isDusKaDum ? (
+            <DusKaDumBoard
+              roundData={roundData}
+              timer={timer}
+              isSuspended={isSuspended}
+            />
           ) : (
             /* Standard Live Runners Exchange Board */
             <div>
@@ -1969,6 +2355,14 @@ export default function CasinoTableModal({ table, onClose }) {
             result={selectedResultModal}
             gameName={table.name}
             onClose={() => setSelectedResultModal(null)}
+          />
+        )}
+
+        {/* 8. Race 20 Result Modal (Image 10 Exact Match) */}
+        {selectedRace20Result && (
+          <Race20ResultModal
+            result={selectedRace20Result}
+            onClose={() => setSelectedRace20Result(null)}
           />
         )}
       </div>

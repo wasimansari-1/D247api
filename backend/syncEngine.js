@@ -1076,6 +1076,25 @@ class D247SyncEngine {
             else if (rawW === "2") val = "AUS";
             else if (rawW === "3") val = "Tie";
             else val = rawW;
+          } else if (targetSlug === "race20") {
+            const rawW = String(r.win || r.winner || r.nat || "").trim();
+            if (rawW === "1") val = "♠";
+            else if (rawW === "2") val = "♥";
+            else if (rawW === "3") val = "♣";
+            else if (rawW === "4") val = "♦";
+            else val = rawW;
+          } else if (targetSlug === "race2") {
+            const rawW = String(r.win || r.winner || r.nat || "").trim();
+            if (rawW === "1") val = "A";
+            else if (rawW === "2") val = "B";
+            else if (rawW === "3") val = "C";
+            else if (rawW === "4") val = "D";
+            else val = rawW;
+          } else if (targetSlug === "dum10") {
+            const rawW = String(r.win || r.winner || r.nat || "").trim();
+            if (rawW === "1") val = "Y";
+            else if (rawW === "2") val = "N";
+            else val = rawW;
           } else {
             val = String(
               r.win !== undefined && r.win !== null && r.win !== ""
