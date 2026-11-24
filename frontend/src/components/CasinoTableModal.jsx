@@ -30,6 +30,11 @@ import SicBoBoard from './casino/SicBoBoard';
 import BallByBallBoard from './casino/BallByBallBoard';
 import TeenPatti1DayBoard from './casino/TeenPatti1DayBoard';
 import TeenPatti20Board from './casino/TeenPatti20Board';
+import TeenPattiTestBoard from './casino/TeenPattiTestBoard';
+import TeenPattiOpenBoard from './casino/TeenPattiOpenBoard';
+import Poker1DayBoard from './casino/Poker1DayBoard';
+import Poker20Board from './casino/Poker20Board';
+import Poker6Board from './casino/Poker6Board';
 import ResultDetailModal from './casino/ResultDetailModal';
 
 export default function CasinoTableModal({ table, onClose }) {
@@ -66,6 +71,11 @@ export default function CasinoTableModal({ table, onClose }) {
   const isBallByBall = slug === 'ballbyball' || nameLow.includes('ball by ball');
   const isTeen1Day = slug === 'teen' || slug === 'teen1day' || nameLow.includes('teenpatti 1day') || nameLow.includes('teenpatti 1-day');
   const isTeen20 = (slug === 'teen20' || nameLow.includes('20-20 teen') || nameLow.includes('teenpatti 20-20') || nameLow.includes('teen 20')) && !slug.includes('joker') && !slug.includes('poison') && slug !== 'teen20b';
+  const isTeenTest = slug === 'teentest' || slug === 'teen9' || nameLow.includes('teenpatti test') || nameLow.includes('teen test');
+  const isTeenOpen = slug === 'teensin' || slug === 'teen8' || nameLow.includes('open teen') || nameLow.includes('teenpatti open');
+  const isPoker1Day = slug === 'poker' || slug === 'poker1day' || nameLow.includes('poker 1 day') || nameLow.includes('poker 1day');
+  const isPoker20 = slug === 'poker20' || nameLow.includes('20-20 poker') || nameLow.includes('poker 20');
+  const isPoker6 = slug === 'poker6' || nameLow.includes('poker 6');
   const isSuspended = timer <= 0 || roundData?.status === 'SUSPENDED';
 
   // Fetch live stream URL from Diamond / D247 API
@@ -238,6 +248,32 @@ export default function CasinoTableModal({ table, onClose }) {
       if (lower.includes("aus")) return { letter: "A", bg: "bg-emerald-700 text-white font-black", title: "AUS" };
       if (lower.includes("rsa")) return { letter: "R", bg: "bg-emerald-700 text-white font-black", title: "RSA" };
       return { letter: "T", bg: "bg-emerald-700 text-white font-black", title: "Tie" };
+    }
+
+    // 4. Teen Patti Test: T (Tiger), L (Lion), D (Dragon) Badges (Image 1 Exact Match)
+    if (isTeenTest) {
+      if (lower.includes("tiger") || w === "1" || lower.startsWith("t")) {
+        return { letter: "T", bg: "bg-amber-600 text-white font-black", title: "Tiger" };
+      }
+      if (lower.includes("lion") || w === "2" || lower.startsWith("l")) {
+        return { letter: "L", bg: "bg-emerald-600 text-white font-black", title: "Lion" };
+      }
+      return { letter: "D", bg: "bg-rose-600 text-white font-black", title: "Dragon" };
+    }
+
+    // 5. Open Teenpatti & Poker 6: Winning Player Number Badges (Image 2 & 5 Exact Match)
+    if (isTeenOpen || isPoker6) {
+      const numMatch = w.match(/\d+/);
+      const displayNum = numMatch ? numMatch[0] : (w || "1");
+      return { letter: displayNum, bg: "bg-emerald-600 text-white font-black", title: `Player ${displayNum}` };
+    }
+
+    // 6. Poker 1-Day & 20-20 Poker: A & B Badges (Image 3 & 4 Exact Match)
+    if (isPoker1Day || isPoker20) {
+      if (w === "1" || lower === "a" || lower.includes("player a")) {
+        return { letter: "A", bg: "bg-amber-600 text-white font-black", title: "Player A" };
+      }
+      return { letter: "B", bg: "bg-emerald-600 text-white font-black", title: "Player B" };
     }
 
     // 3. Teen Patti 1-Day, 20-20, Queen Top, Jack Top (Image 3, 4, 5 Exact Match)
@@ -706,6 +742,111 @@ export default function CasinoTableModal({ table, onClose }) {
                 );
               }
 
+              // Teen Patti Test: TIGER (3 cards), LION (3 cards), DRAGON (3 cards) (Image 1 Exact Match)
+              if (isTeenTest) {
+                const cards = roundData?.cards || [];
+                const tigerCards = cards.slice(0, 3);
+                const lionCards = cards.slice(3, 6);
+                const dragonCards = cards.slice(6, 9);
+                return (
+                  <div className="flex flex-col items-start gap-1">
+                    <div>
+                      <div className="text-[10px] sm:text-[11px] font-black text-amber-300 uppercase tracking-wider drop-shadow-md mb-0.5">
+                        TIGER
+                      </div>
+                      <div className="flex gap-1">
+                        {[0, 1, 2].map(idx => renderCard(tigerCards[idx], `tt-t-${idx}`, !tigerCards[idx] || tigerCards[idx].isHidden))}
+                      </div>
+                    </div>
+                    <div className="mt-0.5">
+                      <div className="text-[10px] sm:text-[11px] font-black text-sky-300 uppercase tracking-wider drop-shadow-md mb-0.5">
+                        LION
+                      </div>
+                      <div className="flex gap-1">
+                        {[0, 1, 2].map(idx => renderCard(lionCards[idx], `tt-l-${idx}`, !lionCards[idx] || lionCards[idx].isHidden))}
+                      </div>
+                    </div>
+                    <div className="mt-0.5">
+                      <div className="text-[10px] sm:text-[11px] font-black text-rose-400 uppercase tracking-wider drop-shadow-md mb-0.5">
+                        DRAGON
+                      </div>
+                      <div className="flex gap-1">
+                        {[0, 1, 2].map(idx => renderCard(dragonCards[idx], `tt-d-${idx}`, !dragonCards[idx] || dragonCards[idx].isHidden))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              // Teen Patti Open: DEALER (3 cards) (Image 2 Exact Match)
+              if (isTeenOpen) {
+                const cards = roundData?.cards || [];
+                return (
+                  <div className="flex flex-col items-start gap-1">
+                    <div className="text-[10px] sm:text-[11px] font-black text-amber-300 uppercase tracking-wider drop-shadow-md mb-0.5">
+                      DEALER
+                    </div>
+                    <div className="flex gap-1">
+                      {[0, 1, 2].map(idx => renderCard(cards[idx], `to-d-${idx}`, !cards[idx] || cards[idx].isHidden))}
+                    </div>
+                  </div>
+                );
+              }
+
+              // Poker 1-Day & 20-20 Poker: PLAYER A (2) + PLAYER B (2) + BOARD (5) (Image 3 & 4 Exact Match)
+              if (isPoker1Day || isPoker20) {
+                const cards = roundData?.cards || [];
+                const pA = cards.slice(0, 2);
+                const pB = cards.slice(2, 4);
+                const board = cards.slice(4, 9);
+                return (
+                  <div className="flex flex-col items-start gap-1">
+                    <div className="flex items-center gap-3">
+                      <div>
+                        <div className="text-[10px] sm:text-[11px] font-black text-amber-300 uppercase tracking-wider drop-shadow-md mb-0.5">
+                          PLAYER A
+                        </div>
+                        <div className="flex gap-1">
+                          {[0, 1].map(idx => renderCard(pA[idx], `pk-a-${idx}`, !pA[idx] || pA[idx].isHidden))}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] sm:text-[11px] font-black text-sky-300 uppercase tracking-wider drop-shadow-md mb-0.5">
+                          PLAYER B
+                        </div>
+                        <div className="flex gap-1">
+                          {[0, 1].map(idx => renderCard(pB[idx], `pk-b-${idx}`, !pB[idx] || pB[idx].isHidden))}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-1">
+                      <div className="text-[10px] sm:text-[11px] font-black text-emerald-400 uppercase tracking-wider drop-shadow-md mb-0.5">
+                        BOARD
+                      </div>
+                      <div className="flex gap-1">
+                        {[0, 1, 2, 3, 4].map(idx => renderCard(board[idx], `pk-bd-${idx}`, !board[idx] || board[idx].isHidden))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              // Poker 6 Players: 5 Community Cards (Image 5 Exact Match)
+              if (isPoker6) {
+                const cards = roundData?.cards || [];
+                const community = cards.slice(12, 17);
+                return (
+                  <div className="flex flex-col items-start gap-1">
+                    <div className="text-[10px] sm:text-[11px] font-black text-emerald-400 uppercase tracking-wider drop-shadow-md mb-0.5">
+                      COMMUNITY
+                    </div>
+                    <div className="flex gap-1">
+                      {[0, 1, 2, 3, 4].map(idx => renderCard(community[idx], `p6-c-${idx}`, !community[idx] || community[idx].isHidden))}
+                    </div>
+                  </div>
+                );
+              }
+
               // Teen Patti 1-Day (Image 3: Player A 3 cards + Player B 3 cards)
               if (isTeen1Day) {
                 const cards = roundData?.cards || [];
@@ -1127,6 +1268,16 @@ export default function CasinoTableModal({ table, onClose }) {
             <SuperOverBoard roundData={roundData} timer={timer} isSuspended={isSuspended} slug={slug} />
           ) : isBallByBall ? (
             <BallByBallBoard roundData={roundData} timer={timer} isSuspended={isSuspended} />
+          ) : isTeenTest ? (
+            <TeenPattiTestBoard roundData={roundData} timer={timer} isSuspended={isSuspended} />
+          ) : isTeenOpen ? (
+            <TeenPattiOpenBoard roundData={roundData} timer={timer} isSuspended={isSuspended} />
+          ) : isPoker1Day ? (
+            <Poker1DayBoard roundData={roundData} timer={timer} isSuspended={isSuspended} />
+          ) : isPoker20 ? (
+            <Poker20Board roundData={roundData} timer={timer} isSuspended={isSuspended} />
+          ) : isPoker6 ? (
+            <Poker6Board roundData={roundData} timer={timer} isSuspended={isSuspended} />
           ) : isTeen1Day ? (
             <TeenPatti1DayBoard roundData={roundData} timer={timer} isSuspended={isSuspended} />
           ) : isTeen20 ? (
