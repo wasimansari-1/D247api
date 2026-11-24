@@ -88,8 +88,8 @@ module.exports = function(syncEngine) {
     res.status(500).json({ success: false, msg: "Failed to fetch live casino data from Diamond" });
   });
 
-  // Get Real Recent Results from Diamond Online (With Aliases & 100% Uptime Guarantee)
-  router.get(['/results/:gameType', '/:gameType/results', '/lastresults/:gameType'], async (req, res) => {
+  // Get Real Recent Results from Diamond Online
+  router.get('/results/:gameType', async (req, res) => {
     const gameType = req.params.gameType;
     try {
       const results = await syncEngine.fetchCasinoRecentResults(gameType);
@@ -102,13 +102,7 @@ module.exports = function(syncEngine) {
     } catch (err) {
       console.error(`Error fetching recent results for ${gameType}:`, err.message);
     }
-    const fallback = syncEngine.generateFallbackRecentResults ? syncEngine.generateFallbackRecentResults(gameType) : [];
-    return res.json({
-      success: true,
-      gameType,
-      total: fallback.length,
-      data: fallback
-    });
+    res.status(500).json({ success: false, msg: "Failed to fetch recent results" });
   });
 
   // Dedicated Standalone Live Video Player (No X-Frame-Options block, 100% embeddable)

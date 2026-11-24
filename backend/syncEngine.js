@@ -272,7 +272,6 @@ class D247SyncEngine {
     this.inPlayEvents = [];
     this.matchCache = new Map(); // gmid -> structured match data
     this.casinoTables = [];
-    this.casinoResultsCache = new Map(); // slug -> recent results array
     this.oddsHysteresis = new Map(); // key -> { price, size, timestamp } anti-flicker smoothing
     this.sportMatchesMap = new Map(); // etid -> parsed matches
     this.sportsTree = { t1: [], t2: [] };
@@ -679,22 +678,6 @@ class D247SyncEngine {
           };
         });
 
-        // Parse authentic last results from Diamond if provided in t3 or last_result
-        const rawResults = res.data.t3 || res.data.last_result || res.data.results || [];
-        if (Array.isArray(rawResults) && rawResults.length > 0) {
-          const parsedRes = rawResults.map(r => ({
-            mid: String(r.mid || r.roundId || ''),
-            winner: String(r.win || r.winner || r.result || r.nat || ''),
-            nat: String(r.nat || r.win || r.winner || r.result || ''),
-            desc: r.desc || '',
-            cards: r.card ? (Array.isArray(r.card) ? r.card : String(r.card).split(',')) : []
-          }));
-          this.casinoResultsCache.set(targetSlug, parsedRes);
-          if (slug !== targetSlug) this.casinoResultsCache.set(slug, parsedRes);
-        }
-
-        const recentResults = this.casinoResultsCache.get(targetSlug) || this.generateFallbackRecentResults(targetSlug);
-
         return {
           gameType: raw.gtype || slug,
           dealType: dealType,
@@ -707,7 +690,6 @@ class D247SyncEngine {
           runners: runners,
           rawRemark: raw.rem || '',
           streamUrl: `/api/casino/${slug}/livetv`,
-          recentResults: recentResults,
           updatedAt: new Date().toISOString()
         };
       }
@@ -718,88 +700,24 @@ class D247SyncEngine {
   }
 
   /**
-   * Generate Authentic Breadcrumb Recent Results for any Casino Table
-   */
-  generateFallbackRecentResults(slug) {
-    const s = (slug || '').toLowerCase();
-    const now = Date.now();
-    const makeRoundId = (idx) => String(now - idx * 45000).slice(0, 15);
-
-    let winners = [];
-    if (s.includes('roulette')) {
-      winners = ['36', '02', '07', '01', '13', '35', '03', '35', '07', '24', '18', '29', '00', '15'];
-    } else if (s === 'lucky5' || s === 'lucky6' || s.includes('lucky6')) {
-      winners = ['L', 'H', 'H', 'T', 'H', 'H', 'L', 'H', 'L', 'H', 'L', 'T', 'H'];
-    } else if (s.includes('lucky7')) {
-      winners = ['L', 'H', '7', 'H', 'L', 'L', 'H', '7', 'H', 'L', 'H'];
-    } else if (s.includes('dt') || s.includes('dragon')) {
-      winners = ['D', 'T', 'D', 'D', 'Tie', 'T', 'D', 'T', 'D', 'D', 'T'];
-    } else if (s.includes('ab') || s.includes('andar')) {
-      winners = ['A', 'B', 'A', 'A', 'B', 'A', 'B', 'A', 'B', 'A'];
-    } else if (s.includes('teen') || s.includes('patti')) {
-      winners = ['A', 'B', 'A', 'A', 'B', 'A', 'B', 'A', 'T', 'B'];
-    } else if (s.includes('card32') || s.includes('32')) {
-      winners = ['8', '9', '10', '11', '8', '9', '8', '10', '11', '9'];
-    } else if (s.includes('sicbo') || s.includes('dice')) {
-      winners = ['11', '14', '9', '12', '7', '15', '10', '8', '13'];
-    } else if (s.includes('superover') || s.includes('ballbyball')) {
-      winners = ['1', '4', '6', '1', 'W', '2', '4', '1', '6', '2'];
-    } else if (s.includes('baccarat')) {
-      winners = ['P', 'B', 'P', 'B', 'T', 'B', 'P', 'B', 'B', 'P'];
-    } else if (s.includes('mogambo')) {
-      winners = ['13', '15', '18', '11', '14', '17', '12', '16'];
-    } else {
-      winners = ['1', '2', '1', '1', '2', '1', '2', '1', '2'];
-    }
-
-    return winners.map((w, idx) => ({
-      mid: makeRoundId(idx),
-      winner: w,
-      nat: w,
-      desc: `Round result: ${w}`,
-      cards: []
-    }));
-  }
-
-  /**
-   * Fetch Real Recent Results from Diamond Online API with Cache & Robust Fallback
+   * Fetch Real Recent Results from Diamond Online API
    */
   async fetchCasinoRecentResults(slug) {
-    const sLow = (slug || '').toLowerCase();
-    const targetSlug = CASINO_SLUG_MAP[sLow] || slug;
-
-    // 1. Check in-memory cache
-    if (this.casinoResultsCache && this.casinoResultsCache.has(targetSlug)) {
-      const cached = this.casinoResultsCache.get(targetSlug);
-      if (cached && cached.length > 0) return cached;
-    }
-
     try {
+      const sLow = (slug || '').toLowerCase();
+      const targetSlug = CASINO_SLUG_MAP[sLow] || slug;
       const res = await this.executeUpstream('/casino/lastresults', { type: targetSlug });
-      const rawList = Array.isArray(res?.data)
-        ? res.data
-        : (Array.isArray(res?.data?.t1) ? res.data.t1 : (Array.isArray(res?.data?.data) ? res.data.data : []));
-
-      if (rawList && rawList.length > 0) {
-        const parsed = rawList.map(r => ({
-          mid: String(r.mid || r.roundId || ''),
-          winner: String(r.win || r.winner || r.result || r.nat || ''),
-          nat: String(r.nat || r.win || r.winner || r.result || ''),
+      if (res && res.success && Array.isArray(res.data)) {
+        return res.data.map(r => ({
+          mid: String(r.mid),
+          winner: r.win || r.winner || r.result || '',
+          nat: r.win || r.winner || r.result || '',
           desc: r.desc || '',
-          cards: r.card ? (Array.isArray(r.card) ? r.card : String(r.card).split(',')) : []
+          cards: r.card ? r.card.split(',') : []
         }));
-        if (!this.casinoResultsCache) this.casinoResultsCache = new Map();
-        this.casinoResultsCache.set(targetSlug, parsed);
-        if (slug !== targetSlug) this.casinoResultsCache.set(slug, parsed);
-        return parsed;
       }
     } catch (err) {}
-
-    // 2. Return authentic game-specific fallback results
-    const fallback = this.generateFallbackRecentResults(targetSlug);
-    if (!this.casinoResultsCache) this.casinoResultsCache = new Map();
-    this.casinoResultsCache.set(targetSlug, fallback);
-    return fallback;
+    return [];
   }
 
   /**
@@ -1566,26 +1484,25 @@ class D247SyncEngine {
    * Fetch live match data directly from upstream (NO STALE CACHE)
    */
   async fetchLiveMatchData(gmid, etid = 4) {
-    // 1. Super Over & Super Over 2 & Mini Super Over
-    if (gmid === 'superover2' || gmid === 'superover' || gmid === 'superover3') {
+    // 1. Super Over 2
+    if (gmid === 'superover2') {
       try {
-        const rawRes = await this.executeUpstream('/casino/data', { type: gmid });
+        const rawRes = await this.executeUpstream('/casino/data', { type: 'superover2' });
         if (rawRes && rawRes.success && rawRes.data) {
           const t1 = rawRes.data.t1 || {};
           const t2 = rawRes.data.t2 || [];
-          const formatted = this.formatGameData(gmid, 4, t2);
+          const formatted = this.formatGameData('superover2', 4, t2);
           if (formatted) {
             formatted.scoreboard = null;
-            formatted.roundId = String(t1.mid || rawRes.data.mid || Date.now());
             formatted.timer = t1.lt !== undefined ? t1.lt : 0;
             formatted.totalTimer = t1.ft || 20;
             formatted.card = t1.card || '';
             formatted.cards = (t1.card || '').replace(/\[|\]/g, '').split(/[|,]/).map(c => c.trim()).filter(Boolean);
-            formatted.eventName = t1.ename || (gmid === 'superover' ? 'Super Over' : (gmid === 'superover3' ? 'Mini Super Over' : 'IND Vs ENG Super Over2'));
+            formatted.eventName = t1.ename || 'IND Vs ENG Super Over2';
             formatted.status = t1.lt === 0 ? 'SUSPENDED' : 'IN_PLAY';
-            formatted.streamUrl = `/api/casino/${gmid}/livetv`;
+            formatted.streamUrl = '/api/casino/superover2/livetv';
 
-            const recentRes = await this.fetchCasinoRecentResults(gmid);
+            const recentRes = await this.fetchCasinoRecentResults('superover2');
             formatted.recentResults = recentRes.slice(0, 15);
 
             this.matchCache.set(gmid, formatted);
@@ -1635,7 +1552,6 @@ class D247SyncEngine {
           const formatted = {
             gmid: 'goal2',
             etid: 1,
-            roundId: String(raw.mid || Date.now()),
             eventName: 'Goal 2 (Football Live)',
             competition: 'Diamond Virtual Football',
             status: raw.lt === 0 ? 'SUSPENDED' : 'IN_PLAY',
@@ -1773,7 +1689,6 @@ class D247SyncEngine {
         if (fresh) {
           this.io.to(`match:${gmid}`).emit('odds_update', {
             gmid,
-            roundId: fresh.roundId || '',
             markets: fresh.markets,
             scoreboard: fresh.scoreboard,
             streamUrl: fresh.streamUrl,

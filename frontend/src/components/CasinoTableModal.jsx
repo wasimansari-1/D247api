@@ -44,9 +44,6 @@ export default function CasinoTableModal({ table, onClose }) {
             if (res.data.timer !== undefined) {
               setTimer(res.data.timer);
             }
-            if (Array.isArray(res.data.recentResults) && res.data.recentResults.length > 0) {
-              setRecentResults(res.data.recentResults.slice(0, 16));
-            }
             setLoading(false);
           }
         })

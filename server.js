@@ -58,16 +58,8 @@ io.on('connection', (socket) => {
     if (snapshot) {
       socket.emit('odds_update', {
         gmid,
-        roundId: snapshot.roundId || '',
         markets: snapshot.markets,
         scoreboard: snapshot.scoreboard,
-        streamUrl: snapshot.streamUrl,
-        timer: snapshot.timer,
-        totalTimer: snapshot.totalTimer,
-        card: snapshot.card,
-        cards: snapshot.cards,
-        recentResults: snapshot.recentResults,
-        status: snapshot.status,
         updatedAt: snapshot.updatedAt
       });
     }
@@ -89,15 +81,6 @@ app.use('/api/sports', sportsRoutes(syncEngine));
 app.use('/api/casino', casinoRoutes(syncEngine));
 app.use('/api/config', configRoutes(syncEngine));
 app.use('/api/docs', docsRoutes(syncEngine));
-
-// Dedicated Frontend Route for Commercial API Documentation (/docs)
-app.get(['/docs', '/api-docs', '/docs/*'], (req, res) => {
-  const distIndex = path.join(__dirname, 'frontend', 'dist', 'index.html');
-  if (fs.existsSync(distIndex)) {
-    return res.sendFile(distIndex);
-  }
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
 
 // Fallback index
 app.use((req, res) => {
