@@ -84,6 +84,8 @@ export default function ResultDetailModal({ result, gameName, slug, onClose }) {
 
   // Flags for game type detection
   const isCricketBall =
+    slug === 'lucky15' ||
+    slug === 'ballbyball' ||
     nameLow.includes('lucky 15') ||
     nameLow.includes('lucky15') ||
     nameLow.includes('ball by ball') ||
@@ -108,7 +110,7 @@ export default function ResultDetailModal({ result, gameName, slug, onClose }) {
   const andarScrollRef = useRef(null);
   const baharScrollRef = useRef(null);
 
-  // Dealt cards helper using authentic /cards/*.webp
+  // Dealt cards helper using authentic Diamond Online format (/cards/${code}.jpg)
   const renderCardGraphic = (card, idx, size = 'normal') => {
     if (!card) return null;
     const imgSrc = getCardImgSrc(card);
@@ -130,24 +132,25 @@ export default function ResultDetailModal({ result, gameName, slug, onClose }) {
           className="w-full h-full object-cover"
           onError={(e) => {
             e.currentTarget.onerror = null;
-            e.currentTarget.src = '/cards/back.webp';
+            e.currentTarget.src = '/cards/1.jpg';
           }}
         />
       </div>
     );
   };
 
-  // Cricket ball outcome text
-  let cricketOutcome = (detailData?.win || detailData?.rdesc || result.winner || result.nat || '').trim();
-  const coLow = cricketOutcome.toLowerCase();
-  if (!coLow || coLow === '0' || coLow === '1' || coLow === '0 run' || coLow.includes('zero')) cricketOutcome = '0 RUN';
-  else if (coLow === '2' || coLow === '1 run' || coLow.includes('one')) cricketOutcome = '1 RUN';
-  else if (coLow === '3' || coLow === '2 run' || coLow === '2 runs' || coLow.includes('two')) cricketOutcome = '2 RUN';
-  else if (coLow === '4' || coLow === '4 run' || coLow === '4 runs' || coLow.includes('four')) cricketOutcome = '4 RUN';
-  else if (coLow === '5' || coLow === '6' || coLow === '6 run' || coLow === '6 runs' || coLow.includes('six')) cricketOutcome = '6 RUN';
-  else if (coLow.includes('w') || coLow.includes('wick')) cricketOutcome = 'WICKET';
-  else if (!isNaN(cricketOutcome)) cricketOutcome = `${cricketOutcome} RUN`;
-  else cricketOutcome = cricketOutcome.toUpperCase();
+  // Cricket ball outcome text (0 RUN, 1 RUN, 2 RUN, 4 RUN, 6 RUN, WICKET)
+  let rawWin = (detailData?.winnat || detailData?.rdesc || detailData?.win || result.winner || result.nat || '').trim();
+  const coLow = rawWin.toLowerCase();
+  let cricketOutcome = '0 RUN';
+  if (coLow.includes('w') || coLow.includes('wick')) cricketOutcome = 'WICKET';
+  else if (coLow.includes('6') || coLow.includes('six')) cricketOutcome = '6 RUN';
+  else if (coLow.includes('4') || coLow.includes('four')) cricketOutcome = '4 RUN';
+  else if (coLow.includes('2') || coLow.includes('two')) cricketOutcome = '2 RUN';
+  else if (coLow.includes('1') || coLow.includes('one')) cricketOutcome = '1 RUN';
+  else if (coLow.includes('0') || coLow.includes('zero')) cricketOutcome = '0 RUN';
+  else if (!isNaN(rawWin) && rawWin !== '') cricketOutcome = `${rawWin} RUN`;
+  else cricketOutcome = rawWin.toUpperCase();
 
   // Cards array parsing
   const cardCodes = (detailData?.card || '')
@@ -156,19 +159,27 @@ export default function ResultDetailModal({ result, gameName, slug, onClose }) {
     .filter(Boolean);
   const parsedCards = cardCodes.map(c => parseCardCode(c)).filter(Boolean);
 
-  // Andar Bahar cards parsing (Card 0 = Opening / Joker, Alternate = Bahar, Andar...)
+  // Andar Bahar cards parsing (Card 0 = Opening / Joker)
+  // If Joker is Black (Spades/Clubs): Card 1 -> Andar, Card 2 -> Bahar...
+  // If Joker is Red (Hearts/Diamonds): Card 1 -> Bahar, Card 2 -> Andar...
   const { andarCards, baharCards } = useMemo(() => {
     const a = [];
     const b = [];
-    for (let i = 1; i < parsedCards.length; i++) {
-      if (i % 2 === 1) {
-        b.push(parsedCards[i]);
-      } else {
-        a.push(parsedCards[i]);
+    if (parsedCards.length > 0) {
+      const joker = parsedCards[0];
+      const isJokerBlack = joker && (joker.suit === '♠' || joker.suit === '♣' || !joker.isRed);
+      for (let i = 1; i < parsedCards.length; i++) {
+        const isAndar = isJokerBlack ? (i % 2 === 1) : (i % 2 === 0);
+        if (isAndar) {
+          a.push(parsedCards[i]);
+        } else {
+          b.push(parsedCards[i]);
+        }
       }
-    }
-    if (a.length === 0 && b.length === 0 && parsedCards.length > 0) {
-      b.push(parsedCards[0]);
+      if (a.length === 0 && b.length === 0 && parsedCards.length > 1) {
+        if (isJokerBlack) a.push(parsedCards[1]);
+        else b.push(parsedCards[1]);
+      }
     }
     return { andarCards: a, baharCards: b };
   }, [parsedCards]);

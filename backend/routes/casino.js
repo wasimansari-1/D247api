@@ -204,6 +204,7 @@ module.exports = function (syncEngine) {
           html = html.replace(/href="player\//g, 'href="https://stream.trubets365.com/stream-assets/player/');
           html = html.replace(/src=["'](?:(?:\/stream-assets\/)|(?:\.\/))?newplayer\.min\.js(?:\?[^"']*)?["']/gi, 'src="https://stream.trubets365.com/stream-assets/newplayer.min.js?v=11"');
           html = html.replace(/src=["'](?:(?:\/stream-assets\/)|(?:\.\/))?player\/player\.bundle\.js(?:\?[^"']*)?["']/gi, 'src="https://stream.trubets365.com/stream-assets/player/player.bundle.js?v=11"');
+          html = html.replace(/gameType:\s*["']lucky7["']/gi, `gameType:"${targetSlug}"`);
 
           // Inject pre-resolved route, unload fix & responsive styling
           const customHead = `
@@ -212,9 +213,136 @@ module.exports = function (syncEngine) {
               #stream-player, #stream-player iframe, #stream-player video { width: 100% !important; height: 100% !important; object-fit: cover !important; }
             </style>
             <script>
-              window.__STREAM_RELAY_ROUTE__ = ${JSON.stringify(routeData)};
+              window.__STREAM_PLAYER_OVERRIDE_GAMETYPE__ = "${targetSlug}";
               window.__STREAM_RELAY_WSID__ = "${targetSlug}";
+              window.__STREAM_RELAY_ROUTE__ = ${JSON.stringify(routeData)};
               window.webSocketURL = "${routeData.url}";
+
+              // 0. Pre-intercept fetch so route lookup never fails with '<' HTML
+
+              // 0. Pre-intercept fetch so route lookup never fails with '<' HTML
+              try {
+                var _origFetch = window.fetch;
+                window.fetch = function(url, opts) {
+                  var uStr = String(url || '');
+                  if (uStr.includes('relay/route') || uStr.includes('/route/')) {
+                    return Promise.resolve(new Response(JSON.stringify(${JSON.stringify(routeData)}), {
+                      status: 200,
+                      headers: { 'Content-Type': 'application/json' }
+                    }));
+                  }
+                  return _origFetch.apply(this, arguments);
+                };
+              } catch (_) {}
+
+              // 0.1. Pre-intercept WebSocket so connection NEVER defaults to localhost:5005 or lucky7
+              try {
+                var _OrigWS = window.WebSocket;
+                window.WebSocket = function(url, proto) {
+                  var finalUrl = String(url || '');
+                  if (finalUrl.includes('5005') || finalUrl.includes('/stream/lucky7') || !finalUrl.includes('wss://')) {
+                    finalUrl = "${routeData.url}";
+                  }
+                  return proto ? new _OrigWS(finalUrl, proto) : new _OrigWS(finalUrl);
+                };
+              } catch (_) {}
+
+              // 1. Lock window.STREAM_PLAYER_SETTINGS to prevent player.bundle.js from defaulting to lucky7
+              var _currentSettings = {
+                videoPlayerId: "stream-player",
+                groupId: "e89f0ed4-b154-457f-9726-9ee50f4487f9",
+                ptype: "nano",
+                gameType: "${targetSlug}",
+                wsid: "${targetSlug}",
+                type: "front",
+                backgroundUrl: "/stream-assets/player/assets/videobg.jpg?v=1"
+              };
+              try {
+                var _origFetch = window.fetch;
+                window.fetch = function(url, opts) {
+                  var uStr = String(url || '');
+                  if (uStr.includes('relay/route') || uStr.includes('/route/')) {
+                    return Promise.resolve(new Response(JSON.stringify(${JSON.stringify(routeData)}), {
+                      status: 200,
+                      headers: { 'Content-Type': 'application/json' }
+                    }));
+                  }
+                  return _origFetch.apply(this, arguments);
+                };
+              } catch (_) {}
+
+              // 0.1. Pre-intercept WebSocket so connection NEVER defaults to localhost:5005 or lucky7
+              try {
+                var _OrigWS = window.WebSocket;
+                window.WebSocket = function(url, proto) {
+                  var finalUrl = String(url || '');
+                  if (finalUrl.includes('5005') || finalUrl.includes('/stream/lucky7') || !finalUrl.includes('wss://')) {
+                    finalUrl = "${routeData.url}";
+                  }
+                  return proto ? new _OrigWS(finalUrl, proto) : new _OrigWS(finalUrl);
+                };
+              } catch (_) {}
+
+              // 1. Lock window.STREAM_PLAYER_SETTINGS to prevent player.bundle.js from defaulting to lucky7
+              var _currentSettings = {
+                videoPlayerId: "stream-player",
+                groupId: "e89f0ed4-b154-457f-9726-9ee50f4487f9",
+                ptype: "nano",
+                gameType: "${targetSlug}",
+                wsid: "${targetSlug}",
+                type: "front",
+                backgroundUrl: "/stream-assets/player/assets/videobg.jpg?v=1"
+              };
+              try {
+                Object.defineProperty(window, 'STREAM_PLAYER_SETTINGS', {
+                  get: function() { return _currentSettings; },
+                  set: function(val) {
+                    if (val && typeof val === 'object') {
+                      val.gameType = "${targetSlug}";
+                      val.wsid = "${targetSlug}";
+                      _currentSettings = val;
+                    }
+                  },
+                  configurable: true
+                });
+              } catch (_) {
+                window.STREAM_PLAYER_SETTINGS = _currentSettings;
+              }
+
+              // 2. Synchronize location query params so URLSearchParams gets targetSlug
+              try {
+                if (!window.location.search.includes('gameType=')) {
+                  var newUrl = window.location.pathname + '?gameType=${targetSlug}&id=${targetSlug}';
+                  window.history.replaceState(null, '', newUrl);
+                }
+              } catch (_) {}
+
+              // 3. Pagehide / unload fix for Chrome permissions policy
+              try {
+                Object.defineProperty(window, 'STREAM_PLAYER_SETTINGS', {
+                  get: function() { return _currentSettings; },
+                  set: function(val) {
+                    if (val && typeof val === 'object') {
+                      val.gameType = "${targetSlug}";
+                      val.wsid = "${targetSlug}";
+                      _currentSettings = val;
+                    }
+                  },
+                  configurable: true
+                });
+              } catch (_) {
+                window.STREAM_PLAYER_SETTINGS = _currentSettings;
+              }
+
+              // 2. Synchronize location query params so URLSearchParams gets targetSlug
+              try {
+                if (!window.location.search.includes('gameType=')) {
+                  var newUrl = window.location.pathname + '?gameType=${targetSlug}&id=${targetSlug}';
+                  window.history.replaceState(null, '', newUrl);
+                }
+              } catch (_) {}
+
+              // 3. Pagehide / unload fix for Chrome permissions policy
               try {
                 var _orig = window.addEventListener;
                 window.addEventListener = function(t, l, o) {
@@ -361,18 +489,18 @@ module.exports = function (syncEngine) {
         return res.json({
           success: true,
           gameType: slug,
-          streamUrl: `/api/casino/mediaplayer/${slug}`,
-          playerUrl: `/api/casino/player/${slug}`,
+          streamUrl: `/api/casino/player/${slug}?gameType=${slug}&id=${slug}`,
+          playerUrl: `/api/casino/player/${slug}?gameType=${slug}&id=${slug}`,
           upstreamUrl: streamData.upstreamUrl,
           sources: [
             {
-              name: "D247 Studio Stream",
-              url: `/api/casino/mediaplayer/${slug}`,
+              name: "D247 Direct Player",
+              url: `/api/casino/player/${slug}?gameType=${slug}&id=${slug}`,
               type: "iframe",
             },
             {
-              name: "D247 Direct Player",
-              url: `/api/casino/player/${slug}`,
+              name: "D247 Studio Stream",
+              url: `/api/casino/mediaplayer/${slug}?gameType=${slug}&id=${slug}`,
               type: "iframe",
             },
             ...(streamData.upstreamUrl

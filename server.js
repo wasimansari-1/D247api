@@ -99,7 +99,24 @@ app.get(
     "/stream-assets/relay/route/:wsid",
   ],
   async (req, res) => {
-    const rawWsid = req.params.wsid;
+    let rawWsid = req.params.wsid;
+
+    // Check if query or referer has the intended gameType (prevents player.bundle.js lucky7 fallback)
+    if (req.query.gameType) {
+      rawWsid = req.query.gameType;
+    } else if (req.query.id) {
+      rawWsid = req.query.id;
+    } else {
+      const ref = req.headers.referer || "";
+      const match =
+        ref.match(/[?&](?:gameType|id)=([a-zA-Z0-9_]+)/i) ||
+        ref.match(/\/player\/([a-zA-Z0-9_]+)/i) ||
+        ref.match(/\/mediaplayer\/([a-zA-Z0-9_]+)/i);
+      if (match && match[1] && match[1].toLowerCase() !== "lucky7") {
+        rawWsid = match[1];
+      }
+    }
+
     const wsid =
       syncEngine?.constructor?.CASINO_SLUG_MAP?.[rawWsid?.toLowerCase()] ||
       rawWsid;
@@ -112,7 +129,7 @@ app.get(
       );
       if (upRes.ok) {
         const data = await upRes.json();
-        data.wsid = rawWsid;
+        data.wsid = req.params.wsid;
         data.targetWsid = wsid;
         if (!data.url && data.path) {
           data.url = `wss://stream1.trubets365.com${data.path}`;
@@ -129,8 +146,8 @@ app.get(
     return res.json({
       ok: true,
       status: "live",
-      wsid: rawWsid,
       targetWsid: wsid,
+      wsid: req.params.wsid,
       nodeId: "stream-c",
       path: `/stream/c/${encodeURIComponent(wsid)}`,
       url: `wss://stream1.trubets365.com/stream/c/${encodeURIComponent(wsid)}`,
@@ -173,6 +190,13 @@ app.get(["/newplayer.min.js", "/player.bundle.js"], async (req, res) => {
   } catch (e) {
     return res.status(502).end();
   }
+});
+
+// Dedicated handler for /stream/:wsid to prevent HTML SPA fallback
+app.get(["/stream/:wsid", "/stream/c/:wsid"], (req, res) => {
+  res.setHeader("access-control-allow-origin", "*");
+  res.setHeader("content-type", "application/json");
+  return res.json({ ok: true, wsid: req.params.wsid });
 });
 
 // Fallback index

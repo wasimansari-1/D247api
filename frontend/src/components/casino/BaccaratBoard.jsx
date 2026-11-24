@@ -1,5 +1,6 @@
 import React from 'react';
 import { Lock } from 'lucide-react';
+import { getCardImgSrc } from '../../utils/cardUtils';
 
 export default function BaccaratBoard({ roundData, timer, isSuspended, slug }) {
   const runners = roundData?.runners || [];
@@ -16,6 +17,21 @@ export default function BaccaratBoard({ roundData, timer, isSuspended, slug }) {
   const tieRunner = getRunner('tie') || { back: 8, max: '450,000' };
   const playerPairRunner = runners.find(r => (r.name || '').toLowerCase().includes('player pair')) || { back: 11, max: '450,000' };
   const bankerPairRunner = runners.find(r => (r.name || '').toLowerCase().includes('banker pair')) || { back: 11, max: '450,000' };
+
+  const isRunnerSuspended = (r) => {
+    if (isSuspended || timer <= 3) return true;
+    if (!r) return true;
+    if (r.suspended === true || r.status === 'SUSPENDED') return true;
+    if (r.gstatus === 'SUSPENDED' || r.gstatus === '0' || r.gstatus === 0) return true;
+    if (r.back === 0) return true;
+    return false;
+  };
+
+  const isPlayerPairSuspended = isRunnerSuspended(playerPairRunner);
+  const isPlayerSuspended = isRunnerSuspended(playerRunner);
+  const isTieSuspended = isRunnerSuspended(tieRunner);
+  const isBankerSuspended = isRunnerSuspended(bankerRunner);
+  const isBankerPairSuspended = isRunnerSuspended(bankerPairRunner);
 
   // Baccarat 1 side bets
   const perfectPairRunner = getRunner('perfect pair') || { back: 25 };
@@ -60,22 +76,33 @@ export default function BaccaratBoard({ roundData, timer, isSuspended, slug }) {
       isRed = false;
       rank = upper.replace(/S+$/, '');
     }
-    return { rank: rank || '?', suit, isRed };
+    return { code: upper, rank: rank || '?', suit, isRed };
   };
 
   // Player cards are at indices 0, 2, 4; Banker at indices 1, 3, 5
   const playerCards = [parseMiniCard(cardCodes[0]), parseMiniCard(cardCodes[2]), parseMiniCard(cardCodes[4])].filter(Boolean);
   const bankerCards = [parseMiniCard(cardCodes[1]), parseMiniCard(cardCodes[3]), parseMiniCard(cardCodes[5])].filter(Boolean);
 
-  const renderMiniCardGraphic = (card, idx) => (
-    <div
-      key={idx}
-      className="w-4 h-6 bg-white border border-slate-900 rounded-[2px] shadow-sm flex flex-col items-center justify-between p-0.5 select-none leading-none"
-    >
-      <span className={`text-[8px] font-black ${card.isRed ? 'text-red-600' : 'text-slate-900'}`}>{card.rank}</span>
-      <span className={`text-[9px] ${card.isRed ? 'text-red-600' : 'text-slate-900'}`}>{card.suit}</span>
-    </div>
-  );
+  const renderMiniCardGraphic = (card, idx) => {
+    if (!card) return null;
+    const imgSrc = getCardImgSrc(card.code || card);
+    return (
+      <div
+        key={idx}
+        className="w-4 h-6 sm:w-5 sm:h-7 rounded-[2px] overflow-hidden shadow border border-slate-900/60 bg-white flex items-center justify-center shrink-0 select-none"
+      >
+        <img
+          src={imgSrc}
+          alt="Card"
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            e.currentTarget.onerror = null;
+            e.currentTarget.src = "/cards/1.jpg";
+          }}
+        />
+      </div>
+    );
+  };
 
   return (
     <div className="flex flex-col gap-3 select-none">
@@ -159,23 +186,26 @@ export default function BaccaratBoard({ roundData, timer, isSuspended, slug }) {
                 { label: 'Small', rate: '1.5:1', r: smallRunner },
                 { label: 'Either Pair', rate: '5:1', r: eitherPairRunner },
               ]
-          ).map((item, idx) => (
-            <div
-              key={idx}
-              className="bg-[#112435] hover:bg-[#1a334d] rounded-lg border border-slate-700 p-2 flex flex-col items-center justify-center text-center cursor-pointer transition shadow active:scale-95 min-h-[56px]"
-            >
-              <span className="text-[10px] font-bold text-slate-300 truncate w-full mb-0.5">
-                {item.label}
-              </span>
-              {isBettingClosed ? (
-                <Lock size={13} className="text-slate-400" />
-              ) : (
-                <span className="text-xs font-black text-amber-300 font-mono">
-                  {item.rate}
+          ).map((item, idx) => {
+            const isSideSuspended = isRunnerSuspended(item.r);
+            return (
+              <div
+                key={idx}
+                className="bg-[#112435] hover:bg-[#1a334d] rounded-lg border border-slate-700 p-2 flex flex-col items-center justify-center text-center cursor-pointer transition shadow active:scale-95 min-h-[56px]"
+              >
+                <span className="text-[10px] font-bold text-slate-300 truncate w-full mb-0.5">
+                  {item.label}
                 </span>
-              )}
-            </div>
-          ))}
+                {isSideSuspended ? (
+                  <Lock size={13} className="text-slate-400" />
+                ) : (
+                  <span className="text-xs font-black text-amber-300 font-mono">
+                    {item.rate}
+                  </span>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -184,7 +214,7 @@ export default function BaccaratBoard({ roundData, timer, isSuspended, slug }) {
         {/* Player Pair (11:1) */}
         <div className="bg-[#1e40af] hover:bg-[#1d4ed8] p-3 text-white flex flex-col items-center justify-center cursor-pointer transition active:scale-95 text-center min-h-[68px]">
           <span className="text-xs sm:text-sm font-black leading-tight">Player Pair</span>
-          {isBettingClosed ? (
+          {isPlayerPairSuspended ? (
             <Lock size={14} className="text-blue-200 mt-1" />
           ) : (
             <span className="text-[11px] text-blue-200 font-bold mt-0.5">11:1</span>
@@ -195,9 +225,9 @@ export default function BaccaratBoard({ roundData, timer, isSuspended, slug }) {
         <div className="bg-[#2563eb] hover:bg-[#1d4ed8] p-2.5 text-white flex flex-col items-center justify-center cursor-pointer transition active:scale-95 text-center border-l border-blue-400/30 min-h-[68px]">
           <div className="flex items-center gap-1.5">
             <span className="text-sm sm:text-base font-black leading-tight">Player</span>
-            {isBettingClosed && <Lock size={12} className="text-blue-200" />}
+            {isPlayerSuspended && <Lock size={12} className="text-blue-200" />}
           </div>
-          {!isBettingClosed && <span className="text-xs text-blue-100 font-bold">1:1</span>}
+          {!isPlayerSuspended && <span className="text-xs text-blue-100 font-bold">1:1</span>}
 
           {/* Cards Display inside button */}
           <div className="flex gap-1 mt-1">
@@ -215,7 +245,7 @@ export default function BaccaratBoard({ roundData, timer, isSuspended, slug }) {
         {/* Tie (8:1) */}
         <div className="bg-[#16a34a] hover:bg-[#15803d] p-3 text-white flex flex-col items-center justify-center cursor-pointer transition active:scale-95 text-center border-x border-emerald-400/30 min-h-[68px]">
           <span className="text-sm sm:text-base font-black leading-tight">Tie</span>
-          {isBettingClosed ? (
+          {isTieSuspended ? (
             <Lock size={14} className="text-emerald-200 mt-1" />
           ) : (
             <span className="text-xs text-emerald-100 font-bold">8:1</span>
@@ -226,9 +256,9 @@ export default function BaccaratBoard({ roundData, timer, isSuspended, slug }) {
         <div className="bg-[#dc2626] hover:bg-[#b91c1c] p-2.5 text-white flex flex-col items-center justify-center cursor-pointer transition active:scale-95 text-center border-r border-red-400/30 min-h-[68px]">
           <div className="flex items-center gap-1.5">
             <span className="text-sm sm:text-base font-black leading-tight">Banker</span>
-            {isBettingClosed && <Lock size={12} className="text-red-200" />}
+            {isBankerSuspended && <Lock size={12} className="text-red-200" />}
           </div>
-          {!isBettingClosed && <span className="text-xs text-red-100 font-bold">1:1</span>}
+          {!isBankerSuspended && <span className="text-xs text-red-100 font-bold">1:1</span>}
 
           {/* Cards Display inside button */}
           <div className="flex gap-1 mt-1">
@@ -246,7 +276,7 @@ export default function BaccaratBoard({ roundData, timer, isSuspended, slug }) {
         {/* Banker Pair (11:1) */}
         <div className="bg-[#991b1b] hover:bg-[#7f1d1d] p-3 text-white flex flex-col items-center justify-center cursor-pointer transition active:scale-95 text-center min-h-[68px]">
           <span className="text-xs sm:text-sm font-black leading-tight">Banker Pair</span>
-          {isBettingClosed ? (
+          {isBankerPairSuspended ? (
             <Lock size={14} className="text-red-200 mt-1" />
           ) : (
             <span className="text-[11px] text-red-200 font-bold mt-0.5">11:1</span>

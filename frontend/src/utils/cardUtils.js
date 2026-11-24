@@ -1,7 +1,7 @@
 /**
  * Universal Card Utilities for AsianExchange / D247
- * Real webp cards from /cards/
- * Contains the 13 rank cards (A, 2..10, J, Q, K) and back.webp
+ * Authentic Diamond Online format: ${rank}${suit}.jpg (e.g. 10DD.jpg, 9SS.jpg, KHH.jpg, ASS.jpg)
+ * Card back: 1.jpg / back.jpg (authentic cyan/blue wave pattern with gold border)
  */
 
 const VALID_RANKS = new Set([
@@ -11,16 +11,41 @@ const VALID_RANKS = new Set([
 export function parseCard(card) {
   if (!card) return null;
   if (typeof card === 'object') {
-    if (card.code) return parseCardString(card.code);
+    if (card.code && typeof card.code === 'string' && card.code.length >= 2) {
+      return parseCardString(card.code);
+    }
     let rank = String(card.rank || card.val || '').toUpperCase().trim();
     if (rank === '1') rank = 'A';
-    const suit = card.suit || '♠';
-    const isRed = card.isRed ?? (card.color === 'red' || suit === '♥' || suit === '♦');
+    
+    let suit = card.suit || '♠';
+    let suitCode = 'SS';
+    let isRed = false;
+
+    if (suit === '♥' || suit === 'H' || suit === 'HH') {
+      suit = '♥';
+      suitCode = 'HH';
+      isRed = true;
+    } else if (suit === '♦' || suit === 'D' || suit === 'DD') {
+      suit = '♦';
+      suitCode = 'DD';
+      isRed = true;
+    } else if (suit === '♣' || suit === 'C' || suit === 'CC') {
+      suit = '♣';
+      suitCode = 'CC';
+      isRed = false;
+    } else {
+      suit = '♠';
+      suitCode = 'SS';
+      isRed = false;
+    }
+
+    const normRank = VALID_RANKS.has(rank) ? rank : 'A';
     return {
-      rank: VALID_RANKS.has(rank) ? rank : 'A',
+      rank: normRank,
       suit,
-      isRed,
-      code: rank,
+      suitCode,
+      code: `${normRank}${suitCode}`,
+      isRed: isRed || !!card.isRed,
       isHidden: !!card.isHidden
     };
   }
@@ -31,44 +56,97 @@ export function parseCardString(rawStr) {
   if (!rawStr) return null;
   const str = String(rawStr).trim().toUpperCase();
   if (str === '1' || str === '?' || str === '0' || str === 'BACK') {
-    return { rank: '?', suit: '♠', isRed: false, code: 'back', isHidden: true };
+    return { rank: '?', suit: '♠', suitCode: 'SS', isRed: false, code: '1', isHidden: true };
   }
 
   let suit = '♠';
+  let suitCode = 'SS';
   let isRed = false;
   let rank = str;
 
-  if (str.endsWith('HH') || str.endsWith('H')) {
+  if (str.endsWith('HH')) {
     suit = '♥';
+    suitCode = 'HH';
     isRed = true;
-    rank = str.replace(/H+$/, '');
-  } else if (str.endsWith('DD') || str.endsWith('D')) {
+    rank = str.slice(0, -2);
+  } else if (str.endsWith('H')) {
+    suit = '♥';
+    suitCode = 'HH';
+    isRed = true;
+    rank = str.slice(0, -1);
+  } else if (str.endsWith('DD')) {
     suit = '♦';
+    suitCode = 'DD';
     isRed = true;
-    rank = str.replace(/D+$/, '');
-  } else if (str.endsWith('CC') || str.endsWith('C')) {
+    rank = str.slice(0, -2);
+  } else if (str.endsWith('D')) {
+    suit = '♦';
+    suitCode = 'DD';
+    isRed = true;
+    rank = str.slice(0, -1);
+  } else if (str.endsWith('CC')) {
     suit = '♣';
+    suitCode = 'CC';
     isRed = false;
-    rank = str.replace(/C+$/, '');
-  } else if (str.endsWith('SS') || str.endsWith('S')) {
+    rank = str.slice(0, -2);
+  } else if (str.endsWith('C')) {
+    suit = '♣';
+    suitCode = 'CC';
+    isRed = false;
+    rank = str.slice(0, -1);
+  } else if (str.endsWith('SS')) {
     suit = '♠';
+    suitCode = 'SS';
     isRed = false;
-    rank = str.replace(/S+$/, '');
+    rank = str.slice(0, -2);
+  } else if (str.endsWith('S')) {
+    suit = '♠';
+    suitCode = 'SS';
+    isRed = false;
+    rank = str.slice(0, -1);
   }
 
   if (rank === '1') rank = 'A';
   if (!VALID_RANKS.has(rank)) {
-    rank = 'A';
+    if (VALID_RANKS.has(str)) {
+      rank = str;
+      suitCode = 'SS';
+    } else {
+      rank = 'A';
+    }
   }
 
-  return { rank, suit, isRed, code: rank, isHidden: false };
+  return {
+    rank,
+    suit,
+    suitCode,
+    code: `${rank}${suitCode}`,
+    isRed,
+    isHidden: false
+  };
 }
 
 export function getCardImgSrc(card, isFaceDown = false) {
-  if (isFaceDown) return '/cards/back.webp';
-  const parsed = parseCard(card);
-  if (!parsed || parsed.isHidden || !parsed.rank || parsed.rank === '?') {
-    return '/cards/back.webp';
+  if (isFaceDown) return '/cards/1.jpg';
+  if (!card) return '/cards/1.jpg';
+
+  if (typeof card === 'string') {
+    const s = card.trim();
+    if (s === '1' || s.toLowerCase() === 'back' || s === '?' || s === '0') {
+      return '/cards/1.jpg';
+    }
+    if (s.endsWith('.jpg') || s.endsWith('.webp')) {
+      return s.startsWith('/') ? s : `/cards/${s}`;
+    }
+    if (s.length >= 2 && (s.endsWith('SS') || s.endsWith('HH') || s.endsWith('CC') || s.endsWith('DD'))) {
+      return `/cards/${s}.jpg`;
+    }
   }
-  return `/cards/${parsed.rank}.webp`;
+
+  const parsed = parseCard(card);
+  if (!parsed || parsed.isHidden || !parsed.code || parsed.code === '1') {
+    return '/cards/1.jpg';
+  }
+
+  return `/cards/${parsed.code}.jpg`;
 }

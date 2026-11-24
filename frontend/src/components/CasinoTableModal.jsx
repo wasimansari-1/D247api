@@ -240,21 +240,11 @@ export default function CasinoTableModal({ table, onClose }) {
     slug.includes("dum");
   const isSuspended = timer <= 0 || roundData?.status === "SUSPENDED";
 
-  // Fetch live stream URL from Diamond / D247 API
+  // Fetch live stream URL directly for this table
   useEffect(() => {
     if (!slug) return;
-    fetch(`/api/casino/${slug}/livetv`)
-      .then((r) => r.json())
-      .then((res) => {
-        if (res.success && res.streamUrl) {
-          setStreamUrl(res.streamUrl);
-        } else {
-          setStreamUrl(`/api/casino/player/${slug}`);
-        }
-      })
-      .catch(() => {
-        setStreamUrl(`/api/casino/player/${slug}`);
-      });
+    const directUrl = `/api/casino/player/${slug}?gameType=${slug}&id=${slug}`;
+    setStreamUrl(directUrl);
   }, [slug]);
 
   // 1. Fetch live round data every 1 second
@@ -852,12 +842,46 @@ export default function CasinoTableModal({ table, onClose }) {
     };
   };
 
-  // Flip Clock dual digit formatting
-  const timerStr = String(Math.max(0, timer)).padStart(2, "0");
-  const d1 = timerStr.charAt(0);
-  const d2 = timerStr.charAt(1);
+  // Dual digit formatting: Timer for standard games; Scores for Baccarat (Player/Banker); Dealt card count for Andar/Bahar
+  let d1 = "0";
+  let d2 = "0";
 
-  // Authentic Playing Card Component using real webp assets from /cards/
+  if (isBaccarat) {
+    const rawCards = roundData?.card ? roundData.card.split(',').map(s => s.trim()) : (roundData?.cards || []);
+    const getBaccVal = (c) => {
+      if (!c) return 0;
+      const str = typeof c === 'string' ? c : (c.rank || c.val || '');
+      const r = str.replace(/(HH|DD|CC|SS|[HDCS])$/i, '').toUpperCase();
+      if (r === 'A' || r === '1') return 1;
+      if (['10', 'J', 'Q', 'K', '0'].includes(r)) return 0;
+      const n = parseInt(r, 10);
+      return isNaN(n) ? 0 : n;
+    };
+    const pScore = ((getBaccVal(rawCards[0]) + getBaccVal(rawCards[2]) + getBaccVal(rawCards[4])) % 10);
+    const bScore = ((getBaccVal(rawCards[1]) + getBaccVal(rawCards[3]) + getBaccVal(rawCards[5])) % 10);
+    d1 = String(pScore);
+    d2 = String(bScore);
+  } else if (isAndarBahar || isAB20 || isAB3 || isAB4) {
+    const rawCards = roundData?.card ? roundData.card.split(',').map(s => s.trim()).filter(x => x && x !== '1' && x !== '0') : (roundData?.cards || []);
+    const jokerCard = rawCards[0];
+    const jSuit = String(typeof jokerCard === 'string' ? jokerCard : (jokerCard?.suit || '')).toUpperCase();
+    const isJokerBlack = jSuit.includes('S') || jSuit.includes('C') || jSuit.includes('♠') || jSuit.includes('♣');
+    const dealt = rawCards.slice(1);
+    let aCount = 0;
+    let bCount = 0;
+    dealt.forEach((_, i) => {
+      if (isJokerBlack ? (i % 2 === 0) : (i % 2 === 1)) aCount++;
+      else bCount++;
+    });
+    d1 = String(aCount % 10);
+    d2 = String(bCount % 10);
+  } else {
+    const timerStr = String(Math.max(0, timer)).padStart(2, "0");
+    d1 = timerStr.charAt(0);
+    d2 = timerStr.charAt(1);
+  }
+
+  // Authentic Playing Card Component using authentic Diamond Online format (/cards/${rank}${suit}.jpg)
   const renderCard = (c, key, isFaceDown = false) => {
     const imgSrc = getCardImgSrc(c, isFaceDown);
     return (
@@ -871,7 +895,7 @@ export default function CasinoTableModal({ table, onClose }) {
           className="w-full h-full object-cover"
           onError={(e) => {
             e.currentTarget.onerror = null;
-            e.currentTarget.src = "/cards/back.webp";
+            e.currentTarget.src = "/cards/1.jpg";
           }}
         />
       </div>
@@ -952,69 +976,6 @@ export default function CasinoTableModal({ table, onClose }) {
             </span>
           </div>
         </div>
-
-        {/* Worli Matka Market Countdown Schedule */}
-        {isWorli && (
-          <div className="bg-[#0b1f36] px-2 py-1.5 border-b border-sky-900/60 flex items-center gap-2 overflow-x-auto scrollbar-none select-none">
-            {[
-              {
-                name: "ASIA CLOSE",
-                time: "00:47:57",
-                date: "24 NOV 26 04:00 PM",
-              },
-              {
-                name: "TAJ OPEN",
-                time: "01:47:57",
-                date: "24 NOV 26 05:00 PM",
-              },
-              {
-                name: "TAJ CLOSE",
-                time: "02:47:57",
-                date: "24 NOV 26 06:00 PM",
-              },
-              {
-                name: "GULF OPEN",
-                time: "03:47:57",
-                date: "24 NOV 26 07:00 PM",
-              },
-              {
-                name: "GULF CLOSE",
-                time: "04:47:57",
-                date: "24 NOV 26 08:00 PM",
-              },
-              {
-                name: "DIAMOND OPEN",
-                time: "05:47:57",
-                date: "24 NOV 26 09:00 PM",
-              },
-              {
-                name: "DIAMOND CLOSE",
-                time: "06:47:57",
-                date: "24 NOV 26 10:00 PM",
-              },
-              {
-                name: "WORLD OPEN",
-                time: "07:47:57",
-                date: "24 NOV 26 11:00 PM",
-              },
-            ].map((m, idx) => (
-              <div
-                key={idx}
-                className="bg-[#14324f] px-2.5 py-1 rounded border border-sky-500/40 shrink-0 text-center font-mono"
-              >
-                <div className="text-sky-300 font-black text-[10px] leading-tight">
-                  {m.name}
-                </div>
-                <div className="text-yellow-400 font-bold text-[10px] leading-tight">
-                  ⏱ {m.time}
-                </div>
-                <div className="text-[8px] text-slate-400 leading-none">
-                  {m.date}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
 
         {/* 3. Live Video Container with Floating HUD Overlay */}
         <div className="relative w-full aspect-video bg-black overflow-hidden select-none border-b border-slate-800 shrink-0">
@@ -1184,9 +1145,15 @@ export default function CasinoTableModal({ table, onClose }) {
               if (isAndarBahar) {
                 const cards = roundData?.cards || [];
                 const jokerCard = cards[0];
+                const jSuit = String(jokerCard?.suit || jokerCard?.raw || '').toUpperCase();
+                const isJokerBlack =
+                  jSuit.includes('S') ||
+                  jSuit.includes('C') ||
+                  jSuit.includes('♠') ||
+                  jSuit.includes('♣');
                 const dealtCards = cards.slice(1);
-                const andarCards = dealtCards.filter((_, i) => i % 2 === 0);
-                const baharCards = dealtCards.filter((_, i) => i % 2 === 1);
+                const andarCards = dealtCards.filter((_, i) => isJokerBlack ? (i % 2 === 0) : (i % 2 === 1));
+                const baharCards = dealtCards.filter((_, i) => isJokerBlack ? (i % 2 === 1) : (i % 2 === 0));
                 return (
                   <div className="flex flex-col items-start gap-1 bg-black/70 p-2 rounded-lg backdrop-blur-sm border border-white/10">
                     <div className="flex items-center gap-2 mb-1">
