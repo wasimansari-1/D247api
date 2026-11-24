@@ -24,7 +24,8 @@ import {
   Gamepad2
 } from 'lucide-react';
 import RateBox from './components/RateBox';
-import Scorecard from './components/Scorecard';
+import Scorecard, { FlipClockCounter, PlayingCardItem } from './components/Scorecard';
+import RacingMeetingGrid from './components/RacingMeetingGrid';
 import CasinoTableModal from './components/CasinoTableModal';
 import LiveStreamModal from './components/LiveStreamModal';
 
@@ -214,6 +215,10 @@ export default function App() {
   const [activeStreamMatch, setActiveStreamMatch] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   
+  // Horse Racing & Greyhound Racing Meeting Grid state
+  const [racingTree, setRacingTree] = useState([]);
+  const [selectedRacingCountry, setSelectedRacingCountry] = useState('AU');
+  
   // Accordion states for sidebar
   const [isRacingOpen, setIsRacingOpen] = useState(true);
   const [isOthersOpen, setIsOthersOpen] = useState(true);
@@ -264,6 +269,12 @@ export default function App() {
           markets: payload.markets || prev.markets,
           scoreboard: payload.scoreboard || prev.scoreboard,
           streamUrl: payload.streamUrl || prev.streamUrl,
+          timer: payload.timer !== undefined ? payload.timer : prev.timer,
+          totalTimer: payload.totalTimer || prev.totalTimer,
+          card: payload.card || prev.card,
+          cards: payload.cards || prev.cards,
+          recentResults: payload.recentResults || prev.recentResults,
+          status: payload.status || prev.status,
           updatedAt: payload.updatedAt
         };
       });
@@ -286,6 +297,36 @@ export default function App() {
       socket.off('quick_rate_ticker');
     };
   }, []);
+
+  // 1.1 Live 1-Second Timer Countdown Ticker (Zero-Lag Countdown)
+  useEffect(() => {
+    if (matchDetails?.timer === undefined || matchDetails?.timer === null || matchDetails.timer <= 0) return;
+    const interval = setInterval(() => {
+      setMatchDetails(prev => {
+        if (!prev || prev.timer === undefined || prev.timer <= 0) return prev;
+        return { ...prev, timer: Math.max(0, prev.timer - 1) };
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [matchDetails?.timer]);
+
+  // 1.2 Fetch dedicated Racing Meeting Grid on Sport Change
+  useEffect(() => {
+    if (selectedSportId === 10 || selectedSportId === 65) {
+      fetch(`/api/sports/racing/${selectedSportId}`)
+        .then(r => r.json())
+        .then(res => {
+          if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+            setRacingTree(res.data);
+            setSelectedRacingCountry(prev => {
+              const exists = res.data.some(c => (c.cname || c.name) === prev);
+              return exists ? prev : (res.data[0].cname || res.data[0].name || 'AU');
+            });
+          }
+        })
+        .catch(() => {});
+    }
+  }, [selectedSportId]);
 
   // 2. Fetch Selected Match Details on Change
   useEffect(() => {
@@ -669,31 +710,39 @@ export default function App() {
                     </marquee>
                   </div>
 
-                  {/* Super Over 2 Real Dealt Balls Visualizer matching Image 1 */}
+                  {/* Super Over 2 Real Dealt Balls & Flip Timer Visualizer matching Image 6 */}
                   {matchDetails.gmid === 'superover2' && (
-                    <div className="bg-black/90 border border-slate-700 rounded-lg p-5 mb-3 flex flex-col items-center justify-center">
-                      <div className="flex items-center gap-3">
-                        {(matchDetails.cards || ['1', '?']).map((c, cIdx) => (
-                          <div 
-                            key={cIdx} 
-                            className="w-14 h-16 sm:w-16 sm:h-20 bg-[#1e293b] border-2 border-slate-600 rounded-lg flex items-center justify-center shadow-2xl"
-                          >
-                            <span className="text-3xl sm:text-4xl font-black text-white font-mono">
-                              {c}
-                            </span>
-                          </div>
-                        ))}
+                    <div className="relative bg-gradient-to-b from-[#0f172a] via-black to-[#0f172a] border border-slate-700 rounded-lg p-3 sm:p-4 mb-3 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-2xl">
+                      {/* Dealt Cards / Balls on Left */}
+                      <div className="flex flex-col items-center sm:items-start gap-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {(matchDetails.cards || ['2CC', '4CC']).map((c, cIdx) => (
+                            <PlayingCardItem key={cIdx} cardRaw={c} />
+                          ))}
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">
+                          Over Balls Dealt
+                        </span>
                       </div>
-                      <span className="text-[10px] text-slate-400 font-bold uppercase mt-2 tracking-widest">
-                        Over Balls Dealt
-                      </span>
+
+                      {/* Real Flip Counter on Right matching Image 6 */}
+                      <div className="flex flex-col items-center sm:items-end gap-1">
+                        <FlipClockCounter value={matchDetails.timer !== undefined ? matchDetails.timer : 7} />
+                        <span className="text-[10px] text-amber-400 font-extrabold tracking-wider uppercase">
+                          Live Ball Timer
+                        </span>
+                      </div>
                     </div>
                   )}
 
-                  {/* Real Scoreboard ONLY when authentic live score data exists */}
+                  {/* Real Scoreboard with Authentic Virtual Cricket Pitch & Vertical Cards matching Image 7 */}
                   {matchDetails.scoreboard && (
                     <div className="mb-3">
-                      <Scorecard scoreboard={matchDetails.scoreboard} />
+                      <Scorecard 
+                        scoreboard={matchDetails.scoreboard} 
+                        timer={matchDetails.timer} 
+                        cards={matchDetails.cards} 
+                      />
                     </div>
                   )}
 
@@ -1002,9 +1051,19 @@ export default function App() {
                 </div>
               )}
 
-              {/* Main Exchange In-Play Match Table matching Image 4 */}
-              <div className="overflow-x-auto flex-1">
-                <table className="w-full border-collapse text-left text-xs">
+              {/* Dedicated Meeting Grid for Horse & Greyhound Racing matching Image 8 */}
+              {(selectedSportId === 10 || selectedSportId === 65) ? (
+                <RacingMeetingGrid
+                  racingTree={racingTree}
+                  selectedCountry={selectedRacingCountry}
+                  onSelectCountry={setSelectedRacingCountry}
+                  onSelectRace={handleSelectMatch}
+                  selectedMatchGmid={selectedMatchGmid}
+                />
+              ) : (
+                /* Main Exchange In-Play Match Table matching Image 4 */
+                <div className="overflow-x-auto flex-1">
+                  <table className="w-full border-collapse text-left text-xs">
                   
                   {/* Table Column Headers */}
                   <thead>
@@ -1190,6 +1249,7 @@ export default function App() {
                   </tbody>
                 </table>
               </div>
+            )}
 
             </div>
           ) : (

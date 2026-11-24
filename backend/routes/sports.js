@@ -20,6 +20,20 @@ module.exports = function(syncEngine) {
     });
   });
 
+  // Get Horse Racing (10) or Greyhound Racing (65) Country/Track/Race Meeting Tree
+  router.get('/racing/:etid', async (req, res) => {
+    try {
+      const tree = await syncEngine.getRacingTree(req.params.etid);
+      res.json({
+        success: true,
+        etid: parseInt(req.params.etid),
+        data: tree
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  });
+
   // Get specific match odds & live markets (ALWAYS FRESH UPSTREAM DATA)
   router.get('/match/:gmid', async (req, res) => {
     const gmid = req.params.gmid;

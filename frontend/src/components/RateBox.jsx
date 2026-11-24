@@ -24,7 +24,7 @@ export default function RateBox({ type, price, size }) {
         {price !== undefined && price !== null ? price : '-'}
       </span>
       <span className="text-[10px] font-semibold text-slate-700 leading-tight">
-        {size ? (size >= 100000 ? `${(size/100000).toFixed(1)}L` : (size >= 1000 ? `${(size/1000).toFixed(0)}K` : size)) : '-'}
+        {size !== undefined && size !== null && size !== 0 ? size : '-'}
       </span>
     </div>
   );
