@@ -49,6 +49,7 @@ import Race20ResultModal from "./casino/Race20ResultModal";
 import ResultDetailModal from "./casino/ResultDetailModal";
 import LotteryBoard from "./casino/LotteryBoard";
 import QueenBoard from "./casino/QueenBoard";
+import { getCardImgSrc } from "../utils/cardUtils";
 
 // Authentic Lucky 15 Runner Index to Outcome Mapper
 function mapLucky15Outcome(val) {
@@ -169,9 +170,13 @@ export default function CasinoTableModal({ table, onClose }) {
     slug.includes("ab") ||
     nameLow.includes("andar bahar") ||
     slug.includes("andar");
-  const isQueen = slug === "queen" || nameLow === "queen" || nameLow === "live queen";
+  const isQueen =
+    slug === "queen" || nameLow === "queen" || nameLow === "live queen";
   const isQueenTop =
-    (slug === "queentop" || slug === "teen41" || nameLow.includes("queen top")) && !isQueen;
+    (slug === "queentop" ||
+      slug === "teen41" ||
+      nameLow.includes("queen top")) &&
+    !isQueen;
   const isJackTop =
     slug === "jacktop" || slug === "teen42" || nameLow.includes("jack");
   const isLottery =
@@ -407,8 +412,8 @@ export default function CasinoTableModal({ table, onClose }) {
     const w = (winnerName || "").trim();
     const lower = w.toLowerCase();
 
-    // 1. Goal, Andar Bahar & Ball By Ball: Green badge with letter 'R' (Image 1, 2 Exact Match)
-    if (isGoal || isAndarBahar || isBallByBall) {
+    // 1. Goal, Andar Bahar, Worli & Ball By Ball: Green badge with letter 'R' (Image 1, 2, 3 Exact Match)
+    if (isGoal || isAndarBahar || isBallByBall || isWorli) {
       return {
         letter: "R",
         bg: "bg-emerald-600 text-white font-bold",
@@ -668,16 +673,26 @@ export default function CasinoTableModal({ table, onClose }) {
       };
     }
 
-    // 4. Teen Patti Test: T (Tiger), L (Lion), D (Dragon) in Dark Green Badges (Image 7 Exact Match)
+    // 4. Teen Patti Test: T (Tiger), L (Lion), D (Dragon) in Dark Green Badges (Image 1 Exact Match)
     if (isTeenTest) {
-      if (lower.includes("tiger") || w === "1" || lower.startsWith("t")) {
+      if (
+        lower.includes("tiger") ||
+        w === "1" ||
+        w === "01" ||
+        lower === "t"
+      ) {
         return {
           letter: "T",
           bg: "bg-emerald-700 text-white font-black",
           title: "Tiger",
         };
       }
-      if (lower.includes("lion") || w === "2" || lower.startsWith("l")) {
+      if (
+        lower.includes("lion") ||
+        w === "2" ||
+        w === "02" ||
+        lower === "l"
+      ) {
         return {
           letter: "L",
           bg: "bg-emerald-700 text-white font-black",
@@ -842,47 +857,23 @@ export default function CasinoTableModal({ table, onClose }) {
   const d1 = timerStr.charAt(0);
   const d2 = timerStr.charAt(1);
 
-  // Authentic Playing Card Component
+  // Authentic Playing Card Component using real webp assets from /cards/
   const renderCard = (c, key, isFaceDown = false) => {
-    if (isFaceDown || c?.isHidden || !c) {
-      return (
-        <div
-          key={key}
-          className="w-8 h-12 sm:w-10 sm:h-14 rounded bg-[#0b2742] border border-yellow-400/90 shadow-md flex items-center justify-center p-0.5 shrink-0"
-          style={{
-            backgroundImage:
-              "repeating-linear-gradient(45deg, #1e3a5f 0, #1e3a5f 2px, #0f2238 2px, #0f2238 4px)",
-          }}
-        >
-          <div className="w-full h-full border border-yellow-400/40 rounded-[2px] flex items-center justify-center text-[10px] text-yellow-300/80 font-serif">
-            ✦
-          </div>
-        </div>
-      );
-    }
-
-    const isRed = c.color === "red" || c.suit === "♥" || c.suit === "♦";
-
+    const imgSrc = getCardImgSrc(c, isFaceDown);
     return (
       <div
         key={key}
-        className="w-8 h-12 sm:w-10 sm:h-14 bg-white border border-slate-900 rounded shadow-md flex flex-col justify-between p-0.5 select-none font-bold shrink-0"
+        className="w-8 h-12 sm:w-10 sm:h-14 rounded overflow-hidden shadow-md shrink-0 border border-slate-900 bg-white flex items-center justify-center select-none"
       >
-        <div
-          className={`text-[11px] sm:text-xs font-black leading-none self-start ${isRed ? "text-red-600" : "text-black"}`}
-        >
-          {c.rank}
-        </div>
-        <div
-          className={`text-base sm:text-lg leading-none self-center ${isRed ? "text-red-600" : "text-black"}`}
-        >
-          {c.suit}
-        </div>
-        <div
-          className={`text-[9px] font-black leading-none self-end rotate-180 ${isRed ? "text-red-600" : "text-black"}`}
-        >
-          {c.rank}
-        </div>
+        <img
+          src={imgSrc}
+          alt="Card"
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            e.currentTarget.onerror = null;
+            e.currentTarget.src = "/cards/back.webp";
+          }}
+        />
       </div>
     );
   };
@@ -1685,7 +1676,10 @@ export default function CasinoTableModal({ table, onClose }) {
                       return (
                         <div key={gIdx} className="flex flex-col items-start">
                           <span className="text-[10px] font-black text-amber-300 drop-shadow-md leading-none mb-0.5">
-                            TOTAL {gIdx}: <span className="text-white font-mono">{totalPoints}</span>
+                            TOTAL {gIdx}:{" "}
+                            <span className="text-white font-mono">
+                              {totalPoints}
+                            </span>
                           </span>
                           <div className="flex gap-1">
                             {grpCards.length > 0 ? (
@@ -2041,60 +2035,6 @@ export default function CasinoTableModal({ table, onClose }) {
                         "r2-a",
                         !cards[0] || cards[0].isHidden,
                       )}
-                    </div>
-                  </div>
-                );
-              }
-
-              // Teenpatti Test (Tiger, Lion, Dragon Cards) (Image 6 Exact Match)
-              if (isTeenTest) {
-                const cards = roundData?.cards || [];
-                const tiger = cards.slice(0, 3);
-                const lion = cards.slice(3, 6);
-                const dragon = cards.slice(6, 9);
-                return (
-                  <div className="flex flex-col items-start gap-1">
-                    <div>
-                      <div className="text-[10px] font-black text-amber-300 uppercase tracking-wider mb-0.5">
-                        TIGER
-                      </div>
-                      <div className="flex gap-1">
-                        {[0, 1, 2].map((idx) =>
-                          renderCard(
-                            tiger[idx],
-                            `tt-t-${idx}`,
-                            !tiger[idx] || tiger[idx].isHidden,
-                          ),
-                        )}
-                      </div>
-                    </div>
-                    <div className="mt-0.5">
-                      <div className="text-[10px] font-black text-sky-300 uppercase tracking-wider mb-0.5">
-                        LION
-                      </div>
-                      <div className="flex gap-1">
-                        {[0, 1, 2].map((idx) =>
-                          renderCard(
-                            lion[idx],
-                            `tt-l-${idx}`,
-                            !lion[idx] || lion[idx].isHidden,
-                          ),
-                        )}
-                      </div>
-                    </div>
-                    <div className="mt-0.5">
-                      <div className="text-[10px] font-black text-rose-400 uppercase tracking-wider mb-0.5">
-                        DRAGON
-                      </div>
-                      <div className="flex gap-1">
-                        {[0, 1, 2].map((idx) =>
-                          renderCard(
-                            dragon[idx],
-                            `tt-d-${idx}`,
-                            !dragon[idx] || dragon[idx].isHidden,
-                          ),
-                        )}
-                      </div>
                     </div>
                   </div>
                 );

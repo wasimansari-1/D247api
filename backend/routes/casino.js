@@ -181,6 +181,24 @@ module.exports = function (syncEngine) {
             if (rRes.ok) routeData = await rRes.json();
           } catch (_) {}
 
+          if (!routeData) {
+            routeData = {
+              ok: true,
+              status: "live",
+              targetWsid: targetSlug,
+              wsid: targetSlug,
+              nodeId: "stream-c",
+              path: `/stream/c/${encodeURIComponent(targetSlug)}`,
+              url: `wss://stream1.trubets365.com/stream/c/${encodeURIComponent(targetSlug)}`,
+            };
+          } else {
+            routeData.wsid = targetSlug;
+            routeData.targetWsid = targetSlug;
+            if (!routeData.url && routeData.path) {
+              routeData.url = `wss://stream1.trubets365.com${routeData.path}`;
+            }
+          }
+
           // Fix base and asset URLs to point directly to reliable CDN
           html = html.replace(/<base[^>]+>/gi, '<base href="https://stream.trubets365.com/stream-assets/">');
           html = html.replace(/href="player\//g, 'href="https://stream.trubets365.com/stream-assets/player/');
@@ -194,7 +212,9 @@ module.exports = function (syncEngine) {
               #stream-player, #stream-player iframe, #stream-player video { width: 100% !important; height: 100% !important; object-fit: cover !important; }
             </style>
             <script>
-              ${routeData ? `window.__STREAM_RELAY_ROUTE__ = ${JSON.stringify(routeData)};` : ""}
+              window.__STREAM_RELAY_ROUTE__ = ${JSON.stringify(routeData)};
+              window.__STREAM_RELAY_WSID__ = "${targetSlug}";
+              window.webSocketURL = "${routeData.url}";
               try {
                 var _orig = window.addEventListener;
                 window.addEventListener = function(t, l, o) {

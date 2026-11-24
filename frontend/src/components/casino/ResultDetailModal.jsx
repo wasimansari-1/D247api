@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { X, Trophy } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { X, Trophy, ChevronLeft, ChevronRight } from 'lucide-react';
+import { getCardImgSrc } from '../../utils/cardUtils';
 
 /**
  * Deterministically formats match time from mid string so it NEVER drifts or ticks!
@@ -88,6 +89,11 @@ export default function ResultDetailModal({ result, gameName, slug, onClose }) {
     nameLow.includes('ball by ball') ||
     nameLow.includes('ballbyball');
 
+  const isCMatch20 =
+    nameLow.includes('cricket match 20') ||
+    nameLow.includes('cmatch') ||
+    slug === 'cmatch20';
+
   const isBaccarat = nameLow.includes('baccarat');
   const isRace20 = nameLow.includes('race 20') || nameLow.includes('race20');
   const isDusKaDum = nameLow.includes('dus ka dum') || nameLow.includes('dum10');
@@ -99,26 +105,34 @@ export default function ResultDetailModal({ result, gameName, slug, onClose }) {
   const isQueen = (slug === 'queen' || nameLow === 'queen' || nameLow.includes('queen')) && !slug?.includes('queentop') && !nameLow.includes('queen top');
   const isLottery = slug === 'lottcard' || nameLow.includes('lottery') || nameLow.includes('lott');
 
-  // Dealt cards helper
+  const andarScrollRef = useRef(null);
+  const baharScrollRef = useRef(null);
+
+  // Dealt cards helper using authentic /cards/*.webp
   const renderCardGraphic = (card, idx, size = 'normal') => {
     if (!card) return null;
-    const isSmall = size === 'small';
+    const imgSrc = getCardImgSrc(card);
+    const sizeClasses =
+      size === 'small'
+        ? 'w-6 h-9'
+        : size === 'large'
+        ? 'w-10 h-14'
+        : 'w-8 h-12';
+
     return (
       <div
         key={idx}
-        className={`${
-          isSmall ? 'w-6 h-9 p-0.5' : 'w-8 h-12 p-0.5'
-        } bg-white border border-slate-900 rounded shadow flex flex-col justify-between select-none font-bold`}
+        className={`${sizeClasses} bg-white border border-slate-700 rounded overflow-hidden shadow-sm flex items-center justify-center shrink-0 select-none`}
       >
-        <div className={`${isSmall ? 'text-[8px]' : 'text-[10px]'} font-black leading-none ${card.isRed ? 'text-red-600' : 'text-slate-900'}`}>
-          {card.rank}
-        </div>
-        <div className={`${isSmall ? 'text-xs' : 'text-sm'} leading-none self-center ${card.isRed ? 'text-red-600' : 'text-slate-900'}`}>
-          {card.suit}
-        </div>
-        <div className={`${isSmall ? 'text-[7px]' : 'text-[8px]'} font-black leading-none self-end rotate-180 ${card.isRed ? 'text-red-600' : 'text-slate-900'}`}>
-          {card.rank}
-        </div>
+        <img
+          src={imgSrc}
+          alt={card.code || 'Card'}
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            e.currentTarget.onerror = null;
+            e.currentTarget.src = '/cards/back.webp';
+          }}
+        />
       </div>
     );
   };
@@ -141,6 +155,23 @@ export default function ResultDetailModal({ result, gameName, slug, onClose }) {
     .map(s => s.trim())
     .filter(Boolean);
   const parsedCards = cardCodes.map(c => parseCardCode(c)).filter(Boolean);
+
+  // Andar Bahar cards parsing (Card 0 = Opening / Joker, Alternate = Bahar, Andar...)
+  const { andarCards, baharCards } = useMemo(() => {
+    const a = [];
+    const b = [];
+    for (let i = 1; i < parsedCards.length; i++) {
+      if (i % 2 === 1) {
+        b.push(parsedCards[i]);
+      } else {
+        a.push(parsedCards[i]);
+      }
+    }
+    if (a.length === 0 && b.length === 0 && parsedCards.length > 0) {
+      b.push(parsedCards[0]);
+    }
+    return { andarCards: a, baharCards: b };
+  }, [parsedCards]);
 
   // Outcome split by '#'
   const descParts = (detailData?.rdesc || '').split('#');
@@ -417,14 +448,105 @@ export default function ResultDetailModal({ result, gameName, slug, onClose }) {
               </div>
             </div>
           ) : isAndarBahar ? (
-            /* 8. ANDAR BAHAR POPUP */
-            <div className="flex flex-col items-center gap-3 w-full">
-              <div className="flex flex-col items-center gap-1 p-2 bg-amber-50 border border-amber-300 rounded">
-                <span className="text-xs font-black text-amber-800">OPENING CARD</span>
-                {renderCardGraphic(parsedCards[0] || parseCardCode('8HH'), 0)}
+            /* 8. ANDAR BAHAR RESULT POPUP (Image 10 Right Exact Match) */
+            <div className="flex flex-col gap-3 w-full px-2 py-1 select-none">
+              {/* Row 1: Andar */}
+              <div className="flex flex-col gap-1 w-full">
+                <span className="text-xs font-black text-slate-800 text-center uppercase tracking-wide">
+                  Andar
+                </span>
+                <div className="flex items-center gap-1 w-full">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (andarScrollRef.current) {
+                        andarScrollRef.current.scrollBy({ left: -120, behavior: 'smooth' });
+                      }
+                    }}
+                    className="p-1 rounded bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 shadow-sm shrink-0 active:scale-95 transition"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  <div
+                    ref={andarScrollRef}
+                    className="flex-1 flex gap-1.5 overflow-x-auto py-1 px-1 scrollbar-none items-center"
+                    style={{ scrollbarWidth: 'none' }}
+                  >
+                    {andarCards.length > 0 ? (
+                      andarCards.map((c, i) => renderCardGraphic(c, `ab-res-a-${i}`, 'normal'))
+                    ) : (
+                      <span className="text-xs text-slate-400 italic mx-auto">No cards dealt</span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (andarScrollRef.current) {
+                        andarScrollRef.current.scrollBy({ left: 120, behavior: 'smooth' });
+                      }
+                    }}
+                    className="p-1 rounded bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 shadow-sm shrink-0 active:scale-95 transition"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
               </div>
-              <div className="border border-slate-300 rounded px-6 py-2 bg-slate-50 text-center text-xs font-bold text-slate-800 shadow-sm">
-                Winner: <span className="font-black text-emerald-700">{detailData?.winnat || 'Andar'}</span>
+
+              {/* Row 2: Bahar */}
+              <div className="flex flex-col gap-1 w-full border-t border-slate-200 pt-2">
+                <span className="text-xs font-black text-slate-800 text-center uppercase tracking-wide">
+                  Bahar
+                </span>
+                <div className="flex items-center gap-1 w-full">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (baharScrollRef.current) {
+                        baharScrollRef.current.scrollBy({ left: -120, behavior: 'smooth' });
+                      }
+                    }}
+                    className="p-1 rounded bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 shadow-sm shrink-0 active:scale-95 transition"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  <div
+                    ref={baharScrollRef}
+                    className="flex-1 flex gap-1.5 overflow-x-auto py-1 px-1 scrollbar-none items-center"
+                    style={{ scrollbarWidth: 'none' }}
+                  >
+                    {baharCards.length > 0 ? (
+                      baharCards.map((c, i) => renderCardGraphic(c, `ab-res-b-${i}`, 'normal'))
+                    ) : (
+                      <span className="text-xs text-slate-400 italic mx-auto">No cards dealt</span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (baharScrollRef.current) {
+                        baharScrollRef.current.scrollBy({ left: 120, behavior: 'smooth' });
+                      }
+                    }}
+                    className="p-1 rounded bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 shadow-sm shrink-0 active:scale-95 transition"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : isCMatch20 ? (
+            /* CRICKET MATCH 20-20 POPUP (Winning Runs & Single Card - NEVER Player A/B) */
+            <div className="flex flex-col items-center gap-3 w-full py-3 select-none">
+              <div className="flex items-center justify-center gap-6">
+                {parsedCards[0] && renderCardGraphic(parsedCards[0], 'cm-card', 'large')}
+                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-red-600 via-rose-700 to-red-950 border-4 border-white shadow-2xl flex flex-col items-center justify-center text-white ring-2 ring-red-900 drop-shadow-xl">
+                  <span className="text-xl font-black font-mono tracking-wider drop-shadow text-center">
+                    {detailData?.winnat || cricketOutcome || '2 RUNS'}
+                  </span>
+                </div>
+              </div>
+              <div className="border border-slate-300 rounded px-6 py-2 bg-slate-50 text-center text-xs font-bold text-slate-800 shadow-sm mt-1">
+                Winning Outcome: <span className="font-black text-emerald-700">{detailData?.winnat || cricketOutcome}</span>
               </div>
             </div>
           ) : (
