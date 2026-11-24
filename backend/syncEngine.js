@@ -1233,41 +1233,15 @@ class D247SyncEngine {
       }
     }
 
-    const isVirtualCricket = eventMeta.etid === 4 && (
-      (eventMeta.eventName || '').includes('XI') || 
-      (eventMeta.competition || '').includes('T10') || 
-      (eventMeta.competition || '').toLowerCase().includes('virtual') ||
-      eventMeta.isVirtual
-    );
-
-    if (isVirtualCricket) {
-      const teamParts = (eventMeta.eventName || '').split(/ v | vs /i);
-      const t1 = (teamParts[0] || 'Team 1').trim();
-      const t2 = (teamParts[1] || 'Team 2').trim();
-
+    // Only real matches with actual scard have scoreboards
+    const isSpecialGame = gmid === 'superover2' || gmid === 'goal2';
+    if (!isSpecialGame && Boolean(rawData[0]?.scard || rawData.some(m => m.scard))) {
       extractedScoreboard = {
-        isVirtual: true,
-        spnnation1: t1,
-        score1: '125-5 (10.0)',
-        spnrunrate1: '12.50',
-        spnreqrate1: '',
-        spnnation2: t2,
-        score2: '27-3 (2.2)',
-        spnrunrate2: '11.57',
-        spnreqrate2: '12.91',
-        spnmessage: `${t2} Needed 99 runs from 46 balls`,
-        balls: ['2', 'WW', '4', '2', '1', '3'],
-        cards: ['AC', '3C'],
-        timer: 13
+        gmid,
+        embedUrl: `https://dzfytm4o128av.cloudfront.net/embed/${gmid}?theme=dark`
       };
     } else {
-      const hasScoreboard = Boolean(rawData[0]?.scard || rawData.some(m => m.scard) || (etid === 4 && gmid !== 'superover2'));
-      if (hasScoreboard) {
-        extractedScoreboard = {
-          gmid,
-          embedUrl: `https://dzfytm4o128av.cloudfront.net/embed/${gmid}?theme=dark`
-        };
-      }
+      extractedScoreboard = null;
     }
 
     const formattedResult = {
@@ -1282,13 +1256,6 @@ class D247SyncEngine {
       markets,
       updatedAt: new Date().toISOString()
     };
-
-    if (isVirtualCricket) {
-      formattedResult.timer = 13;
-      formattedResult.totalTimer = 20;
-      formattedResult.card = 'AC,3C';
-      formattedResult.cards = ['AC', '3C'];
-    }
 
     return formattedResult;
   }
@@ -1306,11 +1273,11 @@ class D247SyncEngine {
           const t2 = rawRes.data.t2 || [];
           const formatted = this.formatGameData('superover2', 4, t2);
           if (formatted) {
+            formatted.scoreboard = null;
             formatted.timer = t1.lt !== undefined ? t1.lt : 0;
             formatted.totalTimer = t1.ft || 20;
             formatted.card = t1.card || '';
-            const rawCards = (t1.card || '').replace(/\[|\]/g, '').split(',').map(c => c.trim()).filter(Boolean);
-            formatted.cards = rawCards.length > 0 ? rawCards : ['1', '?'];
+            formatted.cards = (t1.card || '').replace(/\[|\]/g, '').split(/[|,]/).map(c => c.trim()).filter(Boolean);
             formatted.eventName = t1.ename || 'IND Vs ENG Super Over2';
             formatted.status = t1.lt === 0 ? 'SUSPENDED' : 'IN_PLAY';
             formatted.streamUrl = '/api/casino/superover2/livetv';

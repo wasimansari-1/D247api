@@ -96,14 +96,12 @@ export default function Scorecard({ scoreboard, timer, cards }) {
       ? scoreboard.balls 
       : ['2', 'WW', '4', '2', '1', '3'];
 
-    // 6 Vertical cards on canvas
-    const rawCardsList = cards || scoreboard.cards || ['AC', '3C'];
-    const displayCards = [...rawCardsList];
-    while (displayCards.length < 6) {
-      displayCards.push('back');
-    }
+    // Vertical cards on canvas ONLY if provided by API
+    const rawCardsList = Array.isArray(cards) && cards.length > 0 
+      ? cards 
+      : (Array.isArray(scoreboard.cards) && scoreboard.cards.length > 0 ? scoreboard.cards : null);
 
-    const activeTimer = timer !== undefined && timer !== null ? timer : (scoreboard.timer || 13);
+    const activeTimer = timer !== undefined && timer !== null ? timer : (scoreboard.timer || 0);
 
     return (
       <div className="rounded-lg overflow-hidden border border-slate-700 shadow-xl mb-3">
@@ -159,12 +157,14 @@ export default function Scorecard({ scoreboard, timer, cards }) {
           {/* Subtle cricket pitch stripes background */}
           <div className="absolute inset-0 opacity-15 pointer-events-none bg-[repeating-linear-gradient(90deg,#22c55e_0,#22c55e_40px,#15803d_40px,#15803d_80px)]"></div>
 
-          {/* Left: 6 Vertical Playing Cards Column */}
-          <div className="relative z-10 flex flex-col gap-1.5">
-            {displayCards.slice(0, 6).map((c, idx) => (
-              <PlayingCardItem key={idx} cardRaw={c} />
-            ))}
-          </div>
+          {/* Left: Vertical Playing Cards Column - ONLY IF API HAS CARDS */}
+          {Array.isArray(rawCardsList) && rawCardsList.length > 0 && (
+            <div className="relative z-10 flex flex-col gap-1.5">
+              {rawCardsList.map((c, idx) => (
+                <PlayingCardItem key={idx} cardRaw={c} />
+              ))}
+            </div>
+          )}
 
           {/* Right Bottom: Authentic Flip Clock Countdown Box */}
           <div className="relative z-10 self-end">

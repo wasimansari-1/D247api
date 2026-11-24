@@ -710,33 +710,20 @@ export default function App() {
                     </marquee>
                   </div>
 
-                  {/* Super Over 2 Real Dealt Balls & Flip Timer Visualizer matching Image 6 */}
+                  {/* Super Over 2 Live Screen with Center-Right Flip Timer (Matching Diamond Online exactly) */}
                   {matchDetails.gmid === 'superover2' && (
-                    <div className="relative bg-gradient-to-b from-[#0f172a] via-black to-[#0f172a] border border-slate-700 rounded-lg p-3 sm:p-4 mb-3 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-2xl">
-                      {/* Dealt Cards / Balls on Left */}
-                      <div className="flex flex-col items-center sm:items-start gap-1">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          {(matchDetails.cards || ['2CC', '4CC']).map((c, cIdx) => (
-                            <PlayingCardItem key={cIdx} cardRaw={c} />
-                          ))}
-                        </div>
-                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">
-                          Over Balls Dealt
-                        </span>
-                      </div>
-
-                      {/* Real Flip Counter on Right matching Image 6 */}
-                      <div className="flex flex-col items-center sm:items-end gap-1">
-                        <FlipClockCounter value={matchDetails.timer !== undefined ? matchDetails.timer : 7} />
-                        <span className="text-[10px] text-amber-400 font-extrabold tracking-wider uppercase">
-                          Live Ball Timer
-                        </span>
+                    <div className="relative bg-black rounded-lg min-h-[180px] sm:min-h-[220px] mb-3 flex items-center justify-end pr-8 sm:pr-14 shadow-2xl border border-slate-800 overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-r from-black via-slate-950 to-black opacity-95"></div>
+                      
+                      {/* Live Flip Counter matching Diamond Image 9 */}
+                      <div className="relative z-10 flex flex-col items-center gap-1">
+                        <FlipClockCounter value={matchDetails.timer !== undefined ? matchDetails.timer : 0} />
                       </div>
                     </div>
                   )}
 
-                  {/* Real Scoreboard with Authentic Virtual Cricket Pitch & Vertical Cards matching Image 7 */}
-                  {matchDetails.scoreboard && (
+                  {/* Real Scoreboard ONLY when authentic live score data exists in API and NOT superover2 */}
+                  {matchDetails.scoreboard && matchDetails.gmid !== 'superover2' && (
                     <div className="mb-3">
                       <Scorecard 
                         scoreboard={matchDetails.scoreboard} 
