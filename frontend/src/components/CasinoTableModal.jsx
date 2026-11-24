@@ -47,6 +47,8 @@ import DusKaDumBoard from "./casino/DusKaDumBoard";
 import OneCard20Board from "./casino/OneCard20Board";
 import Race20ResultModal from "./casino/Race20ResultModal";
 import ResultDetailModal from "./casino/ResultDetailModal";
+import LotteryBoard from "./casino/LotteryBoard";
+import QueenBoard from "./casino/QueenBoard";
 
 // Authentic Lucky 15 Runner Index to Outcome Mapper
 function mapLucky15Outcome(val) {
@@ -167,10 +169,13 @@ export default function CasinoTableModal({ table, onClose }) {
     slug.includes("ab") ||
     nameLow.includes("andar bahar") ||
     slug.includes("andar");
+  const isQueen = slug === "queen" || nameLow === "queen" || nameLow === "live queen";
   const isQueenTop =
-    slug === "queentop" || slug === "teen41" || nameLow.includes("queen");
+    (slug === "queentop" || slug === "teen41" || nameLow.includes("queen top")) && !isQueen;
   const isJackTop =
     slug === "jacktop" || slug === "teen42" || nameLow.includes("jack");
+  const isLottery =
+    slug === "lottcard" || slug.includes("lott") || nameLow.includes("lottery");
   const isSicBo = slug.includes("sicbo") || nameLow.includes("sic bo");
   const isLucky15 = slug === "lucky15" || nameLow.includes("lucky 15");
   const isTeen1Day =
@@ -408,6 +413,25 @@ export default function CasinoTableModal({ table, onClose }) {
         letter: "R",
         bg: "bg-emerald-600 text-white font-bold",
         title: w || "Result",
+      };
+    }
+
+    // 1.001 Lottery 3-Digit Badge (Image 2 Exact Match)
+    if (isLottery) {
+      const numStr = String(w || "").replace(/\s+/g, "");
+      return {
+        letter: numStr || "000",
+        bg: "bg-[#253241] text-white font-mono font-black px-1.5 py-0.5 rounded text-[10px] w-auto min-w-[28px]",
+        title: `Result: ${numStr}`,
+      };
+    }
+
+    // 1.002 Queen Total 0..3 Badge (Image 3 Exact Match)
+    if (isQueen) {
+      return {
+        letter: String(w || "0"),
+        bg: "bg-emerald-600 text-white font-black",
+        title: `Total ${w}`,
       };
     }
 
@@ -1588,12 +1612,12 @@ export default function CasinoTableModal({ table, onClose }) {
                 );
               }
 
-              // Poison Teenpatti
+              // Poison Teenpatti (Image 4 Exact Match - Alternating cards)
               if (isPoison) {
                 const cards = roundData?.cards || [];
                 const poisonCard = cards[0];
-                const playerA = cards.slice(1, 4);
-                const playerB = cards.slice(4, 7);
+                const playerA = [cards[1], cards[3], cards[5]];
+                const playerB = [cards[2], cards[4], cards[6]];
                 return (
                   <div className="flex flex-col items-start gap-1">
                     <div>
@@ -1636,6 +1660,62 @@ export default function CasinoTableModal({ table, onClose }) {
                         )}
                       </div>
                     </div>
+                  </div>
+                );
+              }
+
+              // Queen Table (Image 3 Exact Match - 4 Totals)
+              if (isQueen) {
+                const cards = roundData?.cards || [];
+                const groups = [[], [], [], []];
+                cards.forEach((c, idx) => {
+                  if (c && !c.isHidden && idx < 20) {
+                    groups[idx % 4].push(c);
+                  }
+                });
+                return (
+                  <div className="flex flex-col items-start gap-1">
+                    {groups.map((grpCards, gIdx) => {
+                      const totalPoints = grpCards.reduce((acc, c) => {
+                        const r = (c.rank || "").toUpperCase();
+                        if (r === "Q") return acc + 10;
+                        const n = parseInt(r);
+                        return acc + (isNaN(n) ? 0 : n);
+                      }, 0);
+                      return (
+                        <div key={gIdx} className="flex flex-col items-start">
+                          <span className="text-[10px] font-black text-amber-300 drop-shadow-md leading-none mb-0.5">
+                            TOTAL {gIdx}: <span className="text-white font-mono">{totalPoints}</span>
+                          </span>
+                          <div className="flex gap-1">
+                            {grpCards.length > 0 ? (
+                              grpCards.map((c, cIdx) =>
+                                renderCard(c, `queen-${gIdx}-${cIdx}`, false),
+                              )
+                            ) : (
+                              <div className="w-5 h-7 border border-dashed border-white/20 rounded-[2px]" />
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              }
+
+              // Lottery Table (Image 2 Exact Match - 3 Cards)
+              if (isLottery) {
+                const cards = roundData?.cards || [];
+                return (
+                  <div className="flex flex-col items-start gap-1">
+                    {[0, 1, 2].map((cIdx) => {
+                      const c = cards[cIdx];
+                      return (
+                        <div key={cIdx} className="flex flex-col items-start">
+                          {renderCard(c, `lott-${cIdx}`, !c || c.isHidden)}
+                        </div>
+                      );
+                    })}
                   </div>
                 );
               }
@@ -2378,6 +2458,18 @@ export default function CasinoTableModal({ table, onClose }) {
             />
           ) : isOneCard20 || isOneCard1Day ? (
             <OneCard20Board
+              roundData={roundData}
+              timer={timer}
+              isSuspended={isSuspended}
+            />
+          ) : isQueen ? (
+            <QueenBoard
+              roundData={roundData}
+              timer={timer}
+              isSuspended={isSuspended}
+            />
+          ) : isLottery ? (
+            <LotteryBoard
               roundData={roundData}
               timer={timer}
               isSuspended={isSuspended}

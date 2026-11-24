@@ -1137,6 +1137,15 @@ class D247SyncEngine {
             if (rawW === "1") val = "Y";
             else if (rawW === "2") val = "N";
             else val = rawW;
+          } else if (targetSlug === "queen") {
+            const rawW = String(r.win || r.winner || r.nat || "").trim();
+            if (rawW === "1") val = "0";
+            else if (rawW === "2") val = "1";
+            else if (rawW === "3") val = "2";
+            else if (rawW === "4") val = "3";
+            else val = rawW;
+          } else if (targetSlug === "lottcard") {
+            val = String(r.win || r.winner || r.nat || "").replace(/\s+/g, "");
           } else if (targetSlug === "ballbyball") {
             const rawW = String(r.win || r.winner || r.nat || "").trim();
             if (rawW === "1" || rawW === "0") val = "0 RUN";

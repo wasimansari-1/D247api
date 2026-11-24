@@ -90,6 +90,29 @@ app.use("/api/casino", casinoRoutes(syncEngine));
 app.use("/api/config", configRoutes(syncEngine));
 app.use("/api/docs", docsRoutes(syncEngine));
 
+// Relay route lookup for trubets video player (fixes WebSocket resolution)
+app.get("/api/relay/route/:wsid", async (req, res) => {
+  try {
+    const rawWsid = req.params.wsid;
+    const wsid = syncEngine?.constructor?.CASINO_SLUG_MAP?.[rawWsid?.toLowerCase()] || rawWsid;
+    const upRes = await fetch(
+      `https://stream.trubets365.com/api/relay/route/${encodeURIComponent(wsid)}`,
+      {
+        headers: { Accept: "application/json" },
+      },
+    );
+    if (upRes.ok) {
+      const data = await upRes.json();
+      res.setHeader("access-control-allow-origin", "*");
+      res.setHeader("content-type", "application/json");
+      return res.json(data);
+    }
+  } catch (e) {}
+  return res
+    .status(502)
+    .json({ ok: false, error: "Relay route lookup failed" });
+});
+
 // Direct Proxy for Live Stream Assets to prevent Unexpected Token '<'
 app.use("/stream-assets", async (req, res) => {
   try {

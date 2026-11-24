@@ -149,12 +149,13 @@ module.exports = function (syncEngine) {
     res.setHeader("Permissions-Policy", "unload=*");
     res.setHeader("Content-Type", "text/html; charset=utf-8");
 
+    const targetSlug = syncEngine?.constructor?.CASINO_SLUG_MAP?.[slug.toLowerCase()] || slug;
     let streamData = null;
     try {
-      streamData = await syncEngine.getCasinoStreamUrl(slug, clientIp);
+      streamData = await syncEngine.getCasinoStreamUrl(targetSlug, clientIp);
     } catch (e) {}
 
-    const upstreamUrl = streamData?.upstreamUrl || `https://stream.trubets365.com/?id=${encodeURIComponent(slug)}`;
+    const upstreamUrl = streamData?.upstreamUrl || `https://stream.trubets365.com/?id=${encodeURIComponent(targetSlug)}`;
 
     // Try fetching direct live stream HTML from upstream and rewrite asset base paths
     try {
@@ -170,19 +171,30 @@ module.exports = function (syncEngine) {
       if (relayRes.ok) {
         let html = await relayRes.text();
         if (html.includes("__STREAM_RELAY_ROUTE__") || html.includes("<html")) {
+          // Pre-resolve relay route to eliminate client lookup failure
+          let routeData = null;
+          try {
+            const rRes = await fetch(
+              `https://stream.trubets365.com/api/relay/route/${encodeURIComponent(targetSlug)}`,
+              { headers: { Accept: "application/json" } },
+            );
+            if (rRes.ok) routeData = await rRes.json();
+          } catch (_) {}
+
           // Fix base and asset URLs to point directly to reliable CDN
           html = html.replace(/<base[^>]+>/gi, '<base href="https://stream.trubets365.com/stream-assets/">');
           html = html.replace(/href="player\//g, 'href="https://stream.trubets365.com/stream-assets/player/');
           html = html.replace(/src=["'](?:(?:\/stream-assets\/)|(?:\.\/))?newplayer\.min\.js(?:\?[^"']*)?["']/gi, 'src="https://stream.trubets365.com/stream-assets/newplayer.min.js?v=11"');
           html = html.replace(/src=["'](?:(?:\/stream-assets\/)|(?:\.\/))?player\/player\.bundle\.js(?:\?[^"']*)?["']/gi, 'src="https://stream.trubets365.com/stream-assets/player/player.bundle.js?v=11"');
 
-          // Inject unload fix & responsive styling
+          // Inject pre-resolved route, unload fix & responsive styling
           const customHead = `
             <style>
               html, body { width: 100% !important; height: 100% !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; background: #000 !important; }
               #stream-player, #stream-player iframe, #stream-player video { width: 100% !important; height: 100% !important; object-fit: cover !important; }
             </style>
             <script>
+              ${routeData ? `window.__STREAM_RELAY_ROUTE__ = ${JSON.stringify(routeData)};` : ""}
               try {
                 var _orig = window.addEventListener;
                 window.addEventListener = function(t, l, o) {

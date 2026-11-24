@@ -96,6 +96,8 @@ export default function ResultDetailModal({ result, gameName, slug, onClose }) {
   const isAndarBahar = nameLow.includes('andar') || nameLow.includes('ab20') || nameLow.includes('ab3') || nameLow.includes('ab4') || nameLow.includes('ab150');
   const isOneCard = nameLow.includes('1 card') || nameLow.includes('one card') || nameLow.includes('1card') || nameLow.includes('kbc');
   const isPoker = nameLow.includes('poker');
+  const isQueen = (slug === 'queen' || nameLow === 'queen' || nameLow.includes('queen')) && !slug?.includes('queentop') && !nameLow.includes('queen top');
+  const isLottery = slug === 'lottcard' || nameLow.includes('lottery') || nameLow.includes('lott');
 
   // Dealt cards helper
   const renderCardGraphic = (card, idx, size = 'normal') => {
@@ -122,13 +124,15 @@ export default function ResultDetailModal({ result, gameName, slug, onClose }) {
   };
 
   // Cricket ball outcome text
-  let cricketOutcome = (detailData?.rdesc || result.winner || result.nat || '').trim();
-  if (!cricketOutcome || cricketOutcome === '1' || cricketOutcome === '0') cricketOutcome = '0 RUN';
-  else if (cricketOutcome === '2') cricketOutcome = '1 RUN';
-  else if (cricketOutcome === '3') cricketOutcome = '2 RUNS';
-  else if (cricketOutcome === '4') cricketOutcome = '4 RUNS';
-  else if (cricketOutcome === '5' || cricketOutcome === '6') cricketOutcome = '6 RUNS';
-  else if (cricketOutcome.toLowerCase().includes('w')) cricketOutcome = 'WICKET';
+  let cricketOutcome = (detailData?.win || detailData?.rdesc || result.winner || result.nat || '').trim();
+  const coLow = cricketOutcome.toLowerCase();
+  if (!coLow || coLow === '0' || coLow === '1' || coLow === '0 run' || coLow.includes('zero')) cricketOutcome = '0 RUN';
+  else if (coLow === '2' || coLow === '1 run' || coLow.includes('one')) cricketOutcome = '1 RUN';
+  else if (coLow === '3' || coLow === '2 run' || coLow === '2 runs' || coLow.includes('two')) cricketOutcome = '2 RUN';
+  else if (coLow === '4' || coLow === '4 run' || coLow === '4 runs' || coLow.includes('four')) cricketOutcome = '4 RUN';
+  else if (coLow === '5' || coLow === '6' || coLow === '6 run' || coLow === '6 runs' || coLow.includes('six')) cricketOutcome = '6 RUN';
+  else if (coLow.includes('w') || coLow.includes('wick')) cricketOutcome = 'WICKET';
+  else if (!isNaN(cricketOutcome)) cricketOutcome = `${cricketOutcome} RUN`;
   else cricketOutcome = cricketOutcome.toUpperCase();
 
   // Cards array parsing
@@ -169,14 +173,60 @@ export default function ResultDetailModal({ result, gameName, slug, onClose }) {
               <span>Loading authentic round details...</span>
             </div>
           ) : isCricketBall ? (
-            /* 1. CRICKET BALL POPUP (Lucky 15 & Ball By Ball) (Image 1 Exact Match) */
-            <div className="flex flex-col items-center justify-center py-2 animate-in zoom-in-95 duration-200">
-              <div className="relative w-36 h-36 rounded-full flex items-center justify-center shadow-2xl overflow-hidden border-2 border-red-900 bg-gradient-to-br from-red-600 via-red-800 to-red-950">
-                <div className="absolute top-2 left-4 w-12 h-8 rounded-full bg-white/30 blur-sm pointer-events-none transform -rotate-12"></div>
-                <div className="absolute inset-y-0 w-8 border-x-2 border-dashed border-white/60 pointer-events-none transform rotate-12"></div>
-                <span className="relative z-10 font-mono font-black text-xl text-white text-center drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] tracking-wider px-2">
-                  {cricketOutcome}
-                </span>
+            /* 1. CRICKET BALL POPUP (Lucky 15 & Ball By Ball) (Image 6 Right Exact Match) */
+            <div className="flex flex-col items-center justify-center py-4 animate-in zoom-in-95 duration-200">
+              <div className="relative w-36 h-36 flex items-center justify-center select-none filter drop-shadow-xl">
+                <svg viewBox="0 0 140 140" className="w-full h-full">
+                  <defs>
+                    <radialGradient id="cricketBallGrad" cx="35%" cy="30%" r="70%">
+                      <stop offset="0%" stopColor="#ef4444" />
+                      <stop offset="45%" stopColor="#b91c1c" />
+                      <stop offset="85%" stopColor="#7f1d1d" />
+                      <stop offset="100%" stopColor="#450a0a" />
+                    </radialGradient>
+                    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+                      <feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="#000" floodOpacity="0.8"/>
+                    </filter>
+                  </defs>
+
+                  {/* Ball Body */}
+                  <circle cx="70" cy="70" r="66" fill="url(#cricketBallGrad)" stroke="#450a0a" strokeWidth="1.5" />
+
+                  {/* Top-Left Gloss Highlight */}
+                  <ellipse cx="48" cy="35" rx="22" ry="12" fill="white" opacity="0.15" transform="rotate(-20 48 35)" />
+
+                  {/* Horizontal Curved Seam with White Stitches */}
+                  <path d="M 6 70 Q 70 82 134 70" fill="none" stroke="#ffffff" strokeWidth="2.5" opacity="0.85" />
+                  <path d="M 6 70 Q 70 82 134 70" fill="none" stroke="#ffffff" strokeWidth="1.5" strokeDasharray="3 3" opacity="0.95" />
+
+                  {/* Cross-stitches along the seam */}
+                  {[16, 26, 36, 46, 56, 66, 76, 86, 96, 106, 116, 124].map((x) => {
+                    // Approximate y on quadratic curve y = 70 + 12 * (1 - ((x-70)/64)^2)
+                    const norm = (x - 70) / 64;
+                    const y = 70 + 12 * (1 - norm * norm);
+                    return (
+                      <g key={x} opacity="0.75">
+                        <line x1={x - 2} y1={y - 4} x2={x + 2} y2={y + 4} stroke="#ffffff" strokeWidth="1" />
+                        <line x1={x - 2} y1={y + 4} x2={x + 2} y2={y - 4} stroke="#ffffff" strokeWidth="1" />
+                      </g>
+                    );
+                  })}
+
+                  {/* Centered Outcome Text (0 RUN, 1 RUN, 2 RUN, 4 RUN, 6 RUN, WICKET) */}
+                  <text
+                    x="70"
+                    y="76"
+                    textAnchor="middle"
+                    fill="#ffffff"
+                    fontSize="18"
+                    fontWeight="900"
+                    fontFamily="ui-sans-serif, system-ui, sans-serif"
+                    letterSpacing="0.05em"
+                    filter="url(#shadow)"
+                  >
+                    {cricketOutcome}
+                  </text>
+                </svg>
               </div>
             </div>
           ) : isBaccarat ? (
@@ -297,6 +347,46 @@ export default function ResultDetailModal({ result, gameName, slug, onClose }) {
                 <div className="text-2xl font-black text-emerald-800 tracking-wider">
                   {detailData?.winnat || detailData?.rdesc || result.winner || 'IND'}
                 </div>
+              </div>
+            </div>
+          ) : isQueen ? (
+            /* QUEEN POPUP */
+            <div className="flex flex-col items-center gap-3 w-full">
+              <div className="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 text-center shadow-sm">
+                <div className="text-xs font-bold text-slate-500 uppercase">Winning Total</div>
+                <div className="text-lg font-black text-emerald-700 mt-0.5 flex items-center justify-center gap-2">
+                  <span>{detailData?.winnat || descParts[0] || 'Total 0'}</span>
+                  <Trophy size={18} className="text-amber-500 fill-amber-500" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full">
+                {[0, 1, 2, 3].map((gIdx) => {
+                  const grpCards = parsedCards.filter((_, idx) => idx % 4 === gIdx);
+                  const isWinner = (detailData?.win === String(gIdx + 1)) || (detailData?.winnat || '').includes(`Total ${gIdx}`);
+                  return (
+                    <div key={gIdx} className={`p-2 rounded border flex flex-col items-center gap-1 ${isWinner ? 'bg-emerald-50 border-emerald-400' : 'bg-slate-50 border-slate-200'}`}>
+                      <span className={`text-[11px] font-black ${isWinner ? 'text-emerald-800' : 'text-slate-700'}`}>
+                        Total {gIdx}
+                      </span>
+                      <div className="flex flex-wrap gap-1 justify-center">
+                        {grpCards.map((c, cIdx) => renderCardGraphic(c, cIdx, 'small'))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : isLottery ? (
+            /* LOTTERY POPUP */
+            <div className="flex flex-col items-center gap-3 w-full">
+              <div className="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 text-center shadow-sm">
+                <div className="text-xs font-bold text-slate-500 uppercase">Winning Lottery Number</div>
+                <div className="text-2xl font-black text-slate-900 font-mono tracking-widest mt-1">
+                  {String(detailData?.rdesc || result.winner || '0 0 0').replace(/\s+/g, ' ')}
+                </div>
+              </div>
+              <div className="flex gap-2 justify-center p-3 bg-slate-50 border border-slate-300 rounded-lg w-full">
+                {parsedCards.slice(0, 3).map((c, i) => renderCardGraphic(c, i))}
               </div>
             </div>
           ) : isOneCard ? (
