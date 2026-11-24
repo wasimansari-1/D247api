@@ -24,8 +24,12 @@ module.exports = function (syncEngine) {
     },
     servers: [
       {
+        url: "https://diamondapi.cc",
+        description: "Official Production Domain (SSL Enabled)",
+      },
+      {
         url: "http://72.61.172.110:5005",
-        description: "Production Hostinger VPS Endpoint",
+        description: "Direct VPS Server IP Endpoint",
       },
       {
         url: "http://localhost:5005",
@@ -424,7 +428,7 @@ module.exports = function (syncEngine) {
         method: "GET",
         path: "/api/casino/player/:slug",
         summary: "Zero-Latency Casino TV Iframe Player (Anti-Theft Guarded)",
-        description: "Official embeddable Casino Live TV player. To embed on external platforms, your consumer Domain or Server IP MUST be whitelisted in /master dashboard. Direct unauthorized hits or scraper tools receive HTTP 403 Forbidden with emergency admin routing.\n\nEmbed Code Example:\n<iframe src=\"https://72.61.172.110:5005/api/casino/player/teen20\" width=\"100%\" height=\"100%\" frameborder=\"0\" allow=\"autoplay; encrypted-media; fullscreen\" allowfullscreen></iframe>",
+        description: "Official embeddable Casino Live TV player. To embed on external platforms, your consumer Domain or Server IP MUST be whitelisted in /master dashboard. Direct unauthorized hits or scraper tools receive HTTP 403 Forbidden with emergency admin routing.\n\nEmbed Code Example:\n<iframe src=\"https://diamondapi.cc/api/casino/player/teen20\" width=\"100%\" height=\"100%\" frameborder=\"0\" allow=\"autoplay; encrypted-media; fullscreen\" allowfullscreen></iframe>",
         parameters: [
           { name: "slug", in: "path", required: true, type: "string", example: "teen20" }
         ],
@@ -468,7 +472,7 @@ module.exports = function (syncEngine) {
     ],
     websocket: {
       protocol: "Socket.IO v4",
-      url: "ws://72.61.172.110:5005",
+      url: "wss://diamondapi.cc",
       events: [
         {
           event: "join_match",
@@ -496,11 +500,11 @@ module.exports = function (syncEngine) {
       ],
     },
     codeExamples: {
-      curl: `curl -X GET "http://72.61.172.110:5005/api/casino/round/mogambo" -H "Accept: application/json"`,
+      curl: `curl -X GET "https://diamondapi.cc/api/casino/round/mogambo" -H "Accept: application/json"`,
       nodejs: `const axios = require('axios');
 
 async function getCasinoRound(slug) {
-  const { data } = await axios.get(\`http://72.61.172.110:5005/api/casino/round/\${slug}\`);
+  const { data } = await axios.get(\`https://diamondapi.cc/api/casino/round/\${slug}\`);
   console.log('Active Cards:', data.data.cards);
   console.log('Odds:', data.data.runners);
 }
@@ -508,7 +512,7 @@ getCasinoRound('mogambo');`,
       python: `import requests
 
 def get_live_round(slug):
-    resp = requests.get(f"http://72.61.172.110:5005/api/casino/round/{slug}")
+    resp = requests.get(f"https://diamondapi.cc/api/casino/round/{slug}")
     if resp.status_code == 200:
         data = resp.json()["data"]
         print("Round ID:", data["roundId"])
@@ -516,7 +520,7 @@ def get_live_round(slug):
 get_live_round("mogambo")`,
       php: `<?php
 $slug = "mogambo";
-$ch = curl_init("http://72.61.172.110:5005/api/casino/round/" . $slug);
+$ch = curl_init("https://diamondapi.cc/api/casino/round/" . $slug);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 $response = curl_exec($ch);
 curl_close($ch);

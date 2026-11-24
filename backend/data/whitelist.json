@@ -11,6 +11,28 @@
   },
   "domains": [
     {
+      "id": "dom_diamondapi_cc",
+      "domain": "diamondapi.cc",
+      "casinoApi": true,
+      "sportsApi": true,
+      "tvStream": true,
+      "allowDirect": true,
+      "active": true,
+      "note": "Primary Official Production Domain",
+      "addedAt": "2026-11-25T01:45:00.000Z"
+    },
+    {
+      "id": "dom_api_diamondapi_cc",
+      "domain": "api.diamondapi.cc",
+      "casinoApi": true,
+      "sportsApi": true,
+      "tvStream": true,
+      "allowDirect": true,
+      "active": true,
+      "note": "API Subdomain",
+      "addedAt": "2026-11-25T01:45:00.000Z"
+    },
+    {
       "id": "dom_default_1",
       "domain": "72.61.172.110",
       "casinoApi": true,
