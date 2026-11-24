@@ -10,6 +10,8 @@ export default function CasinoTableModal({ table, onClose }) {
   const [streamKey, setStreamKey] = useState(0);
 
   const slug = (table?.slug || table?.id || '').toLowerCase();
+  const isLucky6 = slug === 'lucky6' || slug === 'lucky5' || (table?.name || '').toLowerCase().includes('lucky 6');
+  const isRoulette = slug.includes('roulette') || (table?.name || '').toLowerCase().includes('roulette');
 
   // Fetch live stream URL from Diamond / D247 API
   useEffect(() => {
@@ -343,19 +345,14 @@ export default function CasinoTableModal({ table, onClose }) {
           {/* Iframe Live TV Stream */}
           <iframe
             key={streamKey}
-            src={streamUrl || `/api/casino/player/${slug}`}
+            src={streamUrl || `/api/casino/mediaplayer/${slug}`}
             title="Live Casino TV"
             className="w-full h-full border-0 absolute inset-0 z-0 bg-black"
             allow="autoplay; encrypted-media; fullscreen"
           />
 
-          {/* Fallback ambient live dealer graphics if stream is buffering */}
-          <div className="absolute inset-0 -z-10 bg-radial from-[#0d2235] via-[#040d16] to-black flex items-center justify-center">
-            <div className="text-center opacity-40">
-              <Tv size={36} className="mx-auto mb-2 text-sky-400" />
-              <div className="text-xs font-bold tracking-widest text-slate-400 uppercase">D247 LIVE DEALER FEED</div>
-            </div>
-          </div>
+          {/* Clean black studio stage canvas */}
+          <div className="absolute inset-0 -z-10 bg-black" />
 
           {/* Top-Left Floating HUD: Cards, Daga/Teja, Mogambo, Total (Exact Diamond Image 10) */}
           <div className="absolute top-2 left-2 z-20 flex flex-col items-start gap-1 pointer-events-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
@@ -369,6 +366,44 @@ export default function CasinoTableModal({ table, onClose }) {
 
             {/* Game Specific Overlay Components */}
             {(() => {
+              // 0. Lucky 6 Table (Exact match to Image 1 top left)
+              if (slug === 'lucky6' || slug === 'lucky5') {
+                const c = roundData?.cards?.[0];
+                return (
+                  <div className="flex flex-col items-start gap-1">
+                    <div className="text-[10px] font-black text-white uppercase tracking-wider drop-shadow">
+                      LUCKY 6
+                    </div>
+                    {renderCard(c, 'lucky6-card', !c || c.isHidden)}
+                  </div>
+                );
+              }
+
+              // 0.1 Virtual Cricket (Super Over / Ball by Ball)
+              if (slug.includes('superover') || slug.includes('ballbyball') || roundData?.dealType === 'cricket_ball') {
+                const balls = roundData?.cards || [];
+                return (
+                  <div className="flex flex-col items-start gap-1">
+                    <div className="text-[10px] font-black text-amber-300 uppercase tracking-wider drop-shadow-md">
+                      OVER BALLS DEALT
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {balls.length > 0 ? (
+                        balls.map((b, i) => (
+                          <div 
+                            key={i}
+                            className="px-2 py-0.5 bg-black/90 border border-amber-400 text-amber-300 font-mono font-black text-xs rounded shadow"
+                          >
+                            {b.outcome || b.rank || b.code || b.val || '•'}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-[11px] text-slate-300 font-mono">Balls in play</div>
+                      )}
+                    </div>
+                  </div>
+                );
+              }
               // 1. Mogambo Table (Exact match to User Image 10)
               if (slug === 'mogambo') {
                 const c1 = roundData?.cards?.[0];
@@ -578,85 +613,281 @@ export default function CasinoTableModal({ table, onClose }) {
         </div>
 
         {/* 5. Real Live Betting Odds Board */}
-        <div className="flex-1 overflow-y-auto p-4 bg-[#0b1726]">
-          <div className="flex justify-between items-center mb-3">
-            <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-              <span className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span>
-              LIVE BETTING MARKETS & RATES
-            </h4>
-            <span className="text-[11px] text-slate-400 font-mono">
-              Min: {roundData?.runners?.[0]?.min || 100} | Max: {roundData?.runners?.[0]?.max ? Number(roundData.runners[0].max).toLocaleString() : '300,000'}
-            </span>
-          </div>
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4 bg-[#0b1726]">
+          {isLucky6 ? (
+            /* Lucky 6 Custom Betting Board (Exact Match to Diamond Online Image 1) */
+            <div className="flex flex-col gap-3">
+              <div className="flex justify-between items-center text-xs border-b border-slate-700/60 pb-2">
+                <div className="flex items-center gap-2">
+                  <span className="font-extrabold text-sky-400 text-sm">LUCKY 6</span>
+                  <span className="text-[11px] text-slate-400 font-mono">Round ID: #{roundData?.roundId || 'Connecting...'}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="px-2.5 py-1 bg-sky-600 text-white font-black text-xs rounded shadow">GAME</span>
+                  <span className="px-2.5 py-1 bg-slate-800 text-slate-300 font-bold text-xs rounded border border-slate-700">PLACED BET (0)</span>
+                </div>
+              </div>
 
-          {loading ? (
-            <div className="py-8 text-center text-xs text-slate-400 animate-pulse">
-              Fetching live market rates from Diamond Exchange...
-            </div>
-          ) : roundData?.runners && roundData.runners.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {[...roundData.runners]
-                .sort((a, b) => (a.sr || 0) - (b.sr || 0))
-                .map((r, idx) => {
-                  const isSuspended = r.suspended || roundData?.status === 'SUSPENDED' || timer <= 0;
-                  return (
-                    <div 
-                      key={idx}
-                      className="bg-slate-800/80 border border-slate-700/80 rounded-lg p-2.5 flex items-center justify-between hover:border-slate-600 transition"
+              {/* Row 1: Low Card | 6 | High Card */}
+              <div className="grid grid-cols-3 gap-2">
+                <div className="p-3 bg-[#1d4ed8] hover:bg-[#1e40af] text-white rounded-lg flex flex-col items-center justify-center cursor-pointer shadow-md transition active:scale-95">
+                  <span className="text-xs text-blue-200 font-bold">2</span>
+                  <span className="text-sm sm:text-base font-black">Low Card</span>
+                </div>
+
+                <div className="p-3 bg-white hover:bg-slate-100 text-slate-900 rounded-lg flex flex-col items-center justify-center cursor-pointer shadow-lg transition active:scale-95 border-2 border-yellow-400">
+                  <span className="text-xs text-slate-600 font-bold">10</span>
+                  <div className="flex items-center gap-1 font-black text-base sm:text-lg">
+                    <span>6</span>
+                    <span className="text-xs text-red-600">♦</span>
+                    <span className="text-xs text-slate-900">♣</span>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-[#1d4ed8] hover:bg-[#1e40af] text-white rounded-lg flex flex-col items-center justify-center cursor-pointer shadow-md transition active:scale-95">
+                  <span className="text-xs text-blue-200 font-bold">2</span>
+                  <span className="text-sm sm:text-base font-black">High Card</span>
+                </div>
+              </div>
+
+              {/* Row 2: Even | Odd | Red (♥ ♦) | Black (♠ ♣) */}
+              <div className="grid grid-cols-4 gap-2">
+                <div className="py-2.5 px-2 bg-[#2563eb] hover:bg-[#1d4ed8] text-white rounded-lg flex flex-col items-center justify-center cursor-pointer shadow transition">
+                  <span className="text-xs text-blue-200 font-bold">2.1</span>
+                  <span className="text-xs font-black">Even</span>
+                </div>
+                <div className="py-2.5 px-2 bg-[#2563eb] hover:bg-[#1d4ed8] text-white rounded-lg flex flex-col items-center justify-center cursor-pointer shadow transition">
+                  <span className="text-xs text-blue-200 font-bold">1.79</span>
+                  <span className="text-xs font-black">Odd</span>
+                </div>
+                <div className="py-2.5 px-2 bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white rounded-lg flex flex-col items-center justify-center cursor-pointer shadow transition">
+                  <span className="text-xs text-rose-200 font-bold">1.95</span>
+                  <span className="text-sm font-black">♥ ♦</span>
+                </div>
+                <div className="py-2.5 px-2 bg-gradient-to-r from-slate-900 to-blue-950 hover:from-slate-800 hover:to-blue-900 text-white rounded-lg flex flex-col items-center justify-center cursor-pointer shadow transition">
+                  <span className="text-xs text-slate-300 font-bold">1.95</span>
+                  <span className="text-sm font-black">♠ ♣</span>
+                </div>
+              </div>
+
+              {/* Row 3: 11 Card Rank Strip */}
+              <div>
+                <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                  <span>SINGLE CARD RUNNERS (ODDS: 10.00)</span>
+                  <span>MIN: 100 | MAX: 100,000</span>
+                </div>
+                <div className="grid grid-cols-11 gap-1 sm:gap-1.5">
+                  {['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J'].map((rank) => (
+                    <div
+                      key={rank}
+                      className={`py-2 px-0.5 rounded-lg border flex flex-col items-center justify-between cursor-pointer transition hover:scale-105 ${
+                        rank === '6'
+                          ? 'bg-yellow-500/20 border-yellow-400 text-yellow-300'
+                          : 'bg-white hover:bg-slate-100 border-slate-300 text-slate-900'
+                      } shadow-sm`}
                     >
-                      <div className="flex-1 min-w-0 pr-2">
-                        <div className="text-xs font-bold text-white truncate">{r.name}</div>
-                        <div className="text-[10px] text-slate-400">
-                          {r.subtype ? `${r.subtype} • ` : ''}
-                          Limit: {r.min} - {Number(r.max || 100000).toLocaleString()}
-                        </div>
+                      <span className="text-[9px] font-bold text-slate-500 leading-none">10</span>
+                      <span className="text-xs sm:text-sm font-black my-0.5">{rank}</span>
+                      <div className="flex gap-0.5 text-[7px] leading-none text-slate-600">
+                        <span className="text-black">♠</span>
+                        <span className="text-red-600">♥</span>
+                        <span className="text-red-600">♦</span>
+                        <span className="text-black">♣</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : isRoulette ? (
+            /* Roulette / VIP Roulette Custom Betting Board (Exact Match to Diamond Online Image 2) */
+            <div className="flex flex-col gap-3">
+              <div className="flex justify-between items-center text-xs border-b border-slate-700/60 pb-2">
+                <div className="flex items-center gap-2">
+                  <span className="font-extrabold text-amber-400 text-sm">ROULETTE</span>
+                  <span className="text-[11px] text-slate-400 font-mono">Range: 25 to 100,000</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <button className="px-3 py-1 bg-[#72bbef] text-slate-950 font-black text-xs rounded shadow">Back</button>
+                  <button className="px-3 py-1 bg-[#faa9ba] text-slate-950 font-black text-xs rounded shadow">Lay</button>
+                </div>
+              </div>
+
+              {/* Roulette Layout & Chips palette */}
+              <div className="flex flex-col lg:flex-row gap-3">
+                {/* Roulette Felt Mat */}
+                <div className="flex-1 overflow-x-auto bg-[#475569] p-2 rounded-xl shadow-2xl border border-slate-600">
+                  <div className="min-w-[420px]">
+                    {/* Top Zero Row */}
+                    <div className="w-full bg-[#15803d] text-white font-mono font-black text-center py-1.5 rounded-t border border-emerald-500 cursor-pointer hover:bg-emerald-600 transition shadow">
+                      0
+                    </div>
+
+                    {/* Main Numbers & Outer Bets Grid */}
+                    <div className="grid grid-cols-12 gap-1 my-1">
+                      {/* Left: 1-18, Even, Red, Black, Odd, 19-36 */}
+                      <div className="col-span-2 grid grid-rows-6 gap-1 font-bold text-[10px] text-slate-900 text-center">
+                        <div className="bg-[#fef3c7] hover:bg-[#fde68a] flex items-center justify-center rounded cursor-pointer p-1">1 - 18</div>
+                        <div className="bg-[#fef3c7] hover:bg-[#fde68a] flex items-center justify-center rounded cursor-pointer p-1">Even</div>
+                        <div className="bg-red-600 text-white hover:bg-red-500 flex items-center justify-center rounded cursor-pointer p-1">Red</div>
+                        <div className="bg-slate-950 text-white hover:bg-slate-800 flex items-center justify-center rounded cursor-pointer p-1">Black</div>
+                        <div className="bg-[#fef3c7] hover:bg-[#fde68a] flex items-center justify-center rounded cursor-pointer p-1">Odd</div>
+                        <div className="bg-[#fef3c7] hover:bg-[#fde68a] flex items-center justify-center rounded cursor-pointer p-1">19 - 36</div>
                       </div>
 
-                      {isSuspended ? (
-                        /* Locked / Suspended Box matching Diamond Online */
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-16 sm:w-20 bg-[#2b3543] border border-slate-700 text-slate-400 flex items-center justify-center py-2.5 rounded select-none shadow-inner">
-                            <Lock size={14} className="text-slate-300" />
+                      {/* Middle-Left: 1st12, 2nd12, 3rd12 */}
+                      <div className="col-span-2 grid grid-rows-3 gap-1 font-bold text-[11px] text-slate-900 text-center">
+                        <div className="bg-[#fef3c7] hover:bg-[#fde68a] flex items-center justify-center rounded cursor-pointer">1st 12</div>
+                        <div className="bg-[#fef3c7] hover:bg-[#fde68a] flex items-center justify-center rounded cursor-pointer">2nd 12</div>
+                        <div className="bg-[#fef3c7] hover:bg-[#fde68a] flex items-center justify-center rounded cursor-pointer">3rd 12</div>
+                      </div>
+
+                      {/* Middle: 3 columns x 12 rows matrix */}
+                      <div className="col-span-8 grid grid-cols-3 gap-1">
+                        {[
+                          [1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12],
+                          [13, 14, 15], [16, 17, 18], [19, 20, 21], [22, 23, 24],
+                          [25, 26, 27], [28, 29, 30], [31, 32, 33], [34, 35, 36]
+                        ].flatMap((row, rIdx) => 
+                          row.map(num => {
+                            const RED_NUMS = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
+                            const isRed = RED_NUMS.includes(num);
+                            return (
+                              <div
+                                key={num}
+                                className={`py-1 text-center font-mono font-black text-xs rounded text-white cursor-pointer transition shadow-sm hover:scale-105 ${
+                                  isRed ? 'bg-red-600 hover:bg-red-500' : 'bg-slate-950 hover:bg-slate-800'
+                                }`}
+                              >
+                                {num}
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Bottom 2to1 Row */}
+                    <div className="grid grid-cols-12 gap-1">
+                      <div className="col-span-4"></div>
+                      <div className="col-span-8 grid grid-cols-3 gap-1">
+                        <div className="bg-[#fef3c7] hover:bg-[#fde68a] text-slate-900 font-bold text-center text-xs py-1 rounded cursor-pointer">2to1</div>
+                        <div className="bg-[#fef3c7] hover:bg-[#fde68a] text-slate-900 font-bold text-center text-xs py-1 rounded cursor-pointer">2to1</div>
+                        <div className="bg-[#fef3c7] hover:bg-[#fde68a] text-slate-900 font-bold text-center text-xs py-1 rounded cursor-pointer">2to1</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Chips Palette on Right (Image 2 right side) */}
+                <div className="flex lg:flex-col items-center justify-center gap-2 shrink-0">
+                  {[25, 50, 100, 200, 500, '1K'].map((chip, cIdx) => {
+                    const colors = [
+                      'bg-sky-500 border-sky-300',
+                      'bg-blue-600 border-blue-400',
+                      'bg-teal-500 border-teal-300',
+                      'bg-emerald-600 border-emerald-400',
+                      'bg-amber-600 border-amber-300',
+                      'bg-purple-600 border-purple-300'
+                    ];
+                    return (
+                      <div
+                        key={cIdx}
+                        className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full border-2 text-white font-black text-[10px] sm:text-xs flex items-center justify-center cursor-pointer shadow-lg hover:scale-110 transition active:scale-95 ${colors[cIdx]}`}
+                      >
+                        {chip}
+                      </div>
+                    );
+                  })}
+                  <button className="px-2 py-1 text-[10px] font-bold bg-red-600 text-white rounded hover:bg-red-500 shadow">Undo</button>
+                  <button className="px-2 py-1 text-[10px] font-bold bg-sky-600 text-white rounded hover:bg-sky-500 shadow">Repeat</button>
+                  <button className="px-2 py-1 text-[10px] font-bold bg-amber-500 text-slate-950 rounded hover:bg-amber-400 shadow">Clear</button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Standard Live Runners Exchange Board */
+            <div>
+              <div className="flex justify-between items-center mb-3">
+                <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                  <span className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span>
+                  LIVE BETTING MARKETS & RATES
+                </h4>
+                <span className="text-[11px] text-slate-400 font-mono">
+                  Min: {roundData?.runners?.[0]?.min || 100} | Max: {roundData?.runners?.[0]?.max ? Number(roundData.runners[0].max).toLocaleString() : '300,000'}
+                </span>
+              </div>
+
+              {loading ? (
+                <div className="py-8 text-center text-xs text-slate-400 animate-pulse">
+                  Fetching live market rates from Diamond Exchange...
+                </div>
+              ) : roundData?.runners && roundData.runners.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {[...roundData.runners]
+                    .sort((a, b) => (a.sr || 0) - (b.sr || 0))
+                    .map((r, idx) => {
+                      const isSuspended = r.suspended || roundData?.status === 'SUSPENDED' || timer <= 0;
+                      return (
+                        <div 
+                          key={idx}
+                          className="bg-slate-800/80 border border-slate-700/80 rounded-lg p-2.5 flex items-center justify-between hover:border-slate-600 transition"
+                        >
+                          <div className="flex-1 min-w-0 pr-2">
+                            <div className="text-xs font-bold text-white truncate">{r.name}</div>
+                            <div className="text-[10px] text-slate-400">
+                              {r.subtype ? `${r.subtype} • ` : ''}
+                              Limit: {r.min} - {Number(r.max || 100000).toLocaleString()}
+                            </div>
                           </div>
-                          {r.lay > 0 && (
-                            <div className="w-16 sm:w-20 bg-[#2b3543] border border-slate-700 text-slate-400 flex items-center justify-center py-2.5 rounded select-none shadow-inner">
-                              <Lock size={14} className="text-slate-300" />
+
+                          {isSuspended ? (
+                            /* Locked / Suspended Box matching Diamond Online */
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-16 sm:w-20 bg-[#2b3543] border border-slate-700 text-slate-400 flex items-center justify-center py-2.5 rounded select-none shadow-inner">
+                                <Lock size={14} className="text-slate-300" />
+                              </div>
+                              {r.lay > 0 && (
+                                <div className="w-16 sm:w-20 bg-[#2b3543] border border-slate-700 text-slate-400 flex items-center justify-center py-2.5 rounded select-none shadow-inner">
+                                  <Lock size={14} className="text-slate-300" />
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            /* Active Betting Back / Lay Boxes */
+                            <div className="flex items-center gap-1.5">
+                              {/* Back Box */}
+                              <div className="w-16 sm:w-20 bg-[#72bbef] hover:bg-[#5aaae6] text-slate-950 font-black text-center py-1 rounded cursor-pointer transition shadow-sm">
+                                <div className="text-xs font-black leading-tight">
+                                  {r.back > 0 ? r.back : '-'}
+                                </div>
+                                <div className="text-[9px] font-bold text-slate-800 leading-none">
+                                  {r.backSize > 0 ? Number(r.backSize).toLocaleString() : '100,000'}
+                                </div>
+                              </div>
+
+                              {/* Lay Box */}
+                              {r.lay > 0 ? (
+                                <div className="w-16 sm:w-20 bg-[#faa9ba] hover:bg-[#f294a8] text-slate-950 font-black text-center py-1 rounded cursor-pointer transition shadow-sm">
+                                  <div className="text-xs font-black leading-tight">
+                                    {r.lay}
+                                  </div>
+                                  <div className="text-[9px] font-bold text-slate-800 leading-none">
+                                    {r.laySize > 0 ? Number(r.laySize).toLocaleString() : '100,000'}
+                                  </div>
+                                </div>
+                              ) : null}
                             </div>
                           )}
                         </div>
-                      ) : (
-                        /* Active Betting Back / Lay Boxes */
-                        <div className="flex items-center gap-1.5">
-                          {/* Back Box */}
-                          <div className="w-16 sm:w-20 bg-[#72bbef] hover:bg-[#5aaae6] text-slate-950 font-black text-center py-1 rounded cursor-pointer transition shadow-sm">
-                            <div className="text-xs font-black leading-tight">
-                              {r.back > 0 ? r.back : '-'}
-                            </div>
-                            <div className="text-[9px] font-bold text-slate-800 leading-none">
-                              {r.backSize > 0 ? Number(r.backSize).toLocaleString() : '100,000'}
-                            </div>
-                          </div>
-
-                          {/* Lay Box */}
-                          {r.lay > 0 ? (
-                            <div className="w-16 sm:w-20 bg-[#faa9ba] hover:bg-[#f294a8] text-slate-950 font-black text-center py-1 rounded cursor-pointer transition shadow-sm">
-                              <div className="text-xs font-black leading-tight">
-                                {r.lay}
-                              </div>
-                              <div className="text-[9px] font-bold text-slate-800 leading-none">
-                                {r.laySize > 0 ? Number(r.laySize).toLocaleString() : '100,000'}
-                              </div>
-                            </div>
-                          ) : null}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-            </div>
-          ) : (
-            <div className="py-6 text-center text-xs text-slate-400">
-              No active runners for this table currently.
+                      );
+                    })}
+                </div>
+              ) : (
+                <div className="py-6 text-center text-xs text-slate-400">
+                  No active runners for this table currently.
+                </div>
+              )}
             </div>
           )}
         </div>

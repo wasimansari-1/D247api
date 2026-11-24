@@ -94,8 +94,8 @@ export default function DocsModal({ onClose }) {
       id: 'cs-tables',
       method: 'GET',
       path: '/api/casino/tables',
-      title: '79+ Official Casino Tables Directory',
-      desc: 'Complete directory of 79 official casino tables with categories, slugs, dserver, and betting limits.',
+      title: '77 Official Casino Tables Directory',
+      desc: 'Complete directory of 77 official casino tables with categories, canonical slugs, and betting limits.',
       sampleParams: 'None required',
       exampleUrl: '/api/casino/tables'
     },
@@ -105,8 +105,17 @@ export default function DocsModal({ onClose }) {
       path: '/api/casino/round/:slug',
       title: 'Live Casino Round (Cards, Dice, Flip Clock Timer, Odds)',
       desc: 'High-frequency live round state: real cards dealt, 3D dice, roulette ball, countdown timer, and runners.',
-      sampleParams: 'slug: Table identifier (e.g. mogambo, teen, dt20, lucky7, card32, etc.)',
-      exampleUrl: '/api/casino/round/mogambo'
+      sampleParams: 'slug: Table identifier (e.g. lucky6, viproulette, mogambo, teen, dt20, lucky7, etc.)',
+      exampleUrl: '/api/casino/round/lucky6'
+    },
+    {
+      id: 'cs-mediaplayer',
+      method: 'GET',
+      path: '/api/casino/mediaplayer/:slug',
+      title: 'Live Video Relay & Media Proxy (Zero X-Frame-Options)',
+      desc: 'Reverse-proxied HTML5 live video feed directly from Diamond studio without cross-origin blocks.',
+      sampleParams: 'slug: Table identifier',
+      exampleUrl: '/api/casino/mediaplayer/lucky6'
     },
     {
       id: 'cs-results',

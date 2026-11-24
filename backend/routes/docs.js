@@ -46,11 +46,11 @@ module.exports = function(syncEngine) {
       },
       {
         name: "Full Casino Suite",
-        detail: "Real-time cards, dice, roulette ball, flip clock timer, and odds across 79+ official casino tables."
+        detail: "Real-time cards, dice, roulette ball, flip clock timer, and odds across 77 official casino tables with exact Diamond indexing."
       },
       {
         name: "Zero-CORS Live TV Streams",
-        detail: "Unrestricted, embeddable video player routes for all live sports and casino tables."
+        detail: "Unrestricted, embeddable video player and media relay routes (/api/casino/mediaplayer/:slug) for all live sports and casino tables."
       }
     ],
     endpoints: [
@@ -208,19 +208,20 @@ module.exports = function(syncEngine) {
         }
       },
       {
-        category: "Live Casino Feeds (79+ Tables)",
+        category: "Live Casino Feeds (77 Tables)",
         method: "GET",
         path: "/api/casino/tables",
-        summary: "All 79 Official Casino Tables",
-        description: "Returns complete directory of 79 official casino tables with categories, slugs, and betting limits.",
+        summary: "All 77 Official Casino Tables",
+        description: "Returns complete directory of 77 official casino tables with categories, canonical slugs, and betting limits.",
         parameters: [],
         responseSample: {
           success: true,
-          total: 79,
+          total: 77,
           data: [
-            { id: "4", slug: "teen", name: "VIP TEENPATTI 1DAY", category: "Teen Patti", min: 100, max: 500000 },
-            { id: "6", slug: "mogambo", name: "MOGAMBO", category: "Others", min: 100, max: 300000 },
-            { id: "17", slug: "dt20", name: "20-20 DRAGON TIGER", category: "Dragon Tiger", min: 100, max: 200000 }
+            { id: "1", slug: "goal2", name: "GOAL 2", category: "Football", min: 100, max: 300000 },
+            { id: "4", slug: "mogambo", name: "MOGAMBO", category: "Others", min: 100, max: 300000 },
+            { id: "5", slug: "lucky6", name: "LUCKY 6", category: "Lucky 7", min: 100, max: 100000 },
+            { id: "8", slug: "viproulette", name: "VIP ROULETTE", category: "Roulette", min: 25, max: 100000 }
           ]
         }
       },

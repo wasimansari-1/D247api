@@ -22,15 +22,21 @@ module.exports = function(syncEngine) {
 
   // Image Proxy Route: streams authentic CDN artwork with local cache & fallback
   router.get('/image/:slug', async (req, res) => {
-    let slug = req.params.slug;
-    if (slug === 'roulette') slug = 'roulette11';
+    const rawSlug = (req.params.slug || '').toLowerCase();
+    const slugMap = syncEngine.constructor?.CASINO_SLUG_MAP || {};
+    const slug = slugMap[rawSlug] || rawSlug;
 
     // 1. Check local assets folder (e.g. dolidana.jpg)
-    const localFile = path.join(__dirname, '..', 'assets', 'casino', `${slug}.jpg`);
-    if (fs.existsSync(localFile)) {
-      res.setHeader('Content-Type', 'image/jpeg');
-      res.setHeader('Cache-Control', 'public, max-age=86400');
-      return res.sendFile(localFile);
+    const localCandidates = [
+      path.join(__dirname, '..', 'assets', 'casino', `${slug}.jpg`),
+      path.join(__dirname, '..', 'assets', 'casino', `${rawSlug}.jpg`)
+    ];
+    for (const f of localCandidates) {
+      if (fs.existsSync(f)) {
+        res.setHeader('Content-Type', 'image/jpeg');
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+        return res.sendFile(f);
+      }
     }
 
     // 2. Check memory cache
@@ -42,10 +48,14 @@ module.exports = function(syncEngine) {
     }
 
     const primaryUrl = `https://cdn.926assets.com/g1-casino-icons/lc/${slug}.jpg`;
+    const altUrl = `https://cdn.926assets.com/g1-casino-icons/lc/${rawSlug}.jpg`;
     const defaultUrl = `https://cdn.926assets.com/g1-casino-icons/default.jpg`;
 
     try {
       let imgRes = await fetch(primaryUrl);
+      if (!imgRes.ok && slug !== rawSlug) {
+        imgRes = await fetch(altUrl);
+      }
       if (!imgRes.ok) {
         imgRes = await fetch(defaultUrl);
       }
@@ -123,26 +133,23 @@ module.exports = function(syncEngine) {
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { width: 100%; height: 100%; background: #000; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    .stream-container { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at center, #0e1e2d 0%, #03080d 100%); }
+    .stream-container { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #000; }
     .video-frame { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; z-index: 1; }
-    .ambient-bg { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 0; background: radial-gradient(circle at center, #0a2538 0%, #02070c 80%); }
-    .felt-pattern { position: absolute; inset: 0; opacity: 0.15; background-image: radial-gradient(#1e40af 1px, transparent 1px); background-size: 16px 16px; }
-    .live-badge { position: absolute; top: 12px; right: 12px; z-index: 10; display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.75); border: 1px solid rgba(255,255,255,0.15); padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 800; color: #fff; letter-spacing: 0.05em; backdrop-filter: blur(4px); }
-    .live-dot { width: 7px; height: 7px; background: #ef4444; border-radius: 50%; box-shadow: 0 0 8px #ef4444; animation: pulse 1.5s infinite; }
-    .logo-watermark { position: absolute; bottom: 12px; left: 12px; z-index: 10; opacity: 0.4; font-size: 11px; font-weight: 900; letter-spacing: 0.1em; color: #38bdf8; text-transform: uppercase; }
+    .ambient-bg { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 0; background: #000; }
+    .felt-pattern { position: absolute; inset: 0; opacity: 0.12; background-image: radial-gradient(#1e3a5f 1px, transparent 1px); background-size: 16px 16px; }
+    .live-badge { position: absolute; top: 10px; right: 10px; z-index: 10; display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.65); border: 1px solid rgba(255,255,255,0.12); padding: 3px 8px; border-radius: 16px; font-size: 9px; font-weight: 800; color: #fff; letter-spacing: 0.05em; backdrop-filter: blur(4px); }
+    .live-dot { width: 6px; height: 6px; background: #ef4444; border-radius: 50%; box-shadow: 0 0 6px #ef4444; animation: pulse 1.5s infinite; }
+    .logo-watermark { position: absolute; bottom: 10px; left: 10px; z-index: 10; opacity: 0.35; font-size: 10px; font-weight: 900; letter-spacing: 0.1em; color: #38bdf8; text-transform: uppercase; }
     @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.85); } }
-    .spinner { width: 40px; height: 40px; border: 3px solid rgba(56, 189, 248, 0.2); border-top-color: #38bdf8; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 12px; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .status-text { color: #94a3b8; font-size: 12px; font-weight: 600; letter-spacing: 0.05em; }
   </style>
 </head>
 <body>
   <div class="stream-container">
     <div class="live-badge">
       <span class="live-dot"></span>
-      <span>LIVE BROADCAST</span>
+      <span>LIVE</span>
     </div>
-    <div class="logo-watermark">D247 EXCHANGE</div>
+    <div class="logo-watermark">D247</div>
 
     ${upstreamUrl ? `
     <iframe 
@@ -156,19 +163,53 @@ module.exports = function(syncEngine) {
 
     <div class="ambient-bg" id="ambientBg" style="${upstreamUrl ? 'z-index: 0;' : 'z-index: 2;'}">
       <div class="felt-pattern"></div>
-      <div class="spinner"></div>
-      <div class="status-text">${tableName} • LIVE DEALER FEED ACTIVE</div>
     </div>
   </div>
 
   <script>
-    // Suppress unload warnings in embedded context
-    window.addEventListener('error', function(e) { /* ignore cross-origin errors */ });
+    // Suppress cross-origin frame noise
+    window.addEventListener('error', function(e) {});
   </script>
 </body>
 </html>`;
 
     return res.send(html);
+  });
+
+  // Dedicated Reverse-Proxied Media Player for Diamond Online (Bypasses X-Frame-Options)
+  router.get('/mediaplayer/:slug', async (req, res) => {
+    const slug = req.params.slug;
+    const clientIp = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || '103.21.244.2';
+    
+    res.removeHeader('X-Frame-Options');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Permissions-Policy', 'unload=*');
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+
+    try {
+      const streamData = await syncEngine.getCasinoStreamUrl(slug, clientIp);
+      if (streamData?.upstreamUrl) {
+        const upRes = await fetch(streamData.upstreamUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Referer': 'https://diamondonline7.com/home',
+            'Origin': 'https://diamondonline7.com',
+            'Cookie': syncEngine.config?.headers?.Cookie || ''
+          }
+        });
+        if (upRes.ok) {
+          let text = await upRes.text();
+          // Inject base href so relative bundles and scripts load cleanly
+          if (!text.includes('<base')) {
+            text = text.replace('<head>', '<head><base href="https://diamondonline7.com/">');
+          }
+          return res.send(text);
+        }
+      }
+    } catch (err) {}
+
+    // Fallback to local clean player
+    return res.redirect(`/api/casino/player/${slug}`);
   });
 
   // Get Live Video Stream URL metadata for Casino Table (JSON)
@@ -187,9 +228,14 @@ module.exports = function(syncEngine) {
       return res.json({
         success: true,
         gameType: slug,
-        streamUrl: streamData.streamUrl,
+        streamUrl: `/api/casino/mediaplayer/${slug}`,
         playerUrl: `/api/casino/player/${slug}`,
-        sources: streamData.sources
+        upstreamUrl: streamData.upstreamUrl,
+        sources: [
+          { name: 'D247 Studio Stream', url: `/api/casino/mediaplayer/${slug}`, type: 'iframe' },
+          { name: 'D247 Direct Player', url: `/api/casino/player/${slug}`, type: 'iframe' },
+          ...(streamData.upstreamUrl ? [{ name: 'Diamond Video (Direct)', url: streamData.upstreamUrl, type: 'iframe' }] : [])
+        ]
       });
     } catch (err) {
       return res.json({

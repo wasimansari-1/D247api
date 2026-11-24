@@ -110,96 +110,103 @@ const TOP_MENU_ITEMS = [
   { label: 'CRASH', type: 'casino', filter: 'Others' }
 ];
 
-// Exact 79 Casino Tables matching Diamond Online sequence
-const DEFAULT_79_CASINO_TABLES = [
-  // Row 1
-  { id: '1', slug: 'casino', name: 'Casino', category: 'Others' },
-  { id: '2', slug: 'goal2', name: 'GOAL 2', category: 'Football' },
-  { id: '3', slug: 'worli', name: 'MATKA MARKET', category: 'Matka' },
-  { id: '4', slug: 'teen', name: 'VIP TEENPATTI 1DAY', category: 'Teen Patti' },
-  { id: '5', slug: 'dolidana', name: 'DOLI DANA', category: 'Others' },
-  { id: '6', slug: 'mogambo', name: 'MOGAMBO', category: 'Others' },
-  { id: '7', slug: 'lucky6', name: 'LUCKY 6', category: 'Lucky 7' },
-  { id: '8', slug: 'broulette', name: 'BEACH ROULETTE', category: 'Roulette' },
-  { id: '9', slug: 'roulette11', name: 'ROULETTE', category: 'Roulette' },
-  { id: '10', slug: 'viproulette', name: 'VIP ROULETTE', category: 'Roulette' },
-  // Row 2
-  { id: '11', slug: 'poison', name: 'POISON TEENPATTI ONE DAY', category: 'Teen Patti' },
-  { id: '12', slug: 'teenunique', name: 'UNIQUE TEENPATTI', category: 'Teen Patti' },
-  { id: '13', slug: 'poison20', name: 'POISON TEENPATTI 20 20', category: 'Teen Patti' },
-  { id: '14', slug: 'teenjoker', name: 'UNLIMITED JOKER 20', category: 'Teen Patti' },
-  { id: '15', slug: 'joker20', name: 'TEENPATTI JOKER 20 20', category: 'Teen Patti' },
-  { id: '16', slug: 'joker1', name: 'UNLIMITED JOKER ONEDAY', category: 'Teen Patti' },
-  { id: '17', slug: 'teen20c', name: '20-20 TEENPATTI C', category: 'Teen Patti' },
-  { id: '18', slug: 'btable2', name: 'BOLLYWOOD CASINO 2', category: 'Others' },
-  { id: '19', slug: 'rouletteunique', name: 'UNIQUE ROULETTE', category: 'Roulette' },
-  { id: '20', slug: 'minisuperover', name: 'MINI SUPER OVER', category: 'Cricket' },
-  // Row 3
-  { id: '21', slug: 'goal', name: 'GOAL', category: 'Football' },
-  { id: '22', slug: 'ab150', name: 'ANDAR BAHAR 150 CARDS', category: 'Andar Bahar' },
-  { id: '23', slug: 'lucky15', name: 'LUCKY 15', category: 'Lucky 7' },
-  { id: '24', slug: 'superover2', name: 'SUPER OVER 2', category: 'Cricket' },
-  { id: '25', slug: 'queentop', name: 'QUEEN TOP OPEN TEENPATTI', category: 'Teen Patti' },
-  { id: '26', slug: 'jacktop', name: 'JACK TOP OPEN TEENPATTI', category: 'Teen Patti' },
-  { id: '27', slug: 'sicbo2', name: 'SIC BO 2', category: 'Others' },
-  { id: '28', slug: 'teen33', name: 'INSTANT TEENPATTI 3.0', category: 'Teen Patti' },
-  { id: '29', slug: 'sicbo', name: 'SIC BO', category: 'Others' },
-  { id: '30', slug: 'ballbyball', name: 'BALL BY BALL', category: 'Cricket' },
-  // Row 4
-  { id: '31', slug: 'teen202', name: 'INSTANT TEENPATTI 2.0', category: 'Teen Patti' },
-  { id: '32', slug: 'teen', name: 'TEENPATTI 1 DAY', category: 'Teen Patti' },
-  { id: '33', slug: 'teen20', name: '20-20 TEENPATTI', category: 'Teen Patti' },
-  { id: '34', slug: 'teen9', name: 'TEENPATTI TEST', category: 'Teen Patti' },
-  { id: '35', slug: 'teen8', name: 'OPEN TEENPATTI', category: 'Teen Patti' },
-  { id: '36', slug: 'poker', name: 'POKER 1 DAY', category: 'Poker' },
-  { id: '37', slug: 'poker20', name: '20-20 POKER', category: 'Poker' },
-  { id: '38', slug: 'poker6', name: 'POKER 6 PLAYERS', category: 'Poker' },
-  { id: '39', slug: 'baccarat', name: 'BACCARAT', category: 'Baccarat' },
-  { id: '40', slug: 'baccarat2', name: 'BACCARAT 2', category: 'Baccarat' },
-  // Row 5
-  { id: '41', slug: 'dt20', name: '20-20 DRAGON TIGER', category: 'Dragon Tiger' },
-  { id: '42', slug: 'dt6', name: '1 DAY DRAGON TIGER', category: 'Dragon Tiger' },
-  { id: '43', slug: 'dtl20', name: 'CASINO 20-20 DTL', category: 'Dragon Tiger' },
-  { id: '44', slug: 'dt202', name: '20-20 DRAGON TIGER 2', category: 'Dragon Tiger' },
-  { id: '45', slug: 'card32', name: '32 CARDS A', category: '32 Cards' },
-  { id: '46', slug: 'card32eu', name: '32 CARDS B', category: '32 Cards' },
-  { id: '47', slug: 'ab20', name: 'ANDAR BAHAR', category: 'Andar Bahar' },
-  { id: '48', slug: 'abj', name: 'ANDAR BAHAR 2', category: 'Andar Bahar' },
-  { id: '49', slug: 'lucky7', name: '7-A LUCKY', category: 'Lucky 7' },
-  { id: '50', slug: 'lucky7eu', name: '7-B LUCKY', category: 'Lucky 7' },
-  // Row 6
-  { id: '51', slug: '3cardj', name: '3 CARDS JUDGEMENT', category: 'Teen Patti' },
-  { id: '52', slug: 'worli', name: 'WORLI MATKA', category: 'Matka' },
-  { id: '53', slug: 'worli2', name: 'INSTANT WORLI', category: 'Matka' },
-  { id: '54', slug: 'aaa', name: 'AMAR AKBAR ANTHONY', category: 'Others' },
-  { id: '55', slug: 'btable', name: 'BOLLYWOOD CASINO', category: 'Others' },
-  { id: '56', slug: 'lottcard', name: 'LOTTERY', category: 'Others' },
-  { id: '57', slug: 'cricketv3', name: '5FIVE CRICKET', category: 'Cricket' },
-  { id: '58', slug: 'cmatch20', name: 'CRICKET MATCH 20-20', category: 'Cricket' },
-  { id: '59', slug: 'teen2', name: 'TEENPATTI 2.0', category: 'Teen Patti' },
-  { id: '60', slug: 'queen', name: 'QUEEN', category: 'Teen Patti' },
-  // Row 7
-  { id: '61', slug: 'race20', name: 'RACE 20', category: 'Others' },
-  { id: '62', slug: 'lucky7c', name: 'LUCKY 7-C CASINO', category: 'Lucky 7' },
-  { id: '63', slug: 'superover', name: 'SUPER OVER', category: 'Cricket' },
-  { id: '64', slug: 'trap', name: 'THE TRAP', category: 'Others' },
-  { id: '65', slug: 'teen2card', name: '2 CARDS TEENPATTI', category: 'Teen Patti' },
-  { id: '66', slug: 'baccarat29', name: '29 BACCARAT', category: 'Baccarat' },
-  { id: '67', slug: 'muflis', name: 'MUFLIS TEENPATTI', category: 'Teen Patti' },
-  { id: '68', slug: 'race17', name: 'RACE TO 17', category: 'Others' },
-  { id: '69', slug: 'teen20b', name: '20-20 TEENPATTI B', category: 'Teen Patti' },
-  { id: '70', slug: 'trio', name: 'TRIO', category: 'Others' },
-  // Row 8
-  { id: '71', slug: 'notenumber', name: 'NOTE NUMBER', category: 'Others' },
-  { id: '72', slug: 'card120', name: '1 CARD 20-20', category: 'Others' },
-  { id: '73', slug: 'card1oneday', name: 'ONE CARD ONE DAY', category: 'Others' },
-  { id: '74', slug: 'ab3', name: 'ANDAR BAHAR 50 CARDS', category: 'Andar Bahar' },
-  { id: '75', slug: 'aaa2', name: 'AMAR AKBAR ANTHONY 2.0', category: 'Others' },
-  { id: '76', slug: 'race2nd', name: 'RACE TO 2ND', category: 'Others' },
-  { id: '77', slug: 'instantteen', name: 'INSTANT TEENPATTI', category: 'Teen Patti' },
-  { id: '78', slug: 'duskadum', name: 'DUS KA DUM', category: 'Others' },
-  { id: '79', slug: 'cmeter', name: '1 CARD METER', category: 'Others' }
+// Exact 77 Casino Tables matching Diamond Online Image 3 & Image 4
+const DEFAULT_77_CASINO_TABLES = [
+  // Row 1 (Image 3)
+  { id: '1', slug: 'goal2', name: 'GOAL 2', category: 'Football' },
+  { id: '2', slug: 'worli', name: 'MATKA MARKET', category: 'Matka' },
+  { id: '3', slug: 'dolidana', name: 'DOLI DANA', category: 'Others' },
+  { id: '4', slug: 'mogambo', name: 'MOGAMBO', category: 'Others' },
+  { id: '5', slug: 'lucky6', name: 'LUCKY 6', category: 'Lucky 7' },
+  { id: '6', slug: 'broulette', name: 'BEACH ROULETTE', category: 'Roulette' },
+  { id: '7', slug: 'roulette11', name: 'ROULETTE', category: 'Roulette' },
+  { id: '8', slug: 'viproulette', name: 'VIP ROULETTE', category: 'Roulette' },
+  { id: '9', slug: 'poison', name: 'POISON TEENPATTI ONE DAY', category: 'Teen Patti' },
+  { id: '10', slug: 'teenunique', name: 'UNIQUE TEENPATTI', category: 'Teen Patti' },
+
+  // Row 2 (Image 3)
+  { id: '11', slug: 'poison20', name: 'POISON TEENPATTI 20 20', category: 'Teen Patti' },
+  { id: '12', slug: 'teen120', name: 'UNLIMITED JOKER 20 20', category: 'Teen Patti' },
+  { id: '13', slug: 'teen20b', name: 'TEENPATTI JOKER 20 20', category: 'Teen Patti' },
+  { id: '14', slug: 'teen1', name: 'UNLIMITED JOKER ONEDAY', category: 'Teen Patti' },
+  { id: '15', slug: 'teen20c', name: '20-20 TEENPATTI C', category: 'Teen Patti' },
+  { id: '16', slug: 'btable2', name: '2 BOLLYWOOD CASINO', category: 'Others' },
+  { id: '17', slug: 'uroulette', name: 'UNIQUE ROULETTE', category: 'Roulette' },
+  { id: '18', slug: 'minisuperover', name: 'MINI SUPER OVER', category: 'Cricket' },
+  { id: '19', slug: 'goal', name: 'GOAL', category: 'Football' },
+  { id: '20', slug: 'ab150', name: 'ANDAR BAHAR (150 CARDS)', category: 'Andar Bahar' },
+
+  // Row 3 (Image 3)
+  { id: '21', slug: 'lucky15', name: 'LUCKY 15', category: 'Lucky 7' },
+  { id: '22', slug: 'superover2', name: 'SUPER OVER 2', category: 'Cricket' },
+  { id: '23', slug: 'queentop', name: 'QUEEN (TOP OPEN TEENPATTI)', category: 'Teen Patti' },
+  { id: '24', slug: 'jacktop', name: 'JACK (TOP OPEN TEENPATTI)', category: 'Teen Patti' },
+  { id: '25', slug: 'sicbo2', name: 'SIC BO 2', category: 'Others' },
+  { id: '26', slug: 'teen3', name: 'Instant Teenpatti 3.0', category: 'Teen Patti' },
+  { id: '27', slug: 'sicbo', name: 'SIC BO', category: 'Others' },
+  { id: '28', slug: 'ballbyball', name: 'BALL BY BALL', category: 'Cricket' },
+  { id: '29', slug: 'teen202', name: 'INSTANT Teenpatti 2.0', category: 'Teen Patti' },
+  { id: '30', slug: 'teen', name: 'TEENPATTI 1Day', category: 'Teen Patti' },
+
+  // Row 4 (Image 3)
+  { id: '31', slug: 'teen20', name: '20-20 Teenpatti', category: 'Teen Patti' },
+  { id: '32', slug: 'teentest', name: 'TEENPATTI TEST', category: 'Teen Patti' },
+  { id: '33', slug: 'teensin', name: 'OPEN TEENPATTI', category: 'Teen Patti' },
+  { id: '34', slug: 'poker', name: 'POKER 1 Day', category: 'Poker' },
+  { id: '35', slug: 'poker20', name: '20-20 POKER', category: 'Poker' },
+  { id: '36', slug: 'poker6', name: 'Poker 6 PLAYERS', category: 'Poker' },
+  { id: '37', slug: 'baccarat', name: 'BACCARAT', category: 'Baccarat' },
+  { id: '38', slug: 'baccarat2', name: 'BACCARAT 2', category: 'Baccarat' },
+  { id: '39', slug: 'dt20', name: '20-20 DRAGON TIGER', category: 'Dragon Tiger' },
+  { id: '40', slug: 'dt6', name: '1 DAY DRAGON TIGER', category: 'Dragon Tiger' },
+
+  // Row 5 (Image 3)
+  { id: '41', slug: 'dtl20', name: 'CASINO 20-20 DTL', category: 'Dragon Tiger' },
+  { id: '42', slug: 'dt202', name: '20-20 DRAGON TIGER 2', category: 'Dragon Tiger' },
+  { id: '43', slug: 'card32eu', name: '32 CARDS A', category: '32 Cards' },
+  { id: '44', slug: 'card32', name: '32 CARDS B', category: '32 Cards' },
+  { id: '45', slug: 'ab20', name: 'ANDAR BAHAR', category: 'Andar Bahar' },
+  { id: '46', slug: 'abj', name: 'ANDAR BAHAR 2', category: 'Andar Bahar' },
+  { id: '47', slug: 'lucky7eu', name: '7-A LUCKY', category: 'Lucky 7' },
+  { id: '48', slug: 'lucky7', name: '7-B LUCKY', category: 'Lucky 7' },
+  { id: '49', slug: '3cardj', name: '3 Cards Judgement', category: 'Teen Patti' },
+  { id: '50', slug: 'worli2', name: 'WORLI MATKA', category: 'Matka' },
+
+  // Row 6 (Image 4)
+  { id: '51', slug: 'worli3', name: 'INSTANT WORLI', category: 'Matka' },
+  { id: '52', slug: 'aaa', name: 'AMAR AKBAR ANTHONY', category: 'Others' },
+  { id: '53', slug: 'btable', name: 'BOLLYWOOD CASINO', category: 'Others' },
+  { id: '54', slug: 'lottcard', name: 'LOTTERY', category: 'Others' },
+  { id: '55', slug: 'cricketv3', name: '5FIVE CRICKET', category: 'Cricket' },
+  { id: '56', slug: 'cmatch20', name: 'CRICKET MATCH 20-20', category: 'Cricket' },
+  { id: '57', slug: 'patti2', name: 'Teenpatti 2.0', category: 'Teen Patti' },
+  { id: '58', slug: 'queen', name: 'QUEEN', category: 'Teen Patti' },
+  { id: '59', slug: 'race20', name: 'RACE 20', category: 'Others' },
+  { id: '60', slug: 'lucky7eu2', name: 'LUCKY 7-C CASINO', category: 'Lucky 7' },
+
+  // Row 7 (Image 4)
+  { id: '61', slug: 'superover', name: 'SUPER OVER', category: 'Cricket' },
+  { id: '62', slug: 'trap', name: 'THE TRAP', category: 'Others' },
+  { id: '63', slug: 'teen6', name: '2 Cards TEENPATTI', category: 'Teen Patti' },
+  { id: '64', slug: 'tbaccarat', name: '29 BACCARAT', category: 'Baccarat' },
+  { id: '65', slug: 'teenmuf', name: 'MUFLIS TEENPATTI', category: 'Teen Patti' },
+  { id: '66', slug: 'race17', name: 'RACE TO 17', category: 'Others' },
+  { id: '67', slug: 'teen20b_dup', name: '20-20 TEENPATTI B', category: 'Teen Patti' },
+  { id: '68', slug: 'trio', name: 'TRIO', category: 'Others' },
+  { id: '69', slug: 'notenum', name: 'NOTE NUMBER', category: 'Others' },
+  { id: '70', slug: 'kbc', name: '1 CARD 20-20', category: 'Others' },
+
+  // Row 8 (Image 4)
+  { id: '71', slug: 'card1oneday', name: 'ONE CARD ONE DAY', category: 'Others' },
+  { id: '72', slug: 'ab3', name: 'ANDAR BAHAR 50 Cards', category: 'Andar Bahar' },
+  { id: '73', slug: 'aaa2', name: 'AMAR AKBAR ANTHONY 2.0', category: 'Others' },
+  { id: '74', slug: 'race2', name: 'RACE TO 2ND', category: 'Others' },
+  { id: '75', slug: 'vteen', name: 'INSTANT Teenpatti', category: 'Teen Patti' },
+  { id: '76', slug: 'dum10', name: 'DUS KA DUM', category: 'Others' },
+  { id: '77', slug: 'cmeter1', name: '1 CARD METER', category: 'Others' }
 ];
+
+const DEFAULT_79_CASINO_TABLES = DEFAULT_77_CASINO_TABLES;
 
 export default function App() {
   // Navigation
@@ -547,7 +554,7 @@ export default function App() {
                   }`}
                 >
                   <span>Our Casino</span>
-                  <span className="text-[10px] bg-amber-100 text-amber-900 px-1.5 py-0.2 rounded font-black">{casinoTables.length || 79}</span>
+                  <span className="text-[10px] bg-amber-100 text-amber-900 px-1.5 py-0.2 rounded font-black">{casinoTables.length || 77}</span>
                 </button>
                 <button 
                   onClick={() => { setActiveTab('sports'); setSelectedSportId(4); }}
@@ -1270,7 +1277,7 @@ export default function App() {
                           : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
                       }`}
                     >
-                      {cat === 'all' ? `All Tables (${casinoTables.length || 79})` : cat}
+                      {cat === 'all' ? `All Tables (${casinoTables.length || 77})` : cat}
                     </button>
                   ))}
                 </div>
@@ -1481,7 +1488,7 @@ export default function App() {
           </button>
         </div>
         <div className="font-mono text-[10px] text-slate-400">
-          Sports: {inPlayMatches.length} | Casino: {casinoTables.length || 79} Tables
+          Sports: {inPlayMatches.length} | Casino: {casinoTables.length || 77} Tables
         </div>
       </footer>
 
