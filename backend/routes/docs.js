@@ -279,9 +279,20 @@ module.exports = function(syncEngine) {
       {
         category: "Live Casino Feeds (79+ Tables)",
         method: "GET",
+        path: "/api/casino/player/:slug",
+        summary: "Zero-Latency Casino TV Iframe Player (Anti-Theft Guarded)",
+        description: "Official embeddable Casino Live TV player. To embed on external platforms, your consumer Domain or Server IP MUST be whitelisted in /master dashboard. Direct unauthorized hits or scraper tools receive HTTP 403 Forbidden with emergency admin routing.\n\nEmbed Code Example:\n<iframe src=\"https://72.61.172.110:5005/api/casino/player/teen20\" width=\"100%\" height=\"100%\" frameborder=\"0\" allow=\"autoplay; encrypted-media; fullscreen\" allowfullscreen></iframe>",
+        parameters: [
+          { name: "slug", in: "path", required: true, type: "string", example: "teen20" }
+        ],
+        responseSample: "HTML5 Live Video Player Document"
+      },
+      {
+        category: "Live Casino Feeds (79+ Tables)",
+        method: "GET",
         path: "/api/casino/stream/:slug",
         summary: "Zero-CORS Live Casino Video Stream",
-        description: "Embeddable HTML5 video player without X-Frame-Options or Permissions-Policy blocks. Embed in any iframe.",
+        description: "Direct stream alias for /api/casino/player/:slug without X-Frame-Options or Permissions-Policy blocks. Requires Whitelist approval from Master Admin (/master).",
         parameters: [
           { name: "slug", in: "path", required: true, type: "string", example: "mogambo" }
         ],

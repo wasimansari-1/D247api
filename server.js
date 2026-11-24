@@ -15,6 +15,8 @@ const sportsRoutes = require("./backend/routes/sports");
 const casinoRoutes = require("./backend/routes/casino");
 const configRoutes = require("./backend/routes/config");
 const docsRoutes = require("./backend/routes/docs");
+const masterGuard = require("./backend/masterGuard");
+const masterRoutes = require("./backend/routes/master");
 
 const app = express();
 const server = http.createServer(app);
@@ -22,6 +24,9 @@ const server = http.createServer(app);
 // Enable CORS & JSON parsing
 app.use(cors());
 app.use(express.json());
+
+// Mount D247 Master Guard Management Dashboard & Auth API
+app.use(masterRoutes());
 
 // Serve React frontend (frontend/dist) or fallback to public/
 const distPath = path.join(__dirname, "frontend", "dist");
@@ -98,6 +103,7 @@ app.get(
     "/stream-assets/api/relay/route/:wsid",
     "/stream-assets/relay/route/:wsid",
   ],
+  masterGuard.guardMiddleware("tvStream"),
   async (req, res) => {
     let rawWsid = req.params.wsid;
 
@@ -156,7 +162,7 @@ app.get(
 );
 
 // Direct Proxy for Live Stream Assets to prevent Unexpected Token '<'
-app.use("/stream-assets", async (req, res) => {
+app.use("/stream-assets", masterGuard.guardMiddleware("tvStream"), async (req, res) => {
   try {
     const assetPath = req.path.replace(/^\/stream-assets/, "");
     const upstreamUrl = `https://stream.trubets365.com/stream-assets${assetPath}${req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : ""}`;
@@ -167,6 +173,17 @@ app.use("/stream-assets", async (req, res) => {
       },
     });
     if (!proxyRes.ok) return res.status(proxyRes.status).end();
+    
+    // Dynamic Patch for player.bundle.js: Guarantee it NEVER defaults to lucky7!
+    if (assetPath.includes("player.bundle.js")) {
+      let code = await proxyRes.text();
+      code = code.replace(/gameType:\s*["']lucky7["']/gi, 'gameType:(window.__STREAM_PLAYER_OVERRIDE_GAMETYPE__||"lucky7")');
+      code = code.replace(/return\s+s\|\|a\.searchParams\.get\("gameType"\)\|\|m\|\|t\.gameType\|\|""/g, 'return (window.__STREAM_PLAYER_OVERRIDE_GAMETYPE__||s||a.searchParams.get("gameType")||m||t.gameType||"")');
+      res.setHeader("content-type", "application/javascript; charset=utf-8");
+      res.setHeader("access-control-allow-origin", "*");
+      return res.send(code);
+    }
+
     const contentType = proxyRes.headers.get("content-type");
     if (contentType) res.setHeader("content-type", contentType);
     res.setHeader("access-control-allow-origin", "*");
@@ -177,12 +194,22 @@ app.use("/stream-assets", async (req, res) => {
   }
 });
 
-app.get(["/newplayer.min.js", "/player.bundle.js"], async (req, res) => {
+app.get(["/newplayer.min.js", "/player.bundle.js"], masterGuard.guardMiddleware("tvStream"), async (req, res) => {
   try {
     const filename = req.path.slice(1);
     const upstreamUrl = `https://stream.trubets365.com/stream-assets/${filename}${req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : ""}`;
     const proxyRes = await fetch(upstreamUrl);
     if (!proxyRes.ok) return res.status(proxyRes.status).end();
+
+    if (filename.includes("player.bundle.js")) {
+      let code = await proxyRes.text();
+      code = code.replace(/gameType:\s*["']lucky7["']/gi, 'gameType:(window.__STREAM_PLAYER_OVERRIDE_GAMETYPE__||"lucky7")');
+      code = code.replace(/return\s+s\|\|a\.searchParams\.get\("gameType"\)\|\|m\|\|t\.gameType\|\|""/g, 'return (window.__STREAM_PLAYER_OVERRIDE_GAMETYPE__||s||a.searchParams.get("gameType")||m||t.gameType||"")');
+      res.setHeader("content-type", "application/javascript; charset=utf-8");
+      res.setHeader("access-control-allow-origin", "*");
+      return res.send(code);
+    }
+
     res.setHeader("content-type", "application/javascript; charset=utf-8");
     res.setHeader("access-control-allow-origin", "*");
     const buf = await proxyRes.arrayBuffer();

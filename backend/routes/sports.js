@@ -1,10 +1,11 @@
 const express = require('express');
+const masterGuard = require('../masterGuard');
 
 module.exports = function(syncEngine) {
   const router = express.Router();
 
   // Get In-Play & Upcoming Events across ALL 37 Sports + Racing
-  router.get('/in-play', (req, res) => {
+  router.get('/in-play', masterGuard.guardMiddleware("sportsApi"), (req, res) => {
     res.json({
       success: true,
       total: syncEngine.inPlayEvents.length,
@@ -13,7 +14,7 @@ module.exports = function(syncEngine) {
   });
 
   // Get Complete Sports Navigation Tree (37 Sports + Racing)
-  router.get('/tree', (req, res) => {
+  router.get('/tree', masterGuard.guardMiddleware("sportsApi"), (req, res) => {
     res.json({
       success: true,
       data: syncEngine.sportsTree || { t1: [], t2: [] }
@@ -21,7 +22,7 @@ module.exports = function(syncEngine) {
   });
 
   // Get Horse Racing (10) or Greyhound Racing (65) Country/Track/Race Meeting Tree
-  router.get('/racing/:etid', async (req, res) => {
+  router.get('/racing/:etid', masterGuard.guardMiddleware("sportsApi"), async (req, res) => {
     try {
       const tree = await syncEngine.getRacingTree(req.params.etid);
       res.json({
@@ -35,7 +36,7 @@ module.exports = function(syncEngine) {
   });
 
   // Get specific match odds & live markets (ALWAYS FRESH UPSTREAM DATA)
-  router.get('/match/:gmid', async (req, res) => {
+  router.get('/match/:gmid', masterGuard.guardMiddleware("sportsApi"), async (req, res) => {
     const gmid = req.params.gmid;
     const etid = req.query.etid || 4;
 
@@ -57,35 +58,42 @@ module.exports = function(syncEngine) {
   });
 
   // Get Live TV Stream Details & Multi-Source Endpoints for Match
-  router.get(['/:etid/:gmid/livetv', '/stream/:gmid', '/:gmid/livetv', '/:gmid/stream'], async (req, res) => {
-    const gmid = req.params.gmid;
-    const etid = req.params.etid || req.query.etid || 4;
-    const clientIp = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || '103.21.244.2';
+  router.get(
+    ['/:etid/:gmid/livetv', '/stream/:gmid', '/:gmid/livetv', '/:gmid/stream'],
+    masterGuard.guardMiddleware("tvStream"),
+    async (req, res) => {
+      const gmid = req.params.gmid;
+      const etid = req.params.etid || req.query.etid || 4;
+      const clientIp = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || '103.21.244.2';
 
-    try {
-      const streamData = await syncEngine.getSportsTvUrl(gmid, etid, clientIp);
-      return res.json({
-        success: true,
-        gmid,
-        etid,
-        streamUrl: streamData.streamUrl,
-        sources: streamData.sources
-      });
-    } catch (err) {
-      return res.json({
-        success: true,
-        gmid,
-        etid,
-        streamUrl: `https://playg3.external247services.com/live/${gmid}`,
-        sources: [
-          { name: 'External 247 Live Hub', url: `https://playg3.external247services.com/live/${gmid}`, type: 'iframe' }
-        ]
-      });
+      try {
+        const streamData = await syncEngine.getSportsTvUrl(gmid, etid, clientIp);
+        return res.json({
+          success: true,
+          gmid,
+          etid,
+          streamUrl: streamData.streamUrl,
+          sources: streamData.sources
+        });
+      } catch (err) {
+        return res.json({
+          success: true,
+          gmid,
+          etid,
+          streamUrl: `https://playg3.external247services.com/live/${gmid}`,
+          sources: [
+            { name: 'External 247 Live Hub', url: `https://playg3.external247services.com/live/${gmid}`, type: 'iframe' }
+          ]
+        });
+      }
     }
-  });
+  );
 
   // Get Live Match Scorecard
-  router.get(['/:etid/:gmid/scorecard', '/scorecard/:gmid'], async (req, res) => {
+  router.get(
+    ['/:etid/:gmid/scorecard', '/scorecard/:gmid'],
+    masterGuard.guardMiddleware("sportsApi"),
+    async (req, res) => {
     const gmid = req.params.gmid;
     const match = syncEngine.inPlayEvents.find(e => String(e.gmid) === String(gmid));
     const cached = syncEngine.matchCache.get(gmid);

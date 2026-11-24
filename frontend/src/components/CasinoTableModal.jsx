@@ -1165,76 +1165,21 @@ export default function CasinoTableModal({ table, onClose }) {
               }
 
               // Andar Bahar Carousel HUD (Image 2 Exact Match)
+              // Andar Bahar Clean Joker HUD
               if (isAndarBahar) {
                 const cards = roundData?.cards || [];
                 const jokerCard = cards[0];
-                const jSuit = String(jokerCard?.suit || jokerCard?.raw || '').toUpperCase();
-                const isJokerBlack =
-                  jSuit.includes('S') ||
-                  jSuit.includes('C') ||
-                  jSuit.includes('♠') ||
-                  jSuit.includes('♣');
-                const dealtCards = cards.slice(1);
-                const andarCards = dealtCards.filter((_, i) => isJokerBlack ? (i % 2 === 0) : (i % 2 === 1));
-                const baharCards = dealtCards.filter((_, i) => isJokerBlack ? (i % 2 === 1) : (i % 2 === 0));
+                if (!jokerCard || jokerCard.isHidden) return null;
                 return (
-                  <div className="flex flex-col items-start gap-1 bg-black/70 p-2 rounded-lg backdrop-blur-sm border border-white/10">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[10px] font-black text-yellow-300 uppercase">
-                        JOKER
-                      </span>
-                      {renderCard(
-                        jokerCard,
-                        "ab-joker",
-                        !jokerCard || jokerCard.isHidden,
-                      )}
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-1">
-                        <span className="text-[10px] font-black text-amber-200 w-12 uppercase">
-                          ANDAR
-                        </span>
-                        <ChevronLeft
-                          size={14}
-                          className="text-slate-400 shrink-0"
-                        />
-                        <div className="flex gap-1 overflow-x-auto max-w-[220px] scrollbar-none">
-                          {andarCards.length > 0
-                            ? andarCards.map((c, i) =>
-                                renderCard(c, `ab-a-${i}`, !c || c.isHidden),
-                              )
-                            : [0, 1].map((i) =>
-                                renderCard(null, `ab-a-d-${i}`, true),
-                              )}
-                        </div>
-                        <ChevronRight
-                          size={14}
-                          className="text-slate-400 shrink-0"
-                        />
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <span className="text-[10px] font-black text-yellow-400 w-12 uppercase">
-                          BAHAR
-                        </span>
-                        <ChevronLeft
-                          size={14}
-                          className="text-slate-400 shrink-0"
-                        />
-                        <div className="flex gap-1 overflow-x-auto max-w-[220px] scrollbar-none">
-                          {baharCards.length > 0
-                            ? baharCards.map((c, i) =>
-                                renderCard(c, `ab-b-${i}`, !c || c.isHidden),
-                              )
-                            : [0, 1].map((i) =>
-                                renderCard(null, `ab-b-d-${i}`, true),
-                              )}
-                        </div>
-                        <ChevronRight
-                          size={14}
-                          className="text-slate-400 shrink-0"
-                        />
-                      </div>
-                    </div>
+                  <div className="flex items-center gap-2 bg-black/60 px-2.5 py-1.5 rounded-lg backdrop-blur-sm border border-white/10 shadow-lg">
+                    <span className="text-[10px] font-black text-amber-300 uppercase tracking-wider">
+                      JOKER
+                    </span>
+                    {renderCard(
+                      jokerCard,
+                      "ab-joker",
+                      !jokerCard || jokerCard.isHidden,
+                    )}
                   </div>
                 );
               }

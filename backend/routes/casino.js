@@ -1,13 +1,14 @@
 const express = require("express");
 const path = require("path");
 const fs = require("fs");
+const masterGuard = require("../masterGuard");
 
 module.exports = function (syncEngine) {
   const router = express.Router();
   const imageCache = new Map();
 
   // Get strictly the Official Diamond Casino Tables
-  router.get("/tables", async (req, res) => {
+  router.get("/tables", masterGuard.guardMiddleware("casinoApi"), async (req, res) => {
     let tables = syncEngine.casinoTables;
     if (tables.length === 0) {
       await syncEngine.fetchLiveCasinoTables();
@@ -75,68 +76,83 @@ module.exports = function (syncEngine) {
   });
 
   // Get Live Round Data (Real Cards, Real Countdown Timer, Real Odds) from Diamond Online
-  router.get("/round/:gameType", async (req, res) => {
-    const gameType = req.params.gameType;
-    try {
-      const liveRound = await syncEngine.fetchLiveCasinoRound(gameType);
-      if (liveRound) {
-        return res.json({ success: true, data: liveRound });
+  router.get(
+    "/round/:gameType",
+    masterGuard.guardMiddleware("casinoApi"),
+    async (req, res) => {
+      const gameType = req.params.gameType;
+      try {
+        const liveRound = await syncEngine.fetchLiveCasinoRound(gameType);
+        if (liveRound) {
+          return res.json({ success: true, data: liveRound });
+        }
+      } catch (err) {
+        console.error(
+          `Error fetching live casino round for ${gameType}:`,
+          err.message,
+        );
       }
-    } catch (err) {
-      console.error(
-        `Error fetching live casino round for ${gameType}:`,
-        err.message,
-      );
-    }
-    res.status(500).json({
-      success: false,
-      msg: "Failed to fetch live casino data from Diamond",
-    });
-  });
+      res.status(500).json({
+        success: false,
+        msg: "Failed to fetch live casino data from Diamond",
+      });
+    },
+  );
 
   // Get Real Recent Results from Diamond Online
-  router.get("/results/:gameType", async (req, res) => {
-    const gameType = req.params.gameType;
-    try {
-      const results = await syncEngine.fetchCasinoRecentResults(gameType);
-      return res.json({
-        success: true,
-        gameType,
-        total: results.length,
-        data: results,
-      });
-    } catch (err) {
-      console.error(
-        `Error fetching recent results for ${gameType}:`,
-        err.message,
-      );
-    }
-    res
-      .status(500)
-      .json({ success: false, msg: "Failed to fetch recent results" });
-  });
+  router.get(
+    "/results/:gameType",
+    masterGuard.guardMiddleware("casinoApi"),
+    async (req, res) => {
+      const gameType = req.params.gameType;
+      try {
+        const results = await syncEngine.fetchCasinoRecentResults(gameType);
+        return res.json({
+          success: true,
+          gameType,
+          total: results.length,
+          data: results,
+        });
+      } catch (err) {
+        console.error(
+          `Error fetching recent results for ${gameType}:`,
+          err.message,
+        );
+      }
+      res
+        .status(500)
+        .json({ success: false, msg: "Failed to fetch recent results" });
+    },
+  );
 
   // Get Authentic Round Detail Popup data directly from Diamond Online (/accstatepopup)
-  router.get("/round-detail/:gameType/:mid", async (req, res) => {
-    const { gameType, mid } = req.params;
-    try {
-      const data = await syncEngine.fetchCasinoRoundDetail(gameType, mid);
-      if (data) {
-        return res.json({ success: true, data });
+  router.get(
+    "/round-detail/:gameType/:mid",
+    masterGuard.guardMiddleware("casinoApi"),
+    async (req, res) => {
+      const { gameType, mid } = req.params;
+      try {
+        const data = await syncEngine.fetchCasinoRoundDetail(gameType, mid);
+        if (data) {
+          return res.json({ success: true, data });
+        }
+      } catch (err) {
+        console.error(
+          `Error fetching round detail for ${gameType} / ${mid}:`,
+          err.message,
+        );
       }
-    } catch (err) {
-      console.error(
-        `Error fetching round detail for ${gameType} / ${mid}:`,
-        err.message,
-      );
-    }
-    res
-      .status(500)
-      .json({ success: false, msg: "Failed to fetch round detail" });
-  });
+      res
+        .status(500)
+        .json({ success: false, msg: "Failed to fetch round detail" });
+    },
+  );
 
   // Dedicated Standalone Live Video Player (Zero-Latency Direct Stream & Fallback)
-  router.get(["/player/:slug", "/stream/:slug"], async (req, res) => {
+  router.get(
+    ["/player/:slug", "/stream/:slug"],
+    masterGuard.guardMiddleware("tvStream"),
+    async (req, res) => {
     const slug = req.params.slug;
     const clientIp =
       req.headers["x-forwarded-for"]?.split(",")[0] ||
@@ -299,7 +315,10 @@ module.exports = function (syncEngine) {
   });
 
   // Dedicated Reverse-Proxied Media Player for Diamond Online (Bypasses X-Frame-Options)
-  router.get("/mediaplayer/:slug", async (req, res) => {
+  router.get(
+    "/mediaplayer/:slug",
+    masterGuard.guardMiddleware("tvStream"),
+    async (req, res) => {
     const slug = req.params.slug;
     const clientIp =
       req.headers["x-forwarded-for"]?.split(",")[0] ||
@@ -349,6 +368,7 @@ module.exports = function (syncEngine) {
       "/:gameType/tv",
       "/:gameType/stream",
     ],
+    masterGuard.guardMiddleware("tvStream"),
     async (req, res) => {
       const slug = req.params.gameType;
 

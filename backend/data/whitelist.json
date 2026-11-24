@@ -1,0 +1,112 @@
+{
+  "settings": {
+    "guardActive": true,
+    "blockScrapers": true,
+    "blockDirectAccess": false,
+    "autoWhitelistLocalhost": true
+  },
+  "credentials": {
+    "username": "igwasim",
+    "password": "Asdf1234#"
+  },
+  "domains": [
+    {
+      "id": "dom_default_1",
+      "domain": "72.61.172.110",
+      "casinoApi": true,
+      "sportsApi": true,
+      "tvStream": true,
+      "allowDirect": true,
+      "active": true,
+      "note": "Production Hostinger VPS Server",
+      "addedAt": "2026-11-25T01:00:00.000Z"
+    },
+    {
+      "id": "dom_default_2",
+      "domain": "localhost",
+      "casinoApi": true,
+      "sportsApi": true,
+      "tvStream": true,
+      "allowDirect": true,
+      "active": true,
+      "note": "Local Development",
+      "addedAt": "2026-11-25T01:00:00.000Z"
+    },
+    {
+      "id": "dom_default_3",
+      "domain": "127.0.0.1",
+      "casinoApi": true,
+      "sportsApi": true,
+      "tvStream": true,
+      "allowDirect": true,
+      "active": true,
+      "note": "Loopback Host",
+      "addedAt": "2026-11-25T01:00:00.000Z"
+    },
+    {
+      "id": "dom_default_4",
+      "domain": "d247.com",
+      "casinoApi": true,
+      "sportsApi": true,
+      "tvStream": true,
+      "allowDirect": true,
+      "active": true,
+      "note": "Official D247 Portal",
+      "addedAt": "2026-11-25T01:00:00.000Z"
+    },
+    {
+      "id": "dom_default_5",
+      "domain": "chimneysolutions.info",
+      "casinoApi": true,
+      "sportsApi": true,
+      "tvStream": true,
+      "allowDirect": true,
+      "active": true,
+      "note": "CSTV Chimney Partner",
+      "addedAt": "2026-11-25T01:00:00.000Z"
+    },
+    {
+      "id": "dom_default_6",
+      "domain": "igambli.com",
+      "casinoApi": true,
+      "sportsApi": true,
+      "tvStream": true,
+      "allowDirect": true,
+      "active": true,
+      "note": "Aura Igambli Partner",
+      "addedAt": "2026-11-25T01:00:00.000Z"
+    }
+  ],
+  "ips": [
+    {
+      "id": "ip_default_1",
+      "ip": "72.61.172.110",
+      "casinoApi": true,
+      "sportsApi": true,
+      "tvStream": true,
+      "active": true,
+      "note": "Production Hostinger VPS Server IP",
+      "addedAt": "2026-11-25T01:00:00.000Z"
+    },
+    {
+      "id": "ip_default_2",
+      "ip": "127.0.0.1",
+      "casinoApi": true,
+      "sportsApi": true,
+      "tvStream": true,
+      "active": true,
+      "note": "Localhost IPv4",
+      "addedAt": "2026-11-25T01:00:00.000Z"
+    },
+    {
+      "id": "ip_default_3",
+      "ip": "::1",
+      "casinoApi": true,
+      "sportsApi": true,
+      "tvStream": true,
+      "active": true,
+      "note": "Localhost IPv6",
+      "addedAt": "2026-11-25T01:00:00.000Z"
+    }
+  ]
+}
