@@ -130,49 +130,49 @@ const CASINO_SLUG_MAP = {
   'muflis': 'teenmuf',
 
   // Cards & Baccarat
-  'baccarat': 'baccarat',
-  'baccarat2': 'baccarat2',
-  'baccarat29': 'teensin',
-  'tbaccarat': 'baccarat',
-  'card32': 'card32',
-  'card32eu': 'card32eu',
-  '3cardj': '3cardj',
-  'queen': 'queen',
-  'queentop': 'queen',
-  'jack': 'joker1',
-  'jacktop': 'joker1',
+  baccarat: "baccarat",
+  baccarat2: "baccarat2",
+  baccarat29: "teensin",
+  tbaccarat: "baccarat",
+  card32: "card32",
+  card32eu: "card32eu",
+  "3cardj": "3cardj",
+  queen: "queen",
+  queentop: "queen",
+  jack: "joker1",
+  jacktop: "joker1",
 
   // Others & Special
-  'dt20': 'dt20',
-  'dt202': 'dt202',
-  'dt6': 'dt6',
-  'dtl20': 'dtl20',
-  'sicbo': 'sicbo',
-  'sicbo2': 'sicbo2',
-  'worli': 'worli',
-  'worli2': 'worli',
-  'worli3': 'worli',
-  'aaa': 'aaa',
-  'aaa2': 'aaa2',
-  'btable': 'btable',
-  'btable2': 'btable2',
-  'lottcard': 'lottcard',
-  'race20': 'race20',
-  'race17': 'race17',
-  'race2': 'race2',
-  'trio': 'trio',
-  'notenum': 'notenum',
-  'kbc': 'kbc',
-  'dum10': 'dum10',
-  'duskadum': 'dum10',
-  'cmeter': 'cmeter1',
-  'cmeter1': 'cmeter1',
-  'card1oneday': 'teen1',
-  'dolidana': 'dolidana',
-  'mogambo': 'mogambo',
-  'goal': 'goal',
-  'goal2': 'goal2',
-  'trap': 'trap'
+  dt20: "dt20",
+  dt202: "dt202",
+  dt6: "dt6",
+  dtl20: "dtl20",
+  sicbo: "sicbo",
+  sicbo2: "sicbo2",
+  worli: "worli",
+  worli2: "worli",
+  worli3: "worli",
+  aaa: "aaa",
+  aaa2: "aaa2",
+  btable: "btable",
+  btable2: "btable2",
+  lottcard: "lottcard",
+  race20: "race20",
+  race17: "race17",
+  race2: "race2",
+  trio: "trio",
+  notenum: "notenum",
+  kbc: "kbc",
+  dum10: "dum10",
+  duskadum: "dum10",
+  cmeter: "cmeter1",
+  cmeter1: "cmeter1",
+  card1oneday: "teen1",
+  dolidana: "dolidana",
+  mogambo: "mogambo",
+  goal: "goal",
+  goal2: "goal2",
+  trap: "trap",
 };
 
 const EXACT_77_CASINO_TABLES = [
@@ -1086,9 +1086,17 @@ class D247SyncEngine {
       streamUrl: upstreamUrl || localPlayerUrl,
       upstreamUrl: upstreamUrl,
       sources: [
-        ...(upstreamUrl ? [{ name: 'Diamond Video (Direct)', url: upstreamUrl, type: 'iframe' }] : []),
-        { name: 'D247 Live Stream', url: localPlayerUrl, type: 'iframe' }
-      ]
+        ...(upstreamUrl
+          ? [
+              {
+                name: "Diamond Video (Direct)",
+                url: upstreamUrl,
+                type: "iframe",
+              },
+            ]
+          : []),
+        { name: "D247 Live Stream", url: localPlayerUrl, type: "iframe" },
+      ],
     };
   }
 
@@ -1451,10 +1459,10 @@ class D247SyncEngine {
         const superOver2Item = {
           gmid: "superover2",
           etid: 4,
-          sportName: 'Cricket',
-          sportIcon: '🏏',
-          eventName: 'Super Over2 (IND vs ENG)',
-          competition: 'Diamond Virtual Cricket',
+          sportName: "Cricket",
+          sportIcon: "🏏",
+          eventName: "Super Over2 (IND vs ENG)",
+          competition: "Diamond Virtual Cricket",
           inPlay: true,
           status: isSO2Suspended ? "SUSPENDED" : "OPEN",
           gscode: isSO2Suspended ? 0 : 1,
@@ -1505,10 +1513,12 @@ class D247SyncEngine {
         };
 
         // Super Over (ENG vs RSA)
-        const cachedSO = this.matchCache.get('superover');
-        const soBookmaker = cachedSO?.markets?.find(m => m.marketName === 'Bookmaker' || m.marketName === 'Match Odds');
-        const rEng = soBookmaker?.runners?.find(r => r.runnerName === 'ENG');
-        const rRsa = soBookmaker?.runners?.find(r => r.runnerName === 'RSA');
+        const cachedSO = this.matchCache.get("superover");
+        const soBookmaker = cachedSO?.markets?.find(
+          (m) => m.marketName === "Bookmaker" || m.marketName === "Match Odds",
+        );
+        const rEng = soBookmaker?.runners?.find((r) => r.runnerName === "ENG");
+        const rRsa = soBookmaker?.runners?.find((r) => r.runnerName === "RSA");
 
         const isSOSuspended = cachedSO ? cachedSO.timer === 0 : false;
         const soEngBack = rEng?.backPrice || 1.96;
@@ -1517,31 +1527,59 @@ class D247SyncEngine {
         const soRsaLay = rRsa?.layPrice || 1.98;
 
         const superOverItem = {
-          gmid: 'superover',
+          gmid: "superover",
           etid: 4,
-          sportName: 'Cricket',
-          sportIcon: '🏏',
-          eventName: 'Super Over (ENG vs RSA)',
-          competition: 'Diamond Virtual Cricket',
+          sportName: "Cricket",
+          sportIcon: "🏏",
+          eventName: "Super Over (ENG vs RSA)",
+          competition: "Diamond Virtual Cricket",
           inPlay: true,
-          status: isSOSuspended ? 'SUSPENDED' : 'OPEN',
+          status: isSOSuspended ? "SUSPENDED" : "OPEN",
           gscode: isSOSuspended ? 0 : 1,
-          stime: '',
+          stime: "",
           tv: true,
           fancy: true,
           bm: true,
           isVirtual: true,
           isPinned: true,
-          streamUrl: '/api/casino/superover/livetv',
+          streamUrl: "/api/casino/superover/livetv",
           cols: {
-            col1: { name: 'ENG', back: soEngBack, lay: soEngLay, suspended: isSOSuspended, exists: true },
-            colX: { name: '', back: 0, lay: 0, suspended: false, exists: false },
-            col2: { name: 'RSA', back: soRsaBack, lay: soRsaLay, suspended: isSOSuspended, exists: true }
+            col1: {
+              name: "ENG",
+              back: soEngBack,
+              lay: soEngLay,
+              suspended: isSOSuspended,
+              exists: true,
+            },
+            colX: {
+              name: "",
+              back: 0,
+              lay: 0,
+              suspended: false,
+              exists: false,
+            },
+            col2: {
+              name: "RSA",
+              back: soRsaBack,
+              lay: soRsaLay,
+              suspended: isSOSuspended,
+              exists: true,
+            },
           },
           runners: [
-            { runnerName: 'ENG', backPrice: soEngBack, layPrice: soEngLay, status: isSOSuspended ? 'SUSPENDED' : 'ACTIVE' },
-            { runnerName: 'RSA', backPrice: soRsaBack, layPrice: soRsaLay, status: isSOSuspended ? 'SUSPENDED' : 'ACTIVE' }
-          ]
+            {
+              runnerName: "ENG",
+              backPrice: soEngBack,
+              layPrice: soEngLay,
+              status: isSOSuspended ? "SUSPENDED" : "ACTIVE",
+            },
+            {
+              runnerName: "RSA",
+              backPrice: soRsaBack,
+              layPrice: soRsaLay,
+              status: isSOSuspended ? "SUSPENDED" : "ACTIVE",
+            },
+          ],
         };
 
         parsedMatches.unshift(superOverItem);
@@ -2047,22 +2085,32 @@ class D247SyncEngine {
    */
   async fetchLiveMatchData(gmid, etid = 4) {
     // 1. Super Over & Super Over 2
-    if (gmid === 'superover2' || gmid === 'superover') {
+    if (gmid === "superover2" || gmid === "superover") {
       try {
-        const rawRes = await this.executeUpstream('/casino/data', { type: gmid });
+        const rawRes = await this.executeUpstream("/casino/data", {
+          type: gmid,
+        });
         if (rawRes && rawRes.success && rawRes.data) {
           const t1 = rawRes.data.t1 || {};
           const t2 = rawRes.data.t2 || [];
           const formatted = this.formatGameData(gmid, 4, t2);
           if (formatted) {
-            formatted.roundId = String(t1.gmid || t1.oldgmid || '');
+            formatted.roundId = String(t1.gmid || t1.oldgmid || "");
             formatted.scoreboard = null;
             formatted.timer = t1.lt !== undefined ? t1.lt : 0;
-            formatted.totalTimer = t1.ft || (gmid === 'superover' ? 35 : 20);
-            formatted.card = t1.card || '';
-            formatted.cards = (t1.card || '').replace(/\[|\]/g, '').split(/[|,]/).map(c => c.trim()).filter(Boolean);
-            formatted.eventName = t1.ename || (gmid === 'superover' ? 'ENG Vs RSA Super Over' : 'IND Vs ENG Super Over2');
-            formatted.status = t1.lt === 0 ? 'SUSPENDED' : 'IN_PLAY';
+            formatted.totalTimer = t1.ft || (gmid === "superover" ? 35 : 20);
+            formatted.card = t1.card || "";
+            formatted.cards = (t1.card || "")
+              .replace(/\[|\]/g, "")
+              .split(/[|,]/)
+              .map((c) => c.trim())
+              .filter(Boolean);
+            formatted.eventName =
+              t1.ename ||
+              (gmid === "superover"
+                ? "ENG Vs RSA Super Over"
+                : "IND Vs ENG Super Over2");
+            formatted.status = t1.lt === 0 ? "SUSPENDED" : "IN_PLAY";
             formatted.streamUrl = `/api/casino/${gmid}/livetv`;
 
             const recentRes = await this.fetchCasinoRecentResults(gmid);
