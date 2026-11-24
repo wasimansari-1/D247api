@@ -107,7 +107,8 @@ const TOP_MENU_ITEMS = [
   { label: 'TEENPATTI', type: 'casino', filter: 'Teen Patti' },
   { label: 'POKER', type: 'casino', filter: 'Poker' },
   { label: 'LUCKY 7', type: 'casino', filter: 'Lucky 7' },
-  { label: 'CRASH', type: 'casino', filter: 'Others' }
+  { label: 'CRASH', type: 'casino', filter: 'Others' },
+  { label: '📚 API DOCS', type: 'docs' }
 ];
 
 // Exact 77 Casino Tables matching Diamond Online Image 3 & Image 4
@@ -268,6 +269,12 @@ export default function App() {
       })
       .catch(() => {});
 
+    // Listen to browser popstate for /docs URL
+    const handlePopState = () => {
+      setShowDocs(typeof window !== 'undefined' && window.location.pathname.includes('/docs'));
+    };
+    window.addEventListener('popstate', handlePopState);
+
     // Socket.io Real-time listeners
     socket.on('connect', () => {
       setTickerText('🟢 Live Zero-Latency Synced with Diamond247 Engine');
@@ -278,6 +285,7 @@ export default function App() {
         if (!prev || String(prev.gmid) !== String(payload.gmid)) return prev;
         return {
           ...prev,
+          roundId: payload.roundId || prev.roundId,
           markets: payload.markets || prev.markets,
           scoreboard: payload.scoreboard || prev.scoreboard,
           streamUrl: payload.streamUrl || prev.streamUrl,
@@ -444,7 +452,10 @@ export default function App() {
           <button
             key={idx}
             onClick={() => {
-              if (item.type === 'sports') {
+              if (item.type === 'docs') {
+                setShowDocs(true);
+                if (typeof window !== 'undefined') window.history.pushState(null, '', '/docs');
+              } else if (item.type === 'sports') {
                 setActiveTab('sports');
                 setSelectedSportId(item.sportId);
               } else {
@@ -677,13 +688,19 @@ export default function App() {
                   
                   {/* Match Banner */}
                   <div className="flex justify-between items-center mb-2.5 border-b border-slate-700 pb-2">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="bg-red-600 text-white text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wider">
                         LIVE MATCH
                       </span>
                       <h3 className="font-extrabold text-base text-yellow-400">
                         {matchDetails.eventName}
                       </h3>
+                      {matchDetails.roundId && (
+                        <span className="text-[11px] text-cyan-300 font-mono font-bold bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-700/60 shadow-sm flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+                          Round ID: #{matchDetails.roundId}
+                        </span>
+                      )}
                       <span className="text-xs text-slate-400 font-mono">
                         ({matchDetails.competition})
                       </span>
@@ -1471,7 +1488,12 @@ export default function App() {
 
       {/* Commercial API Documentation Modal */}
       {showDocs && (
-        <DocsModal onClose={() => setShowDocs(false)} />
+        <DocsModal onClose={() => {
+          setShowDocs(false);
+          if (typeof window !== 'undefined' && window.location.pathname.includes('docs')) {
+            window.history.pushState(null, '', '/');
+          }
+        }} />
       )}
 
       {/* Footer */}
@@ -1480,7 +1502,10 @@ export default function App() {
           <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
           <span>D247 Zero-Latency Upstream Engine Active & Synced</span>
           <button 
-            onClick={() => setShowDocs(true)}
+            onClick={() => {
+              setShowDocs(true);
+              if (typeof window !== 'undefined') window.history.pushState(null, '', '/docs');
+            }}
             className="text-sky-400 hover:text-sky-300 hover:underline flex items-center gap-1 font-bold ml-2 pl-2 border-l border-slate-700"
           >
             <BookOpen size={12} />

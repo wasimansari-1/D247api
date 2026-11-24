@@ -226,7 +226,7 @@ module.exports = function(syncEngine) {
         }
       },
       {
-        category: "Live Casino Feeds (79+ Tables)",
+        category: "Live Casino Feeds (77 Tables)",
         method: "GET",
         path: "/api/casino/round/:slug",
         summary: "Live Casino Round Data (Real Cards & Rates)",
@@ -258,7 +258,7 @@ module.exports = function(syncEngine) {
         }
       },
       {
-        category: "Live Casino Feeds (79+ Tables)",
+        category: "Live Casino Feeds (77 Tables)",
         method: "GET",
         path: "/api/casino/results/:slug",
         summary: "Casino Recent Results History",
@@ -277,7 +277,7 @@ module.exports = function(syncEngine) {
         }
       },
       {
-        category: "Live Casino Feeds (79+ Tables)",
+        category: "Live Casino Feeds (77 Tables)",
         method: "GET",
         path: "/api/casino/stream/:slug",
         summary: "Zero-CORS Live Casino Video Stream",
@@ -288,7 +288,7 @@ module.exports = function(syncEngine) {
         responseSample: "HTML5 video player stream document"
       },
       {
-        category: "Live Casino Feeds (79+ Tables)",
+        category: "Live Casino Feeds (77 Tables)",
         method: "GET",
         path: "/api/casino/image/:slug",
         summary: "Casino Artwork CDN Proxy",
