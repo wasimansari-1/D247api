@@ -45,6 +45,7 @@ import Race20Board from "./casino/Race20Board";
 import Race2Board from "./casino/Race2Board";
 import DusKaDumBoard from "./casino/DusKaDumBoard";
 import OneCard20Board from "./casino/OneCard20Board";
+import OneCardMeterBoard from "./casino/OneCardMeterBoard";
 import Race20ResultModal from "./casino/Race20ResultModal";
 import ResultDetailModal from "./casino/ResultDetailModal";
 import LotteryBoard from "./casino/LotteryBoard";
@@ -175,10 +176,12 @@ export default function CasinoTableModal({ table, onClose }) {
   const isQueenTop =
     (slug === "queentop" ||
       slug === "teen41" ||
-      nameLow.includes("queen top")) &&
+      (nameLow.includes("queen") && nameLow.includes("top"))) &&
     !isQueen;
   const isJackTop =
-    slug === "jacktop" || slug === "teen42" || nameLow.includes("jack");
+    slug === "jacktop" ||
+    slug === "teen42" ||
+    (nameLow.includes("jack") && nameLow.includes("top"));
   const isLottery =
     slug === "lottcard" || slug.includes("lott") || nameLow.includes("lottery");
   const isSicBo = slug.includes("sicbo") || nameLow.includes("sic bo");
@@ -202,10 +205,12 @@ export default function CasinoTableModal({ table, onClose }) {
     nameLow.includes("teenpatti test") ||
     nameLow.includes("teen test");
   const isTeenOpen =
-    slug === "teensin" ||
-    slug === "teen8" ||
-    nameLow.includes("open teen") ||
-    nameLow.includes("teenpatti open");
+    !isQueenTop &&
+    !isJackTop &&
+    (slug === "teensin" ||
+      slug === "teen8" ||
+      nameLow.includes("open teen") ||
+      nameLow.includes("teenpatti open"));
   const isPoker1Day =
     slug === "poker" ||
     slug === "poker1day" ||
@@ -506,15 +511,15 @@ export default function CasinoTableModal({ table, onClose }) {
       };
     }
 
-    // 1.05 1 Card Meter: L (Low), H (High)
+    // 1.05 1 Card Meter: A (Green), B (Orange/Brown) (Image 2 Right Exact Match)
     if (isOneCardMeter) {
-      const isL = w === "1" || lower.startsWith("l");
+      const isA = w === "1" || lower === "a" || lower.includes("fighter a");
       return {
-        letter: isL ? "L" : "H",
-        bg: isL
-          ? "bg-blue-600 text-white font-black"
-          : "bg-amber-600 text-white font-black",
-        title: isL ? "Low" : "High",
+        letter: isA ? "A" : "B",
+        bg: isA
+          ? "bg-[#2e7d32] text-white font-black"
+          : "bg-[#d84315] text-white font-black",
+        title: isA ? "Fighter A" : "Fighter B",
       };
     }
 
@@ -751,12 +756,30 @@ export default function CasinoTableModal({ table, onClose }) {
       };
     }
 
-    // 7. Teen Patti 1-Day, 20-20, Queen Top, Jack Top, Poison, Joker in Dark Green Badges (Image 3 & 4 Exact Match)
+    // Queen Top & Jack Top: A (Green #2e7d32), B (Orange/Brown #d84315) (Image 1 Right Exact Match)
+    if (isQueenTop || isJackTop) {
+      let char = "A";
+      if (w === "1" || lower === "a" || lower.includes("player a")) {
+        char = "A";
+      } else if (w === "2" || lower === "b" || lower.includes("player b")) {
+        char = "B";
+      } else {
+        char = (w.slice(0, 1) || "A").toUpperCase();
+      }
+      return {
+        letter: char,
+        bg:
+          char === "A"
+            ? "bg-[#2e7d32] text-white font-black"
+            : "bg-[#d84315] text-white font-black",
+        title: char === "A" ? "Player A" : "Player B",
+      };
+    }
+
+    // 7. Teen Patti 1-Day, 20-20, Poison, Joker in Dark Green Badges (Image 3 & 4 Exact Match)
     if (
       isTeen1Day ||
       isTeen20 ||
-      isQueenTop ||
-      isJackTop ||
       isTeenPattiJoker ||
       isUnlimitedJoker ||
       isPoison ||
@@ -1482,11 +1505,11 @@ export default function CasinoTableModal({ table, onClose }) {
                 );
               }
 
-              // Queen Top Open Teenpatti (Image 3)
+              // Queen Top Open Teenpatti (Image 1 Right - Alternating Cards)
               if (isQueenTop) {
                 const cards = roundData?.cards || [];
-                const playerA = cards.slice(0, 3);
-                const playerB = cards.slice(3, 6);
+                const playerA = [cards[0], cards[2], cards[4]];
+                const playerB = [cards[1], cards[3], cards[5]];
                 return (
                   <div className="flex flex-col items-start gap-1">
                     <div>
@@ -1521,11 +1544,11 @@ export default function CasinoTableModal({ table, onClose }) {
                 );
               }
 
-              // Jack Top Open Teenpatti (Image 4)
+              // Jack Top Open Teenpatti (Alternating Cards)
               if (isJackTop) {
                 const cards = roundData?.cards || [];
-                const playerA = cards.slice(0, 3);
-                const playerB = cards.slice(3, 6);
+                const playerA = [cards[0], cards[2], cards[4]];
+                const playerB = [cards[1], cards[3], cards[5]];
                 return (
                   <div className="flex flex-col items-start gap-1">
                     <div>
@@ -1556,6 +1579,19 @@ export default function CasinoTableModal({ table, onClose }) {
                         )}
                       </div>
                     </div>
+                  </div>
+                );
+              }
+
+              // 1 Card Meter (Image 2 Right Exact Match: Fighter A card, Fighter B card)
+              if (isOneCardMeter) {
+                const cards = roundData?.cards || [];
+                const cardA = cards[0];
+                const cardB = cards[1];
+                return (
+                  <div className="flex gap-1.5">
+                    {renderCard(cardA, "cmeter-a", !cardA || cardA.isHidden)}
+                    {renderCard(cardB, "cmeter-b", !cardB || cardB.isHidden)}
                   </div>
                 );
               }
@@ -2361,6 +2397,12 @@ export default function CasinoTableModal({ table, onClose }) {
             />
           ) : isOneCard20 || isOneCard1Day ? (
             <OneCard20Board
+              roundData={roundData}
+              timer={timer}
+              isSuspended={isSuspended}
+            />
+          ) : isOneCardMeter ? (
+            <OneCardMeterBoard
               roundData={roundData}
               timer={timer}
               isSuspended={isSuspended}

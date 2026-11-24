@@ -102,7 +102,25 @@ export default function ResultDetailModal({ result, gameName, slug, onClose }) {
   const isSuperOver = nameLow.includes('super over') || nameLow.includes('superover');
   const isGoal = nameLow.includes('goal');
   const isAndarBahar = nameLow.includes('andar') || nameLow.includes('ab20') || nameLow.includes('ab3') || nameLow.includes('ab4') || nameLow.includes('ab150');
-  const isOneCard = nameLow.includes('1 card') || nameLow.includes('one card') || nameLow.includes('1card') || nameLow.includes('kbc');
+  const isOneCardMeter =
+    slug === 'cmeter' ||
+    slug === 'cmeter1' ||
+    nameLow.includes('1 card meter') ||
+    nameLow.includes('cmeter');
+  const isOneCard =
+    (nameLow.includes('1 card') ||
+      nameLow.includes('one card') ||
+      nameLow.includes('1card') ||
+      nameLow.includes('kbc')) &&
+    !isOneCardMeter;
+  const isQueenTop =
+    slug === 'queentop' ||
+    slug === 'teen41' ||
+    (nameLow.includes('queen') && nameLow.includes('top'));
+  const isJackTop =
+    slug === 'jacktop' ||
+    slug === 'teen42' ||
+    (nameLow.includes('jack') && nameLow.includes('top'));
   const isPoker = nameLow.includes('poker');
   const isQueen = (slug === 'queen' || nameLow === 'queen' || nameLow.includes('queen')) && !slug?.includes('queentop') && !nameLow.includes('queen top');
   const isLottery = slug === 'lottcard' || nameLow.includes('lottery') || nameLow.includes('lott');
@@ -431,6 +449,33 @@ export default function ResultDetailModal({ result, gameName, slug, onClose }) {
                 {parsedCards.slice(0, 3).map((c, i) => renderCardGraphic(c, i))}
               </div>
             </div>
+          ) : isOneCardMeter ? (
+            /* 1 CARD METER POPUP: Fighter A vs Fighter B (Image 2 Right Exact Match) */
+            <div className="flex flex-col items-center gap-3 w-full">
+              <div className="grid grid-cols-2 gap-6 w-full max-w-xs">
+                <div className="flex flex-col items-center gap-1.5 p-3 rounded-lg bg-blue-50 border border-blue-200 shadow-sm">
+                  <div className="flex items-center gap-1 text-xs font-black text-slate-800 uppercase">
+                    <span>FIGHTER A</span>
+                    {(detailData?.win === '1' || (detailData?.winnat || '').includes('A') || (result?.winner || '').toUpperCase() === 'A') && (
+                      <Trophy size={14} className="text-amber-500 fill-amber-500" />
+                    )}
+                  </div>
+                  {renderCardGraphic(parsedCards[0] || parseCardCode('10CC'), 0)}
+                </div>
+                <div className="flex flex-col items-center gap-1.5 p-3 rounded-lg bg-rose-50 border border-rose-200 shadow-sm">
+                  <div className="flex items-center gap-1 text-xs font-black text-slate-800 uppercase">
+                    <span>FIGHTER B</span>
+                    {(detailData?.win === '2' || (detailData?.winnat || '').includes('B') || (result?.winner || '').toUpperCase() === 'B') && (
+                      <Trophy size={14} className="text-amber-500 fill-amber-500" />
+                    )}
+                  </div>
+                  {renderCardGraphic(parsedCards[1] || parseCardCode('ASS'), 1)}
+                </div>
+              </div>
+              <div className="border border-slate-300 rounded px-6 py-2 bg-slate-50 text-center text-xs font-bold text-slate-800 shadow-sm">
+                Winner: <span className="font-black text-blue-600">{detailData?.winnat || (detailData?.win === '1' || (result?.winner || '').toUpperCase() === 'A' ? 'Fighter A' : 'Fighter B')}</span>
+              </div>
+            </div>
           ) : isOneCard ? (
             /* 7. ONE CARD POPUP */
             <div className="flex flex-col items-center gap-3 w-full">
@@ -558,6 +603,46 @@ export default function ResultDetailModal({ result, gameName, slug, onClose }) {
               </div>
               <div className="border border-slate-300 rounded px-6 py-2 bg-slate-50 text-center text-xs font-bold text-slate-800 shadow-sm mt-1">
                 Winning Outcome: <span className="font-black text-emerald-700">{detailData?.winnat || cricketOutcome}</span>
+              </div>
+            </div>
+          ) : isQueenTop || isJackTop ? (
+            /* QUEEN TOP & JACK TOP POPUP: Player A [0, 2, 4] vs Player B [1, 3, 5] (Image 1 Right Exact Match) */
+            <div className="flex flex-col items-center gap-3 w-full">
+              <div className="grid grid-cols-2 gap-4 w-full">
+                <div className="flex flex-col items-center gap-1.5 p-2.5 rounded-lg bg-emerald-50 border border-emerald-300 shadow-sm">
+                  <div className="flex items-center gap-1 text-xs font-black text-slate-800">
+                    <span>Player A</span>
+                    {(detailData?.win === '1' || (detailData?.winnat || '').includes('A') || (result?.winner || '').toUpperCase() === 'A') && (
+                      <Trophy size={14} className="text-amber-500 fill-amber-500" />
+                    )}
+                  </div>
+                  <div className="flex gap-1.5">
+                    {[parsedCards[0], parsedCards[2], parsedCards[4]].filter(Boolean).map((c, i) => renderCardGraphic(c, `qa-${i}`))}
+                  </div>
+                </div>
+
+                <div className="flex flex-col items-center gap-1.5 p-2.5 rounded-lg bg-amber-50 border border-amber-300 shadow-sm">
+                  <div className="flex items-center gap-1 text-xs font-black text-slate-800">
+                    <span>Player B</span>
+                    {(detailData?.win === '2' || (detailData?.winnat || '').includes('B') || (result?.winner || '').toUpperCase() === 'B') && (
+                      <Trophy size={14} className="text-amber-500 fill-amber-500" />
+                    )}
+                  </div>
+                  <div className="flex gap-1.5">
+                    {[parsedCards[1], parsedCards[3], parsedCards[5]].filter(Boolean).map((c, i) => renderCardGraphic(c, `qb-${i}`))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-center text-xs space-y-1 font-mono text-slate-700 w-full shadow-sm">
+                <div className="font-bold text-slate-900">
+                  Winner: <span className="text-blue-600 font-black">{detailData?.winnat || descParts[0] || (detailData?.win === '1' || (result?.winner || '').toUpperCase() === 'A' ? 'Player A' : 'Player B')}</span>
+                </div>
+                {descParts[1] && (
+                  <div className="text-[11px] text-slate-500">
+                    Combination: <span className="font-bold text-slate-800">{descParts[1]}</span>
+                  </div>
+                )}
               </div>
             </div>
           ) : (

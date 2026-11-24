@@ -163,8 +163,8 @@ const CASINO_SLUG_MAP = {
   sicbo: "sicbo",
   sicbo2: "sicbo2",
   worli: "worli",
-  worli2: "worli",
-  worli3: "worli",
+  worli2: "worli2",
+  worli3: "worli3",
   aaa: "aaa",
   aaa2: "aaa2",
   btable: "btable",
@@ -180,8 +180,8 @@ const CASINO_SLUG_MAP = {
   card20: "teen120",
   dum10: "dum10",
   duskadum: "dum10",
-  cmeter: "cmeter",
-  cmeter1: "cmeter",
+  cmeter: "cmeter1",
+  cmeter1: "cmeter1",
   card1oneday: "teen1",
   dolidana: "dolidana",
   mogambo: "mogambo",
@@ -1176,8 +1176,18 @@ class D247SyncEngine {
             else val = rawW;
           } else if (targetSlug === "cmeter" || targetSlug === "cmeter1") {
             const rawW = String(r.win || r.winner || r.nat || "").trim();
-            if (rawW === "1" || rawW.toLowerCase().includes("low")) val = "L";
-            else if (rawW === "2" || rawW.toLowerCase().includes("high")) val = "H";
+            if (rawW === "1" || rawW.toLowerCase().includes("fighter a") || rawW.toLowerCase() === "a") val = "A";
+            else if (rawW === "2" || rawW.toLowerCase().includes("fighter b") || rawW.toLowerCase() === "b") val = "B";
+            else val = rawW;
+          } else if (
+            targetSlug === "teen41" ||
+            targetSlug === "teen42" ||
+            targetSlug === "queentop" ||
+            targetSlug === "jacktop"
+          ) {
+            const rawW = String(r.win || r.winner || r.nat || "").trim();
+            if (rawW === "1" || rawW.toLowerCase().includes("player a") || rawW.toLowerCase() === "a") val = "A";
+            else if (rawW === "2" || rawW.toLowerCase().includes("player b") || rawW.toLowerCase() === "b") val = "B";
             else val = rawW;
           } else if (targetSlug === "ab3" || targetSlug === "ab4") {
             const rawW = String(r.win || r.winner || r.nat || "").trim();
