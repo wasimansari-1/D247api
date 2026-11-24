@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import {
   X,
   Play,
@@ -35,6 +35,10 @@ import TeenPattiOpenBoard from './casino/TeenPattiOpenBoard';
 import Poker1DayBoard from './casino/Poker1DayBoard';
 import Poker20Board from './casino/Poker20Board';
 import Poker6Board from './casino/Poker6Board';
+import BaccaratBoard from './casino/BaccaratBoard';
+import Lucky15Board from './casino/Lucky15Board';
+import DragonTigerBoard from './casino/DragonTigerBoard';
+import Lucky7Board from './casino/Lucky7Board';
 import ResultDetailModal from './casino/ResultDetailModal';
 
 export default function CasinoTableModal({ table, onClose }) {
@@ -76,6 +80,9 @@ export default function CasinoTableModal({ table, onClose }) {
   const isPoker1Day = slug === 'poker' || slug === 'poker1day' || nameLow.includes('poker 1 day') || nameLow.includes('poker 1day');
   const isPoker20 = slug === 'poker20' || nameLow.includes('20-20 poker') || nameLow.includes('poker 20');
   const isPoker6 = slug === 'poker6' || nameLow.includes('poker 6');
+  const isBaccarat = slug.includes('baccarat') || nameLow.includes('baccarat');
+  const isDragonTiger = slug.includes('dt') || slug.includes('dragon') || nameLow.includes('dragon tiger');
+  const isLucky7 = slug.includes('lucky7') || nameLow.includes('lucky 7') || nameLow.includes('lucky-7');
   const isSuspended = timer <= 0 || roundData?.status === 'SUSPENDED';
 
   // Fetch live stream URL from Diamond / D247 API
@@ -132,11 +139,17 @@ export default function CasinoTableModal({ table, onClose }) {
     return () => clearInterval(t);
   }, []);
 
+  const lastHandledResultMidRef = useRef(null);
+  const isFirstFetchRef = useRef(true);
+
   // 2. Fetch real recent results for this table
   useEffect(() => {
     if (!slug) return;
 
     let isMounted = true;
+    isFirstFetchRef.current = true;
+    lastHandledResultMidRef.current = null;
+
     const fetchResults = () => {
       fetch(`/api/casino/results/${slug}`)
         .then((r) => r.json())
@@ -144,14 +157,29 @@ export default function CasinoTableModal({ table, onClose }) {
           if (isMounted && res.success && Array.isArray(res.data)) {
             setRecentResults(res.data.slice(0, 16));
             if (res.data.length > 0) {
-              const latest = res.data[0]?.nat;
-              if (isLucky15 && latest) {
-                setLucky15Popup(latest);
-                setTimeout(() => setLucky15Popup(null), 2000);
-              }
-              if (isBallByBall && latest) {
-                setBallByBallPopup(latest.toUpperCase().includes('W') ? 'WICKET' : `${latest} RUN`);
-                setTimeout(() => setBallByBallPopup(null), 2000);
+              const latestItem = res.data[0];
+              const latestMid = latestItem?.mid;
+              const outcome = latestItem?.nat || latestItem?.win;
+
+              // Only trigger animated result zoom popup ONCE when an authentic new round result arrives!
+              if (latestMid && outcome) {
+                if (isFirstFetchRef.current) {
+                  lastHandledResultMidRef.current = latestMid;
+                  isFirstFetchRef.current = false;
+                } else if (lastHandledResultMidRef.current !== latestMid) {
+                  lastHandledResultMidRef.current = latestMid;
+
+                  if (isLucky15) {
+                    const txt = outcome.toUpperCase().includes('W') ? 'WICKET' : `${outcome} RUN`;
+                    setLucky15Popup(txt);
+                    setTimeout(() => setLucky15Popup(null), 2000);
+                  }
+                  if (isBallByBall) {
+                    const txt = outcome.toUpperCase().includes('W') ? 'WICKET' : `${outcome} RUN`;
+                    setBallByBallPopup(txt);
+                    setTimeout(() => setBallByBallPopup(null), 2000);
+                  }
+                }
               }
             }
           }
@@ -222,6 +250,39 @@ export default function CasinoTableModal({ table, onClose }) {
         bg: "bg-emerald-600 text-white font-bold",
         title: w || "Result",
       };
+    }
+
+    // 1.1 Baccarat: P (Blue), B (Red), T (Green) (Image 1 Exact Match)
+    if (isBaccarat) {
+      if (lower.startsWith('p') || w === '1') {
+        return { letter: 'P', bg: 'bg-blue-600 text-white font-black', title: 'Player' };
+      }
+      if (lower.startsWith('b') || w === '2') {
+        return { letter: 'B', bg: 'bg-red-600 text-white font-black', title: 'Banker' };
+      }
+      return { letter: 'T', bg: 'bg-emerald-600 text-white font-black', title: 'Tie' };
+    }
+
+    // 1.2 Dragon Tiger: D (Red), T (Yellow), Tie (Green)
+    if (isDragonTiger) {
+      if (lower.startsWith('d') || w === '1') {
+        return { letter: 'D', bg: 'bg-red-600 text-white font-black', title: 'Dragon' };
+      }
+      if (lower.startsWith('t') || w === '2') {
+        return { letter: 'T', bg: 'bg-amber-600 text-white font-black', title: 'Tiger' };
+      }
+      return { letter: 'Tie', bg: 'bg-emerald-600 text-white font-black', title: 'Tie' };
+    }
+
+    // 1.3 Lucky 7: L (Green), H (Amber), 7 (Red)
+    if (isLucky7) {
+      if (lower.includes('low') || lower.startsWith('l') || w === '1') {
+        return { letter: 'L', bg: 'bg-emerald-600 text-white font-black', title: 'Low' };
+      }
+      if (lower.includes('high') || lower.startsWith('h') || w === '2') {
+        return { letter: 'H', bg: 'bg-amber-600 text-white font-black', title: 'High' };
+      }
+      return { letter: '7', bg: 'bg-red-600 text-white font-black', title: '7' };
     }
 
     // 2. Lucky 6: L, O, H, E, B, R badges (Image 2 Exact Match)
@@ -304,38 +365,19 @@ export default function CasinoTableModal({ table, onClose }) {
       };
     }
 
-    // 5. Lucky 15: Cricket outcomes 0, 1, 2, 4, 6, W
+    // 5. Lucky 15: Cricket outcomes 0, 1, 2, 4, 6, W (All in Green Badges matching Image 2)
     if (isLucky15 || lower.includes("run") || lower.includes("wicket")) {
-      if (
-        lower.includes("w") ||
-        w === "W" ||
-        w === "w" ||
-        lower.includes("wicket")
-      ) {
-        return {
-          letter: "W",
-          bg: "bg-red-700 text-white font-black",
-          title: "Wicket",
-        };
-      }
-      if (w === "6" || lower.includes("6")) {
-        return {
-          letter: "6",
-          bg: "bg-emerald-600 text-white font-black",
-          title: "6 Runs",
-        };
-      }
-      if (w === "4" || lower.includes("4")) {
-        return {
-          letter: "4",
-          bg: "bg-sky-600 text-white font-black",
-          title: "4 Runs",
-        };
+      let char = w || "0";
+      if (lower.includes("w") || w === "W" || lower.includes("wicket")) {
+        char = "W";
+      } else {
+        const d = w.match(/\d+/);
+        if (d) char = d[0];
       }
       return {
-        letter: w || "0",
-        bg: "bg-slate-700 text-white font-bold font-mono",
-        title: w,
+        letter: char,
+        bg: "bg-emerald-700 text-white font-black font-mono",
+        title: char === "W" ? "Wicket" : `${char} Runs`,
       };
     }
 
@@ -577,11 +619,12 @@ export default function CasinoTableModal({ table, onClose }) {
 
           <div className="absolute inset-0 -z-10 bg-black" />
 
-          {/* Lucky 15 Animated Result Zoom Popup */}
+          {/* Lucky 15 Animated 3D Cricket Ball Result Zoom Popup (Image 2 Exact Match) */}
           {lucky15Popup && (
-            <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none animate-in zoom-in-50 fade-in duration-300">
-              <div className="w-24 h-24 rounded-full bg-red-600 border-4 border-yellow-400 flex items-center justify-center text-white text-5xl font-black font-mono shadow-2xl animate-pulse">
-                {lucky15Popup}
+            <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none animate-in zoom-in-75 fade-in duration-300">
+              <div className="relative w-32 h-32 rounded-full bg-gradient-to-br from-red-600 via-rose-700 to-red-950 border-4 border-white/60 flex items-center justify-center text-white text-xl font-black font-mono shadow-2xl drop-shadow-[0_10px_25px_rgba(0,0,0,0.9)] tracking-wider">
+                <div className="absolute inset-y-0 w-1 border-r border-dashed border-white/40 left-1/2 -translate-x-1/2 pointer-events-none"></div>
+                <span className="relative z-10 text-center uppercase drop-shadow">{lucky15Popup}</span>
               </div>
             </div>
           )}
@@ -1149,6 +1192,46 @@ export default function CasinoTableModal({ table, onClose }) {
                 );
               }
 
+              // Dragon Tiger Table (Dragon 1 card + Tiger 1 card)
+              if (isDragonTiger) {
+                const cards = roundData?.cards || [];
+                return (
+                  <div className="flex flex-col items-start gap-1">
+                    <div>
+                      <div className="text-[10px] sm:text-[11px] font-black text-rose-400 uppercase tracking-wider drop-shadow-md mb-0.5">
+                        DRAGON
+                      </div>
+                      <div className="flex gap-1">
+                        {renderCard(cards[0], 'dt-d-0', !cards[0] || cards[0].isHidden)}
+                      </div>
+                    </div>
+                    <div className="mt-0.5">
+                      <div className="text-[10px] sm:text-[11px] font-black text-amber-300 uppercase tracking-wider drop-shadow-md mb-0.5">
+                        TIGER
+                      </div>
+                      <div className="flex gap-1">
+                        {renderCard(cards[1], 'dt-t-1', !cards[1] || cards[1].isHidden)}
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              // Lucky 7 Table (1 card)
+              if (isLucky7) {
+                const c = roundData?.cards?.[0];
+                return (
+                  <div className="flex flex-col items-start gap-1">
+                    {renderCard(c, 'l7-card', !c || c.isHidden)}
+                  </div>
+                );
+              }
+
+              // Clean Video without card overlay for Baccarat, Lucky 15, Roulette, Sic Bo
+              if (isBaccarat || isLucky15 || isRoulette || isUniqueRoulette || isSicBo) {
+                return null;
+              }
+
               // Generic fallback cards
               if (roundData?.cards && roundData.cards.length > 0) {
                 return (
@@ -1268,6 +1351,14 @@ export default function CasinoTableModal({ table, onClose }) {
             <SuperOverBoard roundData={roundData} timer={timer} isSuspended={isSuspended} slug={slug} />
           ) : isBallByBall ? (
             <BallByBallBoard roundData={roundData} timer={timer} isSuspended={isSuspended} />
+          ) : isBaccarat ? (
+            <BaccaratBoard roundData={roundData} timer={timer} isSuspended={isSuspended} />
+          ) : isLucky15 ? (
+            <Lucky15Board roundData={roundData} timer={timer} isSuspended={isSuspended} />
+          ) : isDragonTiger ? (
+            <DragonTigerBoard roundData={roundData} timer={timer} isSuspended={isSuspended} />
+          ) : isLucky7 ? (
+            <Lucky7Board roundData={roundData} timer={timer} isSuspended={isSuspended} />
           ) : isTeenTest ? (
             <TeenPattiTestBoard roundData={roundData} timer={timer} isSuspended={isSuspended} />
           ) : isTeenOpen ? (
