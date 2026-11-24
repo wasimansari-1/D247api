@@ -92,13 +92,16 @@ const CASINO_SLUG_MAP = {
   ab20: "ab20",
   abj: "abj",
 
-  // Teen Patti & Joker Games (Exact Diamond Online Mapping: Joker20 -> 169..., Joker120 -> 170..., Joker1 -> 168...)
+  // Teen Patti & Joker Games (Exact Diamond Online Mapping)
   'teen': 'teen',
   'teen20': 'teen20',
   'teen3': 'teen3',
+  'instantteen3': 'teen3',
   'teen33': 'teen33',
-  'teen202': 'teen33',
-  'teen2024': 'teen33',
+  'teen202': 'patti2',
+  'instantteen2': 'patti2',
+  'teen2024': 'patti2',
+  'patti2': 'patti2',
   'teen20b': 'joker20',
   'teen20b_dup': 'joker20',
   'joker20': 'joker20',
@@ -113,13 +116,16 @@ const CASINO_SLUG_MAP = {
   'unlimitedjoker20': 'joker120',
   'unlimitedjokeroneday': 'joker1',
   'unlimitedjoker1day': 'joker1',
-  'teen41': 'poison',
-  'teen42': 'poison20',
+  'teen41': 'teen41',
+  'teen42': 'teen42',
+  'queentop': 'teen41',
+  'queen41': 'teen41',
+  'jacktop': 'teen42',
+  'jack42': 'teen42',
   'poison': 'poison',
   'poison20': 'poison20',
   'poison1day': 'poison',
   'teenunique': 'teenunique',
-  'patti2': 'patti2',
   'teen6': 'teen6',
   'teenmuf': 'teenmuf',
   'teensin': 'teensin',
@@ -138,9 +144,9 @@ const CASINO_SLUG_MAP = {
   card32eu: "card32eu",
   "3cardj": "3cardj",
   queen: "queen",
-  queentop: "queen",
-  jack: "joker1",
-  jacktop: "joker1",
+  queentop: "teen41",
+  jack: "teen42",
+  jacktop: "teen42",
 
   // Others & Special
   dt20: "dt20",
@@ -996,13 +1002,22 @@ class D247SyncEngine {
       });
       const list = res?.data?.res || (Array.isArray(res?.data) ? res.data : []);
       if (Array.isArray(list) && list.length > 0) {
-        return list.map((r) => ({
-          mid: String(r.mid || ""),
-          winner: String(r.win || r.winner || r.result || ""),
-          nat: String(r.win || r.winner || r.result || ""),
-          desc: r.desc || "",
-          cards: r.card ? String(r.card).split(",") : [],
-        }));
+        return list.map((r) => {
+          const val = String(
+            r.win !== undefined && r.win !== null && r.win !== ""
+              ? r.win
+              : r.nat !== undefined && r.nat !== null
+              ? r.nat
+              : r.winner || r.result || ""
+          );
+          return {
+            mid: String(r.mid || ""),
+            winner: val,
+            nat: val,
+            desc: r.desc || "",
+            cards: r.card ? String(r.card).split(",") : [],
+          };
+        });
       }
     } catch (err) {
       console.error(`Error in fetchCasinoRecentResults(${slug}):`, err.message);
