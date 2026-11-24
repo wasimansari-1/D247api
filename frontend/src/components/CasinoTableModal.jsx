@@ -1936,11 +1936,7 @@ export default function CasinoTableModal({ table, onClose }) {
                           <div className="flex gap-1">
                             {sCards.length > 0 ? (
                               sCards.map((c, cIdx) =>
-                                renderCard(
-                                  c,
-                                  `r20-${sIcon}-${cIdx}`,
-                                  false,
-                                ),
+                                renderCard(c, `r20-${sIcon}-${cIdx}`, false),
                               )
                             ) : (
                               <div className="w-5 h-7 border border-dashed border-white/20 rounded-[2px]" />
