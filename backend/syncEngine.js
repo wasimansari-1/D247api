@@ -78,7 +78,7 @@ const CASINO_SLUG_MAP = {
   // Virtual & Cricket (Exact Diamond Online Mapping)
   minisuperover: "superover3",
   superover3: "superover3",
-  superover2: "superover",
+  superover2: "superover2",
   superover: "superover",
   cricketv2: "superover3",
   cricketv3: "cricketv3",
@@ -102,10 +102,10 @@ const CASINO_SLUG_MAP = {
   instantteen2: "patti2",
   teen2024: "patti2",
   patti2: "patti2",
-  teen20b: "teen20b",
-  teen20b_dup: "teen20b",
-  joker20: "teen20b",
-  teenjoker20: "teen20b",
+  teen20b: "joker20",
+  teen20b_dup: "joker20",
+  joker20: "joker20",
+  teenjoker20: "joker20",
   teen20c: "teen20c",
   teen1: "joker1",
   teen120: "joker120",
@@ -974,14 +974,30 @@ class D247SyncEngine {
             ballArray.length > 0
               ? ((runs / ballArray.length) * 6).toFixed(2)
               : "0.00";
-          const isSO2 = sLower.includes('superover2');
+          let team1 = "IND";
+          let team2 = "ENG";
+          if (sLower === "superover") {
+            team1 = "ENG";
+            team2 = "RSA";
+          } else if (sLower === "superover2") {
+            team1 = "IND";
+            team2 = "ENG";
+          } else if (sLower.includes("superover3") || sLower.includes("mini")) {
+            team1 = "IND";
+            team2 = "AUS";
+          }
+          if (t1.ename && t1.ename.includes("Vs")) {
+            const parts = t1.ename.split("Vs");
+            team1 = parts[0].trim();
+            team2 = parts[1].replace(/Super\s*Over.*/i, "").trim();
+          }
           cricketScore = {
-            team1: isSO2 ? 'ENG' : 'IND',
+            team1,
             team1Score: `${runs}-${wickets} (${overs})`,
             team1CRR: `CRR ${crr}`,
-            team2: isSO2 ? 'RSA' : sLower.includes('superover3') || sLower.includes('mini') ? 'AUS' : 'ENG',
-            team2Score: '0-0 (0.0)',
-            balls: ballArray
+            team2,
+            team2Score: "0-0 (0.0)",
+            balls: ballArray,
           };
         }
 
@@ -994,6 +1010,7 @@ class D247SyncEngine {
           card: raw.card || "",
           cards: parsedItems,
           items: parsedItems,
+          cricketScore: cricketScore,
           score: cricketScore,
           runners: runners,
           rawRemark: raw.rem || "",
@@ -1024,8 +1041,41 @@ class D247SyncEngine {
         return list.map((r) => {
           let val = "";
           if (targetSlug === "poker6") {
-            // For Poker 6, r.nat or r.sid is the winning player number (1..6)
-            val = String(r.nat || r.winner || r.win || "");
+            const rawW = parseInt(r.win || r.winner || r.nat || "");
+            if (rawW >= 11 && rawW <= 16) {
+              val = String(rawW - 10);
+            } else if (rawW >= 1 && rawW <= 6) {
+              val = String(rawW);
+            } else {
+              val = String(r.win || r.nat || "");
+            }
+          } else if (targetSlug === "lucky15") {
+            const rawW = String(r.win || r.winner || r.nat || "").trim();
+            if (rawW === "1" || rawW === "0") val = "0";
+            else if (rawW === "2") val = "1";
+            else if (rawW === "3") val = "2";
+            else if (rawW === "4") val = "4";
+            else if (rawW === "5") val = "6";
+            else if (rawW === "6" || rawW.toUpperCase() === "W") val = "W";
+            else val = rawW;
+          } else if (targetSlug === "superover") {
+            const rawW = String(r.win || r.winner || r.nat || "").trim();
+            if (rawW === "1") val = "ENG";
+            else if (rawW === "2") val = "RSA";
+            else if (rawW === "3") val = "Tie";
+            else val = rawW;
+          } else if (targetSlug === "superover2") {
+            const rawW = String(r.win || r.winner || r.nat || "").trim();
+            if (rawW === "1") val = "IND";
+            else if (rawW === "2") val = "ENG";
+            else if (rawW === "3") val = "Tie";
+            else val = rawW;
+          } else if (targetSlug === "superover3") {
+            const rawW = String(r.win || r.winner || r.nat || "").trim();
+            if (rawW === "1") val = "IND";
+            else if (rawW === "2") val = "AUS";
+            else if (rawW === "3") val = "Tie";
+            else val = rawW;
           } else {
             val = String(
               r.win !== undefined && r.win !== null && r.win !== ""
@@ -1106,35 +1156,22 @@ class D247SyncEngine {
    * Get Live Video Stream for Casino / Virtual Table directly from Diamond Online (/casino/launchother)
    */
   async getCasinoStreamUrl(slug, ip = "103.21.244.2") {
-    let upstreamUrl = null;
     const sLow = (slug || "").toLowerCase();
     const targetSlug = CASINO_SLUG_MAP[sLow] || slug;
-    try {
-      const res = await this.executeUpstream("/casino/launchother", {
-        id: "tv",
-      });
-      if (res && res.data && res.data.token) {
-        const token = res.data.token;
-        upstreamUrl = `https://diamondonline7.com/tv/${token}`;
-      }
-    } catch (err) {
-      console.error(`Error in getCasinoStreamUrl(${slug}):`, err.message);
-    }
 
+    // Direct stream player from Universe / Diamond Nanocosmos Stream Engine (as in Internatniol)
+    const directRelayUrl = `https://stream.trubets365.com/?id=${encodeURIComponent(targetSlug)}`;
     const localPlayerUrl = `/api/casino/player/${slug}`;
+
     return {
-      streamUrl: upstreamUrl || localPlayerUrl,
-      upstreamUrl: upstreamUrl,
+      streamUrl: localPlayerUrl,
+      upstreamUrl: directRelayUrl,
       sources: [
-        ...(upstreamUrl
-          ? [
-              {
-                name: "Diamond Video (Direct)",
-                url: upstreamUrl,
-                type: "iframe",
-              },
-            ]
-          : []),
+        {
+          name: "Diamond Video (Direct)",
+          url: directRelayUrl,
+          type: "iframe",
+        },
         { name: "D247 Live Stream", url: localPlayerUrl, type: "iframe" },
       ],
     };

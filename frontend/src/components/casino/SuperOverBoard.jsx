@@ -4,9 +4,13 @@ import { Lock } from 'lucide-react';
 export default function SuperOverBoard({ roundData, timer, isSuspended, slug }) {
   const runners = roundData?.runners || [];
   const sLower = (slug || '').toLowerCase();
-  const isSO2 = sLower.includes('superover2');
-  const team1 = isSO2 ? 'ENG' : 'IND';
-  const team2 = isSO2 ? 'RSA' : 'ENG';
+  const isSuperOver1 = sLower === 'superover';
+  let team1 = isSuperOver1 ? 'ENG' : 'IND';
+  let team2 = isSuperOver1 ? 'RSA' : 'ENG';
+  if (roundData?.cricketScore?.team1) {
+    team1 = roundData.cricketScore.team1;
+    team2 = roundData.cricketScore.team2;
+  }
 
   // 1. Bookmaker Runners (Team 1 vs Team 2)
   const bookmakerRunners = [

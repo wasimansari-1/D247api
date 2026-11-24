@@ -116,7 +116,7 @@ module.exports = function (syncEngine) {
       .json({ success: false, msg: "Failed to fetch recent results" });
   });
 
-  // Dedicated Standalone Live Video Player (No X-Frame-Options block, 100% embeddable)
+  // Dedicated Standalone Live Video Player (Zero-Latency Direct Stream & Fallback)
   router.get(["/player/:slug", "/stream/:slug"], async (req, res) => {
     const slug = req.params.slug;
     const clientIp =
@@ -124,7 +124,7 @@ module.exports = function (syncEngine) {
       req.socket.remoteAddress ||
       "103.21.244.2";
 
-    // Set headers to permit embedding anywhere
+    res.removeHeader("Content-Security-Policy");
     res.removeHeader("X-Frame-Options");
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Permissions-Policy", "unload=*");
@@ -135,9 +135,53 @@ module.exports = function (syncEngine) {
       streamData = await syncEngine.getCasinoStreamUrl(slug, clientIp);
     } catch (e) {}
 
-    const upstreamUrl = streamData?.upstreamUrl || "";
-    const tableName = slug.replace(/_/g, " ").toUpperCase();
+    const upstreamUrl = streamData?.upstreamUrl || `https://stream.trubets365.com/?id=${encodeURIComponent(slug)}`;
 
+    // Try fetching direct live stream HTML from upstream and rewrite asset base paths
+    try {
+      const relayRes = await fetch(upstreamUrl, {
+        headers: {
+          "User-Agent":
+            req.headers["user-agent"] ||
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+          Referer: "https://diamondonline7.com/"
+        }
+      });
+
+      if (relayRes.ok) {
+        let html = await relayRes.text();
+        if (html.includes("__STREAM_RELAY_ROUTE__") || html.includes("<html")) {
+          // Fix base and asset URLs to point directly to reliable CDN
+          html = html.replace('<base href="/stream-assets/">', '<base href="https://stream.trubets365.com/stream-assets/">');
+          html = html.replace(/href="player\//g, 'href="https://stream.trubets365.com/stream-assets/player/');
+          html = html.replace(/src="newplayer\.min\.js/g, 'src="https://stream.trubets365.com/stream-assets/newplayer.min.js');
+          html = html.replace(/src="player\/player\.bundle\.js/g, 'src="https://stream.trubets365.com/stream-assets/player/player.bundle.js');
+
+          // Inject unload fix & responsive styling
+          const customHead = `
+            <style>
+              html, body { width: 100% !important; height: 100% !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; background: #000 !important; }
+              #stream-player, #stream-player iframe, #stream-player video { width: 100% !important; height: 100% !important; object-fit: cover !important; }
+            </style>
+            <script>
+              try {
+                var _orig = window.addEventListener;
+                window.addEventListener = function(t, l, o) {
+                  if (t === 'unload') return _orig.call(this, 'pagehide', l, o);
+                  return _orig.call(this, t, l, o);
+                };
+              } catch (_) {}
+            </script>
+          `;
+          html = html.replace("<head>", `<head>${customHead}`);
+          return res.send(html);
+        }
+      }
+    } catch (e) {
+      console.error(`[CasinoStream] Error proxying player for ${slug}:`, e.message);
+    }
+
+    const tableName = slug.replace(/_/g, " ").toUpperCase();
     const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -185,7 +229,6 @@ module.exports = function (syncEngine) {
   </div>
 
   <script>
-    // Suppress cross-origin frame noise
     window.addEventListener('error', function(e) {});
   </script>
 </body>

@@ -43,6 +43,30 @@ import CricketMatch20Board from './casino/CricketMatch20Board';
 import AmarAkbarAnthonyBoard from './casino/AmarAkbarAnthonyBoard';
 import ResultDetailModal from './casino/ResultDetailModal';
 
+// Authentic Lucky 15 Runner Index to Outcome Mapper
+function mapLucky15Outcome(val) {
+  const str = String(val || '').trim().toLowerCase();
+  if (str === '6' || str.includes('w') || str.includes('wicket')) {
+    return { badge: 'W', popup: 'WICKET', title: 'Wicket' };
+  }
+  if (str === '1' || str === '0' || str.includes('0 run')) {
+    return { badge: '0', popup: '0 RUNS', title: '0 Runs' };
+  }
+  if (str === '2' || str === '1 run') {
+    return { badge: '1', popup: '1 RUN', title: '1 Run' };
+  }
+  if (str === '3' || str === '2 runs' || str === '2 run') {
+    return { badge: '2', popup: '2 RUNS', title: '2 Runs' };
+  }
+  if (str === '4' || str.includes('4 run')) {
+    return { badge: '4', popup: '4 RUNS', title: '4 Runs' };
+  }
+  if (str === '5' || str.includes('6 run')) {
+    return { badge: '6', popup: '6 RUNS', title: '6 Runs' };
+  }
+  return { badge: '0', popup: '0 RUNS', title: '0 Runs' };
+}
+
 export default function CasinoTableModal({ table, onClose }) {
   const [roundData, setRoundData] = useState(null);
   const [recentResults, setRecentResults] = useState([]);
@@ -176,8 +200,8 @@ export default function CasinoTableModal({ table, onClose }) {
                   lastHandledResultMidRef.current = latestMid;
 
                   if (isLucky15) {
-                    const txt = outcome.toUpperCase().includes('W') ? 'WICKET' : `${outcome} RUN`;
-                    setLucky15Popup(txt);
+                    const lk = mapLucky15Outcome(outcome);
+                    setLucky15Popup(lk.popup);
                     setTimeout(() => setLucky15Popup(null), 2000);
                   }
                   if (isBallByBall) {
@@ -310,52 +334,34 @@ export default function CasinoTableModal({ table, onClose }) {
       return { letter: char, bg, title: w || "Result" };
     }
 
-    // 3. Super Over & Mini Super Over: Team letters A, I, T, E, R in Green Badges (Image 1 & 3 Exact Match)
+    // 3. Super Over & Mini Super Over: Team letters in Green Badges (Exact Diamond Match)
     if (isSuperOver || isMiniSuperOver) {
-      if (w === "1" || lower.includes("ind") || lower.includes("india")) {
-        return {
-          letter: "I",
-          bg: "bg-emerald-700 text-white font-black",
-          title: "IND",
-        };
-      }
-      if (w === "2") {
-        if (slug.includes("superover2")) {
-          return {
-            letter: "R",
-            bg: "bg-emerald-700 text-white font-black",
-            title: "RSA",
-          };
+      if (slug === 'superover') {
+        if (w === "1" || lower.includes("eng")) {
+          return { letter: "E", bg: "bg-emerald-700 text-white font-black", title: "ENG" };
         }
-        return {
-          letter: "A",
-          bg: "bg-emerald-700 text-white font-black",
-          title: "AUS",
-        };
+        if (w === "2" || lower.includes("rsa")) {
+          return { letter: "R", bg: "bg-emerald-700 text-white font-black", title: "RSA" };
+        }
+        return { letter: "T", bg: "bg-emerald-700 text-white font-black", title: "Tie" };
       }
-      if (lower.includes("eng"))
-        return {
-          letter: "E",
-          bg: "bg-emerald-700 text-white font-black",
-          title: "ENG",
-        };
-      if (lower.includes("aus"))
-        return {
-          letter: "A",
-          bg: "bg-emerald-700 text-white font-black",
-          title: "AUS",
-        };
-      if (lower.includes("rsa"))
-        return {
-          letter: "R",
-          bg: "bg-emerald-700 text-white font-black",
-          title: "RSA",
-        };
-      return {
-        letter: "T",
-        bg: "bg-emerald-700 text-white font-black",
-        title: "Tie",
-      };
+      if (slug === 'superover2') {
+        if (w === "1" || lower.includes("ind")) {
+          return { letter: "I", bg: "bg-emerald-700 text-white font-black", title: "IND" };
+        }
+        if (w === "2" || lower.includes("eng")) {
+          return { letter: "E", bg: "bg-emerald-700 text-white font-black", title: "ENG" };
+        }
+        return { letter: "T", bg: "bg-emerald-700 text-white font-black", title: "Tie" };
+      }
+      // Mini Super Over (IND vs AUS)
+      if (w === "1" || lower.includes("ind")) {
+        return { letter: "I", bg: "bg-emerald-700 text-white font-black", title: "IND" };
+      }
+      if (w === "2" || lower.includes("aus")) {
+        return { letter: "A", bg: "bg-emerald-700 text-white font-black", title: "AUS" };
+      }
+      return { letter: "T", bg: "bg-emerald-700 text-white font-black", title: "Tie" };
     }
 
     // 4. Teen Patti Test: T (Tiger), L (Lion), D (Dragon) in Dark Green Badges (Image 7 Exact Match)
@@ -408,8 +414,11 @@ export default function CasinoTableModal({ table, onClose }) {
     // 5. Open Teenpatti & Poker 6: Winning Player Number Badges (Image 2 & 5 Exact Match)
     if (isTeenOpen || isPoker6) {
       let num = "1";
-      if (["1", "2", "3", "4", "5", "6"].includes(w)) {
-        num = w;
+      const p = parseInt(w);
+      if (p >= 11 && p <= 16) {
+        num = String(p - 10);
+      } else if (p >= 1 && p <= 6) {
+        num = String(p);
       } else {
         const m = (w || "").match(/[1-6]/);
         if (m) num = m[0];
@@ -472,17 +481,11 @@ export default function CasinoTableModal({ table, onClose }) {
 
     // 5. Lucky 15: Cricket outcomes 0, 1, 2, 4, 6, W (All in Green Badges matching Image 2)
     if (isLucky15 || lower.includes("run") || lower.includes("wicket")) {
-      let char = w || "0";
-      if (lower.includes("w") || w === "W" || lower.includes("wicket")) {
-        char = "W";
-      } else {
-        const d = w.match(/\d+/);
-        if (d) char = d[0];
-      }
+      const res = mapLucky15Outcome(w);
       return {
-        letter: char,
+        letter: res.badge,
         bg: "bg-emerald-700 text-white font-black font-mono",
-        title: char === "W" ? "Wicket" : `${char} Runs`,
+        title: res.title,
       };
     }
 
@@ -840,22 +843,26 @@ export default function CasinoTableModal({ table, onClose }) {
                 );
               }
 
-              // Super Over 1 / 2: Pitch Scoreboard Banner (Image 3 Exact Match)
+              // Super Over 1 / 2: Pitch Scoreboard Banner (Image 1 & 3 Exact Match)
               if (isSuperOver && !isMiniSuperOver && !isBallByBall) {
-                const isSO2 = slug.includes("superover2");
-                const team1 = isSO2 ? "ENG" : "IND";
-                const team2 = isSO2 ? "RSA" : "ENG";
+                const isSuperOver1 = slug === "superover";
+                let team1 = isSuperOver1 ? "ENG" : "IND";
+                let team2 = isSuperOver1 ? "RSA" : "ENG";
+                if (roundData?.cricketScore?.team1) {
+                  team1 = roundData.cricketScore.team1;
+                  team2 = roundData.cricketScore.team2;
+                }
                 return (
                   <div className="flex flex-col items-start gap-1 w-full max-w-sm pointer-events-none">
                     <div className="bg-[#1e3a1f]/95 border border-emerald-500/60 rounded px-3 py-1.5 text-white shadow-xl w-full select-none">
                       <div className="flex justify-between items-center text-[11px] font-mono">
                         <span className="font-bold text-slate-100">
-                          {team1} 0-0 (0.0)CRR 0.00
+                          {team1} {roundData?.cricketScore?.team1Score || '0-0 (0.0)'} {roundData?.cricketScore?.team1CRR || 'CRR 0.00'}
                         </span>
                       </div>
                       <div className="flex justify-between items-center text-[11px] font-mono mt-0.5">
                         <span className="font-black text-white">
-                          {team2} 0-0 (0.0)
+                          {team2} {roundData?.cricketScore?.team2Score || '0-0 (0.0)'}
                         </span>
                       </div>
                     </div>

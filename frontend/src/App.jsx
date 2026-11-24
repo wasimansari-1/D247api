@@ -31,6 +31,7 @@ import Scorecard, {
 } from "./components/Scorecard";
 import RacingMeetingGrid from "./components/RacingMeetingGrid";
 import CasinoTableModal from "./components/CasinoTableModal";
+import SuperOverBoard from "./components/casino/SuperOverBoard";
 import LiveStreamModal from "./components/LiveStreamModal";
 import DocsModal from "./components/DocsModal";
 
@@ -995,43 +996,60 @@ export default function App() {
                     </marquee>
                   </div>
 
-                  {/* Super Over & Super Over 2 Live Screen with Center-Right Flip Timer (Matching Diamond Online exactly) */}
+                  {/* Super Over & Super Over 2 Live Stream Player with Top Pitch Scoreboard (Image 1 Exact Match) */}
                   {(matchDetails.gmid === 'superover2' || matchDetails.gmid === 'superover') && (
-                    <div className="relative bg-black rounded-lg min-h-[180px] sm:min-h-[220px] mb-3 flex items-center justify-between px-6 sm:px-12 shadow-2xl border border-slate-800 overflow-hidden">
-                      <div className="absolute inset-0 bg-gradient-to-r from-black via-slate-950 to-black opacity-95"></div>
+                    <div className="relative bg-black rounded-lg min-h-[220px] sm:min-h-[280px] mb-3 shadow-2xl border border-slate-800 overflow-hidden">
+                      {/* Live Video Stream Frame */}
+                      <iframe
+                        src={`/api/casino/player/${matchDetails.gmid}`}
+                        className="w-full h-full min-h-[220px] sm:min-h-[280px] border-0 absolute inset-0 z-0 bg-black"
+                        allow="autoplay; fullscreen; encrypted-media"
+                        title="Super Over Live Stream"
+                      />
 
-                      {/* Left: Over Balls Dealt & Round ID */}
-                      <div className="relative z-10 flex flex-col items-start gap-2">
-                        {matchDetails.roundId && (
-                          <div className="text-[11px] font-mono text-slate-300 bg-black/70 px-2.5 py-0.5 rounded border border-slate-700">
-                            Round ID: <span className="text-yellow-400 font-bold">{matchDetails.roundId}</span>
-                          </div>
-                        )}
-                        {matchDetails.cards && matchDetails.cards.length > 0 && (
-                          <div className="flex flex-col gap-1">
-                            <span className="text-[10px] font-black text-amber-300 uppercase tracking-wider">
-                              OVER BALLS DEALT
-                            </span>
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              {matchDetails.cards.map((b, i) => (
-                                <div key={i} className="px-2 py-0.5 bg-black/90 border border-amber-400 text-amber-300 font-mono font-black text-xs rounded shadow">
-                                  {b}
+                      {/* Top Pitch Scoreboard Overlay */}
+                      <div className="absolute top-2 left-2 z-10 w-full max-w-xs sm:max-w-sm pointer-events-none">
+                        <div className="bg-[#1e3a1f]/95 border border-emerald-500/60 rounded px-3 py-1.5 text-white shadow-xl w-full select-none">
+                          {(() => {
+                            const isSO1 = matchDetails.gmid === 'superover';
+                            const t1Name = isSO1 ? 'ENG' : 'IND';
+                            const t2Name = isSO1 ? 'RSA' : 'ENG';
+                            return (
+                              <>
+                                <div className="flex justify-between items-center text-[11px] font-mono">
+                                  <span className="font-bold text-slate-100">
+                                    {t1Name} 0-0 (0.0)CRR 0.00
+                                  </span>
                                 </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
+                                <div className="flex justify-between items-center text-[11px] font-mono mt-0.5">
+                                  <span className="font-black text-white">
+                                    {t2Name} 0-0 (0.0)
+                                  </span>
+                                </div>
+                              </>
+                            );
+                          })()}
+                        </div>
                       </div>
 
-                      {/* Right: Live Flip Counter matching Diamond Image 9 */}
-                      <div className="relative z-10 flex flex-col items-center gap-1">
-                        <FlipClockCounter
-                          value={
-                            matchDetails.timer !== undefined
-                              ? matchDetails.timer
-                              : 0
-                          }
-                        />
+                      {/* Bottom-Right Live Timer Overlay (Image 1 Exact Match) */}
+                      <div className="absolute bottom-2 right-2 z-10 pointer-events-none">
+                        <div className="flex gap-1 bg-black/80 p-1 rounded backdrop-blur-sm border border-white/10 shadow-2xl">
+                          {(() => {
+                            const t = matchDetails.timer !== undefined ? matchDetails.timer : 0;
+                            const tStr = String(t).padStart(2, '0');
+                            return (
+                              <>
+                                <div className="w-7 h-9 sm:w-9 sm:h-11 bg-[#1e293b] border border-slate-600 rounded flex items-center justify-center">
+                                  <span className="font-mono font-black text-lg sm:text-xl text-white">{tStr[0]}</span>
+                                </div>
+                                <div className="w-7 h-9 sm:w-9 sm:h-11 bg-[#1e293b] border border-slate-600 rounded flex items-center justify-center">
+                                  <span className="font-mono font-black text-lg sm:text-xl text-white">{tStr[1]}</span>
+                                </div>
+                              </>
+                            );
+                          })()}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -1048,7 +1066,15 @@ export default function App() {
                   )}
 
                   {/* Detailed Markets Grid with Exact Upstream Indexing */}
-                  <div className="flex flex-col gap-3">
+                  {(matchDetails.gmid === 'superover2' || matchDetails.gmid === 'superover') ? (
+                    <SuperOverBoard
+                      roundData={matchDetails}
+                      timer={matchDetails.timer}
+                      isSuspended={matchDetails.status === 'SUSPENDED' || matchDetails.timer <= 0}
+                      slug={matchDetails.gmid}
+                    />
+                  ) : (
+                    <div className="flex flex-col gap-3">
                     {(() => {
                       const matchOddsMarket = matchDetails.markets?.find(
                         (m) =>
@@ -1543,6 +1569,7 @@ export default function App() {
                       );
                     })()}
                   </div>
+                  )}
                 </div>
               )}
 
