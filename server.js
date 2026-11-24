@@ -58,7 +58,7 @@ io.on("connection", (socket) => {
     if (snapshot) {
       socket.emit("odds_update", {
         gmid,
-        roundId: snapshot.roundId || '',
+        roundId: snapshot.roundId || "",
         markets: snapshot.markets,
         scoreboard: snapshot.scoreboard,
         streamUrl: snapshot.streamUrl,

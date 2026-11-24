@@ -133,9 +133,7 @@ export default function CasinoTableModal({ table, onClose }) {
     nameLow.includes("one card one day") ||
     nameLow.includes("1 card master");
   const isOneCardMeter =
-    slug === "cmeter" ||
-    slug === "cmeter1" ||
-    nameLow.includes("1 card meter");
+    slug === "cmeter" || slug === "cmeter1" || nameLow.includes("1 card meter");
   const isUnlimitedJoker =
     (slug === "joker120" ||
       slug === "joker1" ||
@@ -494,7 +492,9 @@ export default function CasinoTableModal({ table, onClose }) {
       const isL = w === "1" || lower.startsWith("l");
       return {
         letter: isL ? "L" : "H",
-        bg: isL ? "bg-blue-600 text-white font-black" : "bg-amber-600 text-white font-black",
+        bg: isL
+          ? "bg-blue-600 text-white font-black"
+          : "bg-amber-600 text-white font-black",
         title: isL ? "Low" : "High",
       };
     }
@@ -1189,7 +1189,10 @@ export default function CasinoTableModal({ table, onClose }) {
                         <span className="text-[10px] font-black text-amber-200 w-12 uppercase">
                           ANDAR
                         </span>
-                        <ChevronLeft size={14} className="text-slate-400 shrink-0" />
+                        <ChevronLeft
+                          size={14}
+                          className="text-slate-400 shrink-0"
+                        />
                         <div className="flex gap-1 overflow-x-auto max-w-[220px] scrollbar-none">
                           {andarCards.length > 0
                             ? andarCards.map((c, i) =>
@@ -1199,13 +1202,19 @@ export default function CasinoTableModal({ table, onClose }) {
                                 renderCard(null, `ab-a-d-${i}`, true),
                               )}
                         </div>
-                        <ChevronRight size={14} className="text-slate-400 shrink-0" />
+                        <ChevronRight
+                          size={14}
+                          className="text-slate-400 shrink-0"
+                        />
                       </div>
                       <div className="flex items-center gap-1">
                         <span className="text-[10px] font-black text-yellow-400 w-12 uppercase">
                           BAHAR
                         </span>
-                        <ChevronLeft size={14} className="text-slate-400 shrink-0" />
+                        <ChevronLeft
+                          size={14}
+                          className="text-slate-400 shrink-0"
+                        />
                         <div className="flex gap-1 overflow-x-auto max-w-[220px] scrollbar-none">
                           {baharCards.length > 0
                             ? baharCards.map((c, i) =>
@@ -1215,7 +1224,10 @@ export default function CasinoTableModal({ table, onClose }) {
                                 renderCard(null, `ab-b-d-${i}`, true),
                               )}
                         </div>
-                        <ChevronRight size={14} className="text-slate-400 shrink-0" />
+                        <ChevronRight
+                          size={14}
+                          className="text-slate-400 shrink-0"
+                        />
                       </div>
                     </div>
                   </div>
@@ -1926,10 +1938,7 @@ export default function CasinoTableModal({ table, onClose }) {
                           type="button"
                           onClick={() =>
                             setDumCardIndex((prev) =>
-                              Math.min(
-                                Math.max(0, cards.length - 3),
-                                prev + 1,
-                              ),
+                              Math.min(Math.max(0, cards.length - 3), prev + 1),
                             )
                           }
                           className="p-1 bg-black/80 hover:bg-black text-white rounded border border-white/20 shadow z-10 transition active:scale-95"
