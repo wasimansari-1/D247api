@@ -21,13 +21,15 @@ import {
   CheckCircle2,
   PlusSquare,
   MinusSquare,
-  Gamepad2
+  Gamepad2,
+  BookOpen
 } from 'lucide-react';
 import RateBox from './components/RateBox';
 import Scorecard, { FlipClockCounter, PlayingCardItem } from './components/Scorecard';
 import RacingMeetingGrid from './components/RacingMeetingGrid';
 import CasinoTableModal from './components/CasinoTableModal';
 import LiveStreamModal from './components/LiveStreamModal';
+import DocsModal from './components/DocsModal';
 
 const socket = io();
 
@@ -224,8 +226,11 @@ export default function App() {
   const [isOthersOpen, setIsOthersOpen] = useState(true);
   const [isSportsOpen, setIsSportsOpen] = useState(true);
 
-  // Settings modal
+  // Settings & Commercial Documentation modals
   const [showSettings, setShowSettings] = useState(false);
+  const [showDocs, setShowDocs] = useState(() => 
+    typeof window !== 'undefined' && (window.location.pathname === '/docs' || window.location.search.includes('docs'))
+  );
   const [cookieInput, setCookieInput] = useState('');
   const [syncStatus, setSyncStatus] = useState('');
   const [tickerText, setTickerText] = useState('Connecting to Diamond247 Engine...');
@@ -406,6 +411,15 @@ export default function App() {
               <span className="font-black text-xs text-red-400 font-mono">0.00</span>
             </div>
           </div>
+
+          <button 
+            onClick={() => setShowDocs(true)}
+            className="px-2.5 py-1 bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-500 hover:to-blue-600 text-white font-extrabold text-xs rounded border border-sky-400/40 transition flex items-center gap-1.5 shadow-sm"
+            title="D247 Commercial Exchange API Documentation"
+          >
+            <BookOpen size={14} className="text-yellow-300" />
+            <span className="hidden sm:inline">API Docs</span>
+          </button>
 
           <button 
             onClick={() => setShowSettings(true)}
@@ -1448,11 +1462,23 @@ export default function App() {
         </div>
       )}
 
+      {/* Commercial API Documentation Modal */}
+      {showDocs && (
+        <DocsModal onClose={() => setShowDocs(false)} />
+      )}
+
       {/* Footer */}
       <footer className="bg-[#112435] text-slate-400 text-[11px] py-2 px-4 border-t border-slate-800 flex justify-between items-center select-none">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
           <span>D247 Zero-Latency Upstream Engine Active & Synced</span>
+          <button 
+            onClick={() => setShowDocs(true)}
+            className="text-sky-400 hover:text-sky-300 hover:underline flex items-center gap-1 font-bold ml-2 pl-2 border-l border-slate-700"
+          >
+            <BookOpen size={12} />
+            <span>API Docs (/docs)</span>
+          </button>
         </div>
         <div className="font-mono text-[10px] text-slate-400">
           Sports: {inPlayMatches.length} | Casino: {casinoTables.length || 79} Tables

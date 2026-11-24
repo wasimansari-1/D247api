@@ -1,39 +1,47 @@
-import React, { useEffect, useState } from 'react';
-import { X, Play, Clock, ShieldCheck, Tv, LayoutGrid, Award, History, Lock } from 'lucide-react';
+import React, { useEffect, useState, useMemo } from 'react';
+import { X, Play, Clock, ShieldCheck, Tv, Award, History, Lock, RefreshCw } from 'lucide-react';
 
 export default function CasinoTableModal({ table, onClose }) {
   const [roundData, setRoundData] = useState(null);
   const [recentResults, setRecentResults] = useState([]);
   const [timer, setTimer] = useState(0);
-  const [viewMode, setViewMode] = useState('board'); // 'board' | 'stream'
   const [loading, setLoading] = useState(true);
   const [streamUrl, setStreamUrl] = useState('');
+  const [streamKey, setStreamKey] = useState(0);
 
-  // Fetch live stream URL from Diamond API
+  const slug = (table?.slug || table?.id || '').toLowerCase();
+
+  // Fetch live stream URL from Diamond / D247 API
   useEffect(() => {
-    if (!table) return;
-    fetch(`/api/casino/${table.slug || table.id}/livetv`)
+    if (!slug) return;
+    fetch(`/api/casino/${slug}/livetv`)
       .then(r => r.json())
       .then(res => {
         if (res.success && res.streamUrl) {
           setStreamUrl(res.streamUrl);
+        } else {
+          setStreamUrl(`/api/casino/player/${slug}`);
         }
       })
-      .catch(() => {});
-  }, [table]);
+      .catch(() => {
+        setStreamUrl(`/api/casino/player/${slug}`);
+      });
+  }, [slug]);
 
   // 1. Fetch live round data every 1 second
   useEffect(() => {
-    if (!table) return;
+    if (!slug) return;
 
     let isMounted = true;
     const fetchRound = () => {
-      fetch(`/api/casino/round/${table.slug || table.id}`)
+      fetch(`/api/casino/round/${slug}`)
         .then(r => r.json())
         .then(res => {
           if (isMounted && res.success && res.data) {
             setRoundData(res.data);
-            setTimer(res.data.timer);
+            if (res.data.timer !== undefined) {
+              setTimer(res.data.timer);
+            }
             setLoading(false);
           }
         })
@@ -47,32 +55,79 @@ export default function CasinoTableModal({ table, onClose }) {
       isMounted = false;
       clearInterval(interval);
     };
-  }, [table]);
+  }, [slug]);
+
+  // Local ticker to decrement timer smoothly
+  useEffect(() => {
+    const t = setInterval(() => {
+      setTimer(prev => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(t);
+  }, []);
 
   // 2. Fetch real recent results for this table
   useEffect(() => {
-    if (!table) return;
+    if (!slug) return;
 
     let isMounted = true;
     const fetchResults = () => {
-      fetch(`/api/casino/results/${table.slug || table.id}`)
+      fetch(`/api/casino/results/${slug}`)
         .then(r => r.json())
         .then(res => {
           if (isMounted && res.success && Array.isArray(res.data)) {
-            setRecentResults(res.data.slice(0, 15)); // Show last 15 results
+            setRecentResults(res.data.slice(0, 16));
           }
         })
         .catch(() => {});
     };
 
     fetchResults();
-    const resultsInterval = setInterval(fetchResults, 5000);
+    const resultsInterval = setInterval(fetchResults, 4000);
 
     return () => {
       isMounted = false;
       clearInterval(resultsInterval);
     };
-  }, [table]);
+  }, [slug]);
+
+  // Calculate Total for games like Mogambo, Baccarat, 32 Cards, Sic Bo
+  const calculatedTotal = useMemo(() => {
+    if (!roundData) return null;
+
+    // Check if runners has a "total" runner with back price
+    const totalRunner = roundData.runners?.find(r => 
+      (r.name || '').toLowerCase().includes('total') || (r.subtype || '').toLowerCase().includes('total')
+    );
+    if (totalRunner && totalRunner.back > 0) {
+      return totalRunner.back;
+    }
+
+    // For Sic Bo: sum of dice values
+    if (roundData.dealType === 'dice' && Array.isArray(roundData.cards)) {
+      const sum = roundData.cards.reduce((acc, d) => acc + (parseInt(d.val) || 0), 0);
+      return sum > 0 ? sum : null;
+    }
+
+    // For Mogambo: calculate rank sum if all 3 cards present
+    if (slug === 'mogambo' && Array.isArray(roundData.cards) && roundData.cards.length >= 3) {
+      const rankToVal = (r) => {
+        if (!r) return 0;
+        if (r === 'A') return 1;
+        if (r === 'J') return 11;
+        if (r === 'Q') return 12;
+        if (r === 'K') return 13;
+        const n = parseInt(r);
+        return isNaN(n) ? 0 : n;
+      };
+      const c1 = rankToVal(roundData.cards[0]?.rank);
+      const c2 = rankToVal(roundData.cards[1]?.rank);
+      const c3 = rankToVal(roundData.cards[2]?.rank);
+      const sum = c1 + c2 + c3;
+      return sum > 0 ? sum : 13;
+    }
+
+    return null;
+  }, [roundData, slug]);
 
   if (!table) return null;
 
@@ -117,104 +172,134 @@ export default function CasinoTableModal({ table, onClose }) {
       const bg = runs === '6' ? 'bg-emerald-600 text-white' : runs === '4' ? 'bg-sky-600 text-white' : 'bg-slate-700 text-slate-200';
       return { letter: runs, bg: `${bg} font-black font-mono`, title: w };
     }
-    
+
     if (lower.includes('daga') || lower.includes('teja')) {
-      return { letter: 'D', bg: 'bg-emerald-700 text-white', title: w };
+      return { letter: 'D', bg: 'bg-emerald-700 text-white font-bold', title: w };
     }
     if (lower.includes('mogambo')) {
-      return { letter: 'M', bg: 'bg-emerald-700 text-white', title: w };
+      return { letter: 'M', bg: 'bg-emerald-700 text-white font-bold', title: w };
     }
     if (lower === 'ind' || lower.includes('india')) {
-      return { letter: 'I', bg: 'bg-emerald-700 text-white', title: w };
+      return { letter: 'I', bg: 'bg-emerald-700 text-white font-bold', title: w };
     }
     if (lower === 'eng' || lower.includes('england')) {
-      return { letter: 'E', bg: 'bg-emerald-700 text-white', title: w };
+      return { letter: 'E', bg: 'bg-emerald-700 text-white font-bold', title: w };
     }
     if (lower.includes('player a') || lower === 'a') {
-      return { letter: 'A', bg: 'bg-red-600 text-white', title: w };
+      return { letter: 'A', bg: 'bg-red-600 text-white font-bold', title: w };
     }
     if (lower.includes('player b') || lower === 'b') {
-      return { letter: 'B', bg: 'bg-blue-600 text-white', title: w };
+      return { letter: 'B', bg: 'bg-blue-600 text-white font-bold', title: w };
     }
     if (lower.includes('dragon')) {
-      return { letter: 'D', bg: 'bg-amber-600 text-white', title: w };
+      return { letter: 'D', bg: 'bg-amber-600 text-white font-bold', title: w };
     }
     if (lower.includes('tiger')) {
-      return { letter: 'T', bg: 'bg-yellow-500 text-black', title: w };
+      return { letter: 'T', bg: 'bg-yellow-500 text-black font-bold', title: w };
     }
     if (lower.includes('tie')) {
-      return { letter: 'T', bg: 'bg-emerald-600 text-white', title: w };
+      return { letter: 'T', bg: 'bg-emerald-600 text-white font-bold', title: w };
     }
     if (lower.includes('low')) {
-      return { letter: 'L', bg: 'bg-indigo-600 text-white', title: w };
+      return { letter: 'L', bg: 'bg-indigo-600 text-white font-bold', title: w };
     }
     if (lower.includes('high')) {
-      return { letter: 'H', bg: 'bg-rose-600 text-white', title: w };
+      return { letter: 'H', bg: 'bg-rose-600 text-white font-bold', title: w };
     }
     if (lower.includes('amar')) {
-      return { letter: 'Am', bg: 'bg-purple-600 text-white', title: w };
+      return { letter: 'Am', bg: 'bg-purple-600 text-white font-bold', title: w };
     }
     if (lower.includes('akbar')) {
-      return { letter: 'Ak', bg: 'bg-cyan-600 text-white', title: w };
+      return { letter: 'Ak', bg: 'bg-cyan-600 text-white font-bold', title: w };
     }
     if (lower.includes('anthony')) {
-      return { letter: 'An', bg: 'bg-teal-600 text-white', title: w };
+      return { letter: 'An', bg: 'bg-teal-600 text-white font-bold', title: w };
     }
     if (lower.includes('player 8')) {
-      return { letter: '8', bg: 'bg-blue-700 text-white', title: w };
+      return { letter: '8', bg: 'bg-blue-700 text-white font-bold', title: w };
     }
     if (lower.includes('player 9')) {
-      return { letter: '9', bg: 'bg-red-700 text-white', title: w };
+      return { letter: '9', bg: 'bg-red-700 text-white font-bold', title: w };
     }
     if (lower.includes('player 10')) {
-      return { letter: '10', bg: 'bg-amber-700 text-white', title: w };
+      return { letter: '10', bg: 'bg-amber-700 text-white font-bold', title: w };
     }
     if (lower.includes('player 11')) {
-      return { letter: '11', bg: 'bg-emerald-700 text-white', title: w };
+      return { letter: '11', bg: 'bg-emerald-700 text-white font-bold', title: w };
     }
 
-    return { letter: w.slice(0, 1).toUpperCase() || 'R', bg: 'bg-emerald-700 text-white', title: w };
+    return { letter: w.slice(0, 1).toUpperCase() || 'R', bg: 'bg-emerald-700 text-white font-bold', title: w };
+  };
+
+  // Flip Clock dual digit formatting
+  const timerStr = String(Math.max(0, timer)).padStart(2, '0');
+  const d1 = timerStr.charAt(0);
+  const d2 = timerStr.charAt(1);
+
+  // Authentic Playing Card Component (Matching Diamond Online Image 10)
+  const renderCard = (c, key, isFaceDown = false) => {
+    if (isFaceDown || c?.isHidden || !c) {
+      return (
+        <div 
+          key={key}
+          className="w-8 h-12 sm:w-10 sm:h-14 rounded bg-[#0b2742] border border-yellow-400/90 shadow-md flex items-center justify-center p-0.5"
+          style={{
+            backgroundImage: 'repeating-linear-gradient(45deg, #1e3a5f 0, #1e3a5f 2px, #0f2238 2px, #0f2238 4px)'
+          }}
+        >
+          <div className="w-full h-full border border-yellow-400/40 rounded-[2px] flex items-center justify-center text-[10px] text-yellow-300/80 font-serif">
+            ✦
+          </div>
+        </div>
+      );
+    }
+
+    const isRed = c.color === 'red' || c.suit === '♥' || c.suit === '♦';
+
+    return (
+      <div 
+        key={key} 
+        className="w-8 h-12 sm:w-10 sm:h-14 bg-white border border-slate-900 rounded shadow-md flex flex-col justify-between p-0.5 select-none font-bold"
+      >
+        <div className={`text-[11px] sm:text-xs font-black leading-none self-start ${isRed ? 'text-red-600' : 'text-black'}`}>
+          {c.rank}
+        </div>
+        <div className={`text-base sm:text-lg leading-none self-center ${isRed ? 'text-red-600' : 'text-black'}`}>
+          {c.suit}
+        </div>
+        <div className={`text-[9px] font-black leading-none self-end rotate-180 ${isRed ? 'text-red-600' : 'text-black'}`}>
+          {c.rank}
+        </div>
+      </div>
+    );
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-3 animate-fade-in">
-      <div className="bg-slate-900 border border-slate-700 w-full max-w-4xl rounded-2xl overflow-hidden shadow-2xl text-white flex flex-col max-h-[94vh]">
+    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-1 sm:p-3 animate-fade-in">
+      <div className="bg-[#0b1726] border border-slate-700 w-full max-w-4xl rounded-2xl overflow-hidden shadow-2xl text-white flex flex-col max-h-[96vh]">
         
-        {/* 1. Header */}
-        <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-4 py-3 flex justify-between items-center border-b border-slate-700">
+        {/* 1. Modal Header */}
+        <div className="bg-[#112435] px-4 py-2.5 flex justify-between items-center border-b border-slate-700">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 bg-red-500 rounded-full animate-ping"></span>
             <span className="bg-red-600 text-white font-black text-[10px] uppercase px-1.5 py-0.5 rounded tracking-wider">
               LIVE
             </span>
-            <h3 className="font-extrabold text-base text-yellow-400">{table.name}</h3>
-            <span className="text-xs bg-slate-800 px-2 py-0.5 rounded border border-slate-700 text-slate-300 font-mono">
+            <h3 className="font-extrabold text-sm sm:text-base text-yellow-400">{table.name}</h3>
+            <span className="hidden sm:inline-block text-[11px] bg-slate-800 px-2 py-0.5 rounded border border-slate-700 text-slate-300 font-mono">
               {table.slug}
             </span>
           </div>
 
           <div className="flex items-center gap-2">
-            {/* View Mode Toggle */}
-            <div className="flex bg-slate-800 rounded-lg p-0.5 border border-slate-700">
-              <button
-                onClick={() => setViewMode('board')}
-                className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-md font-bold transition ${
-                  viewMode === 'board' ? 'bg-sky-600 text-white shadow' : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <LayoutGrid size={13} />
-                <span>Cards & Odds</span>
-              </button>
-              <button
-                onClick={() => setViewMode('stream')}
-                className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-md font-bold transition ${
-                  viewMode === 'stream' ? 'bg-sky-600 text-white shadow' : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <Tv size={13} />
-                <span>Live Video</span>
-              </button>
-            </div>
+            <button
+              onClick={() => setStreamKey(k => k + 1)}
+              className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded transition flex items-center gap-1 text-xs"
+              title="Reload Live Feed"
+            >
+              <RefreshCw size={14} />
+              <span className="hidden sm:inline text-[11px]">Reload TV</span>
+            </button>
 
             <button 
               onClick={onClose} 
@@ -226,23 +311,25 @@ export default function CasinoTableModal({ table, onClose }) {
         </div>
 
         {/* 2. Round Info Bar */}
-        <div className="bg-slate-950 px-4 py-2 flex flex-wrap justify-between items-center border-b border-slate-800 text-xs gap-2">
+        <div className="bg-[#07101a] px-4 py-2 flex flex-wrap justify-between items-center border-b border-slate-800 text-xs gap-2">
           <div className="flex items-center gap-2 font-mono">
-            <span className="text-slate-400">ROUND ID:</span>
-            <span className="text-cyan-400 font-bold bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800/40">
+            <span className="text-slate-400 text-[11px]">ROUND:</span>
+            <span className="text-cyan-400 font-bold bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800/40 text-[11px]">
               #{roundData?.roundId || 'Connecting...'}
             </span>
             <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${
-              roundData?.status === 'OPEN' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-red-500/20 text-red-400 border border-red-500/40'
+              roundData?.status === 'OPEN' 
+                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' 
+                : 'bg-red-500/20 text-red-400 border border-red-500/40'
             }`}>
-              {roundData?.status || 'SYNCING'}
+              {roundData?.status || (timer > 0 ? 'OPEN' : 'SUSPENDED')}
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5">
-            <Clock size={14} className={timer <= 5 ? 'text-red-400 animate-pulse' : 'text-yellow-400'} />
-            <span className="text-slate-300 font-medium">Betting Closes:</span>
-            <span className={`font-black font-mono px-2.5 py-0.5 rounded text-xs ${
+          <div className="flex items-center gap-1.5 font-mono">
+            <Clock size={13} className={timer <= 5 ? 'text-red-400 animate-pulse' : 'text-yellow-400'} />
+            <span className="text-slate-400 text-[11px]">Closes in:</span>
+            <span className={`font-black px-2 py-0.5 rounded text-xs ${
               timer <= 5 ? 'bg-red-600 text-white animate-bounce' : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
             }`}>
               {timer}s
@@ -250,8 +337,215 @@ export default function CasinoTableModal({ table, onClose }) {
           </div>
         </div>
 
-        {/* 3. Real Recent Results Ribbon (Diamond Upstream) */}
-        <div className="bg-[#0b1726] px-4 py-2 border-b border-slate-800 flex items-center justify-between overflow-x-auto scrollbar-thin">
+        {/* 3. Live Video Container with Floating HUD Overlay (Image 10 Exact Parity) */}
+        <div className="relative w-full aspect-video bg-black overflow-hidden select-none border-b border-slate-800 shrink-0">
+          
+          {/* Iframe Live TV Stream */}
+          <iframe
+            key={streamKey}
+            src={streamUrl || `/api/casino/player/${slug}`}
+            title="Live Casino TV"
+            className="w-full h-full border-0 absolute inset-0 z-0 bg-black"
+            allow="autoplay; encrypted-media; fullscreen"
+          />
+
+          {/* Fallback ambient live dealer graphics if stream is buffering */}
+          <div className="absolute inset-0 -z-10 bg-radial from-[#0d2235] via-[#040d16] to-black flex items-center justify-center">
+            <div className="text-center opacity-40">
+              <Tv size={36} className="mx-auto mb-2 text-sky-400" />
+              <div className="text-xs font-bold tracking-widest text-slate-400 uppercase">D247 LIVE DEALER FEED</div>
+            </div>
+          </div>
+
+          {/* Top-Left Floating HUD: Cards, Daga/Teja, Mogambo, Total (Exact Diamond Image 10) */}
+          <div className="absolute top-2 left-2 z-20 flex flex-col items-start gap-1 pointer-events-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
+            
+            {/* Yellow TOTAL Badge */}
+            {calculatedTotal !== null && (
+              <div className="bg-yellow-400 text-black font-black text-xs sm:text-sm px-2 py-0.5 rounded shadow-lg uppercase tracking-wider mb-0.5">
+                TOTAL: {calculatedTotal}
+              </div>
+            )}
+
+            {/* Game Specific Overlay Components */}
+            {(() => {
+              // 1. Mogambo Table (Exact match to User Image 10)
+              if (slug === 'mogambo') {
+                const c1 = roundData?.cards?.[0];
+                const c2 = roundData?.cards?.[1];
+                const c3 = roundData?.cards?.[2];
+                return (
+                  <div className="flex flex-col items-start gap-1">
+                    {/* DAGA / TEJA */}
+                    <div>
+                      <div className="text-[10px] sm:text-[11px] font-black text-white uppercase tracking-wider drop-shadow-md mb-0.5">
+                        DAGA / TEJA
+                      </div>
+                      <div className="flex gap-1.5">
+                        {renderCard(c1, 'dt1', !c1 || c1.isHidden)}
+                        {renderCard(c2, 'dt2', !c2 || c2.isHidden)}
+                      </div>
+                    </div>
+
+                    {/* MOGAMBO */}
+                    <div className="mt-0.5">
+                      <div className="text-[10px] sm:text-[11px] font-black text-white uppercase tracking-wider drop-shadow-md mb-0.5">
+                        MOGAMBO
+                      </div>
+                      <div className="flex gap-1.5">
+                        {renderCard(c3, 'mg1', !c3 || c3.isHidden)}
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              // 2. Teen Patti / 20-20 / VIP
+              if (slug.includes('teen') || slug.includes('patti')) {
+                const cards = roundData?.cards || [];
+                const playerA = cards.slice(0, 3);
+                const playerB = cards.slice(3, 6);
+                return (
+                  <div className="flex flex-col items-start gap-1">
+                    <div>
+                      <div className="text-[10px] sm:text-[11px] font-black text-white uppercase tracking-wider drop-shadow-md mb-0.5">
+                        PLAYER A
+                      </div>
+                      <div className="flex gap-1">
+                        {[0, 1, 2].map(idx => renderCard(playerA[idx], `pa-${idx}`, !playerA[idx]))}
+                      </div>
+                    </div>
+                    <div className="mt-0.5">
+                      <div className="text-[10px] sm:text-[11px] font-black text-white uppercase tracking-wider drop-shadow-md mb-0.5">
+                        PLAYER B
+                      </div>
+                      <div className="flex gap-1">
+                        {[0, 1, 2].map(idx => renderCard(playerB[idx], `pb-${idx}`, !playerB[idx]))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              // 3. Dragon Tiger
+              if (slug.includes('dt') || slug.includes('dragon')) {
+                const dragonCard = roundData?.cards?.[0];
+                const tigerCard = roundData?.cards?.[1];
+                return (
+                  <div className="flex gap-3 items-start">
+                    <div>
+                      <div className="text-[10px] sm:text-[11px] font-black text-amber-300 uppercase tracking-wider drop-shadow-md mb-0.5">
+                        DRAGON
+                      </div>
+                      {renderCard(dragonCard, 'dragon', !dragonCard)}
+                    </div>
+                    <div>
+                      <div className="text-[10px] sm:text-[11px] font-black text-yellow-400 uppercase tracking-wider drop-shadow-md mb-0.5">
+                        TIGER
+                      </div>
+                      {renderCard(tigerCard, 'tiger', !tigerCard)}
+                    </div>
+                  </div>
+                );
+              }
+
+              // 4. Lucky 7
+              if (slug.includes('lucky7') || slug === 'lucky7eu') {
+                const c = roundData?.cards?.[0];
+                return (
+                  <div>
+                    <div className="text-[10px] sm:text-[11px] font-black text-white uppercase tracking-wider drop-shadow-md mb-0.5">
+                      CARD
+                    </div>
+                    {renderCard(c, 'lucky-card', !c)}
+                  </div>
+                );
+              }
+
+              // 5. 32 Cards
+              if (slug.includes('card32') || slug.includes('32')) {
+                const cards = roundData?.cards || [];
+                return (
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {[8, 9, 10, 11].map((p, idx) => (
+                      <div key={idx} className="flex flex-col items-center">
+                        <span className="text-[9px] font-black text-sky-300 drop-shadow">P{p}</span>
+                        {renderCard(cards[idx], `c32-${idx}`, !cards[idx])}
+                      </div>
+                    ))}
+                  </div>
+                );
+              }
+
+              // 6. Sic Bo (3D Dice)
+              if (roundData?.dealType === 'dice' || slug.includes('sicbo')) {
+                const pips = { 1: '⚀', 2: '⚁', 3: '⚂', 4: '⚃', 5: '⚄', 6: '⚅' };
+                const dice = roundData?.cards || [{ val: '?' }, { val: '?' }, { val: '?' }];
+                return (
+                  <div className="flex gap-1.5 items-center">
+                    {dice.map((d, i) => (
+                      <div 
+                        key={i} 
+                        className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-white border border-slate-900 text-red-600 flex items-center justify-center text-2xl sm:text-3xl shadow-lg"
+                      >
+                        {pips[d.val] || '🎲'}
+                      </div>
+                    ))}
+                  </div>
+                );
+              }
+
+              // 7. Roulette
+              if (roundData?.dealType === 'roulette' || slug.includes('roulette')) {
+                const r = roundData?.cards?.[0] || {};
+                const num = r.number || '0';
+                const isGreen = num === '0' || num === '00';
+                const isRed = r.color === 'red';
+                return (
+                  <div className="flex items-center gap-2">
+                    <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-yellow-400 flex items-center justify-center font-mono font-black text-lg sm:text-xl shadow-2xl text-white ${
+                      isGreen ? 'bg-emerald-600' : isRed ? 'bg-red-600' : 'bg-slate-950'
+                    }`}>
+                      {num}
+                    </div>
+                  </div>
+                );
+              }
+
+              // Generic fallback cards
+              if (roundData?.cards && roundData.cards.length > 0) {
+                return (
+                  <div className="flex gap-1">
+                    {roundData.cards.slice(0, 4).map((c, i) => renderCard(c, `gen-${i}`))}
+                  </div>
+                );
+              }
+
+              return null;
+            })()}
+          </div>
+
+          {/* Bottom-Right 3D Flip Clock Counter [ 0 ] [ 1 ] (Exact Image 10 bottom right) */}
+          <div className="absolute bottom-2.5 right-2.5 z-20 pointer-events-none flex items-center gap-1">
+            <div className="flex gap-1 bg-black/70 p-1 rounded-lg backdrop-blur-sm border border-white/10 shadow-2xl">
+              <div className="w-8 h-11 sm:w-10 sm:h-13 bg-[#1e293b] border border-slate-600 rounded-md flex flex-col items-center justify-center relative shadow-2xl overflow-hidden">
+                <span className="font-mono font-black text-xl sm:text-2xl text-white leading-none drop-shadow">
+                  {d1}
+                </span>
+                <div className="w-full h-[1px] bg-slate-950/80 absolute top-1/2 left-0 z-10"></div>
+              </div>
+              <div className="w-8 h-11 sm:w-10 sm:h-13 bg-[#1e293b] border border-slate-600 rounded-md flex flex-col items-center justify-center relative shadow-2xl overflow-hidden">
+                <span className="font-mono font-black text-xl sm:text-2xl text-white leading-none drop-shadow">
+                  {d2}
+                </span>
+                <div className="w-full h-[1px] bg-slate-950/80 absolute top-1/2 left-0 z-10"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 4. Real Recent Results Ribbon (Diamond Upstream) */}
+        <div className="bg-[#07101a] px-4 py-2 border-b border-slate-800 flex items-center justify-between overflow-x-auto scrollbar-thin">
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1 text-[11px] font-bold text-slate-400 uppercase tracking-wide shrink-0 mr-1">
               <History size={13} className="text-amber-400" />
@@ -283,293 +577,95 @@ export default function CasinoTableModal({ table, onClose }) {
           </button>
         </div>
 
-        {/* 4. Main Content: Stream or Table */}
-        <div className="flex-1 overflow-y-auto">
-          {viewMode === 'stream' ? (
-            /* Live Stream Video Player */
-            <div className="relative bg-black w-full aspect-video flex items-center justify-center">
-              <iframe
-                src={streamUrl || `https://playg3.external247services.com/live/${table.slug}`}
-                title="Live Casino Stream"
-                className="w-full h-full border-0"
-                allow="autoplay; encrypted-media; fullscreen"
-              />
+        {/* 5. Real Live Betting Odds Board */}
+        <div className="flex-1 overflow-y-auto p-4 bg-[#0b1726]">
+          <div className="flex justify-between items-center mb-3">
+            <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+              <span className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span>
+              LIVE BETTING MARKETS & RATES
+            </h4>
+            <span className="text-[11px] text-slate-400 font-mono">
+              Min: {roundData?.runners?.[0]?.min || 100} | Max: {roundData?.runners?.[0]?.max ? Number(roundData.runners[0].max).toLocaleString() : '300,000'}
+            </span>
+          </div>
+
+          {loading ? (
+            <div className="py-8 text-center text-xs text-slate-400 animate-pulse">
+              Fetching live market rates from Diamond Exchange...
             </div>
-          ) : (
-            /* Live Cards Felt Table */
-            <div className="bg-gradient-to-b from-[#093522] via-[#0d4a30] to-[#08291b] p-4 border-b border-slate-800 relative">
-              <div className="absolute top-2 right-2 text-[10px] text-emerald-300/60 font-mono tracking-widest uppercase">
-                DIAMOND LIVE FELT TABLE
-              </div>
-
-              <div className="text-center mb-2">
-                <span className="text-xs uppercase font-extrabold tracking-wider text-emerald-200 bg-emerald-950/60 px-3 py-1 rounded-full border border-emerald-500/30">
-                  {roundData?.dealType === 'dice' ? '🎲 DICE IN PLAY'
-                    : roundData?.dealType === 'roulette' ? '🎡 ROULETTE WHEEL & BALL'
-                    : roundData?.dealType === 'cricket_ball' ? '🏏 CRICKET BALL IN PLAY'
-                    : roundData?.dealType === 'football' ? '⚽ FOOTBALL / GOAL IN PLAY'
-                    : '🃏 DEALT CARDS IN PLAY'}
-                </span>
-              </div>
-
-              {/* Dynamic Dealt Items (Cards, 3D Dice, Roulette Ball, Cricket Ball, Football) */}
-              {(() => {
-                const dealType = roundData?.dealType || (
-                  (table.slug || '').includes('sicbo') ? 'dice'
-                  : (table.slug || '').includes('roulette') ? 'roulette'
-                  : (table.slug || '').includes('ballbyball') ? 'cricket_ball'
-                  : (table.slug || '').includes('goal') ? 'football'
-                  : 'cards'
-                );
-
-                // 1. 3D Dice (Sic Bo, 7 Up 7 Down)
-                if (dealType === 'dice') {
-                  const pips = { 1: '⚀', 2: '⚁', 3: '⚂', 4: '⚃', 5: '⚄', 6: '⚅' };
-                  const items = roundData?.cards || [{ val: '?' }, { val: '?' }, { val: '?' }];
+          ) : roundData?.runners && roundData.runners.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {[...roundData.runners]
+                .sort((a, b) => (a.sr || 0) - (b.sr || 0))
+                .map((r, idx) => {
+                  const isSuspended = r.suspended || roundData?.status === 'SUSPENDED' || timer <= 0;
                   return (
-                    <div className="flex justify-center items-center gap-4 my-3 min-h-[80px]">
-                      {items.map((d, i) => (
-                        <div key={i} className="flex flex-col items-center">
-                          <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center text-4xl shadow-2xl transition-transform hover:scale-105 border-2 ${
-                            d?.isHidden 
-                              ? 'bg-gradient-to-br from-amber-950 to-slate-950 border-amber-500/40 text-amber-400' 
-                              : 'bg-white border-slate-300 text-red-600 shadow-amber-500/20'
-                          }`}>
-                            {d?.isHidden ? '🎲' : (pips[d?.val] || d?.val)}
+                    <div 
+                      key={idx}
+                      className="bg-slate-800/80 border border-slate-700/80 rounded-lg p-2.5 flex items-center justify-between hover:border-slate-600 transition"
+                    >
+                      <div className="flex-1 min-w-0 pr-2">
+                        <div className="text-xs font-bold text-white truncate">{r.name}</div>
+                        <div className="text-[10px] text-slate-400">
+                          {r.subtype ? `${r.subtype} • ` : ''}
+                          Limit: {r.min} - {Number(r.max || 100000).toLocaleString()}
+                        </div>
+                      </div>
+
+                      {isSuspended ? (
+                        /* Locked / Suspended Box matching Diamond Online */
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-16 sm:w-20 bg-[#2b3543] border border-slate-700 text-slate-400 flex items-center justify-center py-2.5 rounded select-none shadow-inner">
+                            <Lock size={14} className="text-slate-300" />
                           </div>
-                          <span className="text-[10px] text-amber-300 font-bold mt-1">Die {i + 1}</span>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                }
-
-                // 2. Roulette Wheel Pocket & Ball
-                if (dealType === 'roulette') {
-                  const items = roundData?.cards || [{ number: '?' }];
-                  const r = items[0] || { number: '?' };
-                  return (
-                    <div className="flex justify-center items-center gap-4 my-3 min-h-[80px]">
-                      <div className="flex flex-col items-center">
-                        <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full flex flex-col items-center justify-center font-black text-xl sm:text-2xl shadow-2xl border-4 ${
-                          r?.isHidden 
-                            ? 'bg-gradient-to-br from-emerald-950 to-slate-950 border-emerald-500/50 text-emerald-400'
-                            : r?.color === 'green'
-                              ? 'bg-emerald-600 border-yellow-400 text-white shadow-emerald-500/40'
-                              : r?.color === 'red'
-                                ? 'bg-red-600 border-yellow-400 text-white shadow-red-500/40'
-                                : 'bg-slate-950 border-yellow-400 text-white shadow-slate-900/60'
-                        }`}>
-                          {r?.isHidden ? (
-                            <span className="text-xl animate-spin">⚪</span>
-                          ) : (
-                            <>
-                              <span className="font-mono leading-none">{r?.number}</span>
-                              <span className="text-[8px] uppercase tracking-wider font-extrabold text-yellow-300 mt-0.5">
-                                {r?.color}
-                              </span>
-                            </>
-                          )}
-                        </div>
-                        <span className="text-[10px] text-yellow-300 font-bold mt-1">Winning Pocket & Ball</span>
-                      </div>
-                    </div>
-                  );
-                }
-
-                // 3. Cricket Ball (Ball by Ball / Super Over)
-                if (dealType === 'cricket_ball') {
-                  const items = roundData?.cards || [{ outcome: '?' }];
-                  return (
-                    <div className="flex justify-center items-center gap-3 my-3 min-h-[80px]">
-                      {items.map((b, i) => (
-                        <div key={i} className="flex flex-col items-center">
-                          <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center font-black text-sm sm:text-base shadow-2xl border-2 border-white/30 ${
-                            b?.isHidden 
-                              ? 'bg-red-950 text-red-300' 
-                              : 'bg-gradient-to-br from-red-600 to-red-800 text-white shadow-red-600/50'
-                          }`}>
-                            {b?.isHidden ? '🏏' : b?.outcome}
-                          </div>
-                          <span className="text-[10px] text-slate-300 font-bold mt-1">Ball {i + 1}</span>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                }
-
-                // 4. Playing Cards (Mogambo, Teen Patti, Dragon Tiger, etc.)
-                const renderCard = (c, i) => (
-                  <div 
-                    key={i} 
-                    className={`w-12 h-16 sm:w-14 sm:h-20 rounded-lg flex flex-col items-center justify-between p-1 font-bold shadow-lg transition-transform hover:scale-105 ${
-                      c?.isHidden 
-                        ? 'bg-gradient-to-br from-indigo-900 to-slate-900 border-2 border-indigo-400/40 text-indigo-300' 
-                        : 'bg-white border-2 border-slate-200'
-                    }`}
-                  >
-                    {c?.isHidden ? (
-                      <div className="w-full h-full rounded border border-indigo-400/30 flex items-center justify-center text-xs font-mono">
-                        🂠
-                      </div>
-                    ) : (
-                      <>
-                        <div className={`text-xs sm:text-sm self-start leading-none ${c?.color === 'red' ? 'text-red-600' : 'text-slate-900'}`}>
-                          {c?.rank}
-                        </div>
-                        <div className={`text-xl sm:text-2xl leading-none ${c?.color === 'red' ? 'text-red-600' : 'text-slate-900'}`}>
-                          {c?.suit}
-                        </div>
-                        <div className={`text-xs sm:text-sm self-end leading-none ${c?.color === 'red' ? 'text-red-600' : 'text-slate-900'}`}>
-                          {c?.rank}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                );
-
-                if (table.slug === 'mogambo') {
-                  return (
-                    <div className="flex flex-col items-center gap-2.5 my-2">
-                      {/* Row 1: DAGA / TEJA */}
-                      <div className="flex flex-col items-center">
-                        <span className="text-[11px] font-black text-yellow-300 tracking-wider mb-1 uppercase drop-shadow">
-                          DAGA / TEJA
-                        </span>
-                        <div className="flex gap-2">
-                          {[0, 1].map((idx) => {
-                            const c = roundData?.cards?.[idx] || { isHidden: true };
-                            return renderCard(c, idx);
-                          })}
-                        </div>
-                      </div>
-
-                      {/* Row 2: MOGAMBO */}
-                      <div className="flex flex-col items-center">
-                        <span className="text-[11px] font-black text-emerald-300 tracking-wider mb-1 uppercase drop-shadow">
-                          MOGAMBO
-                        </span>
-                        <div className="flex gap-2">
-                          {[2].map((idx) => {
-                            const c = roundData?.cards?.[idx] || { isHidden: true };
-                            return renderCard(c, idx);
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                }
-
-                return (
-                  <div className="flex flex-wrap justify-center items-center gap-2.5 my-3 min-h-[80px]">
-                    {roundData && roundData.cards && roundData.cards.length > 0 ? (
-                      roundData.cards.map((c, i) => renderCard(c, i))
-                    ) : (
-                      <div className="text-xs text-emerald-300/80 italic py-4">
-                        Dealing cards for next round...
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
-
-              <div className="flex justify-between items-center text-[11px] text-emerald-200/70 pt-2 border-t border-emerald-800/40">
-                <span>Game: {table.name}</span>
-                <span className="font-mono">Live Dealer Sync Active</span>
-              </div>
-            </div>
-          )}
-
-          {/* 5. Real Live Betting Odds Board */}
-          <div className="p-4 bg-slate-900">
-            <div className="flex justify-between items-center mb-3">
-              <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-                <span className="w-2 h-2 bg-yellow-400 rounded-full"></span>
-                LIVE BETTING MARKETS & RATES
-              </h4>
-              <span className="text-[11px] text-slate-400">
-                Min: {roundData?.runners?.[0]?.min || 100} | Max: {roundData?.runners?.[0]?.max || 100000}
-              </span>
-            </div>
-
-            {loading ? (
-              <div className="py-8 text-center text-xs text-slate-400 animate-pulse">
-                Fetching live market rates from Diamond Exchange...
-              </div>
-            ) : roundData?.runners && roundData.runners.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {[...roundData.runners]
-                  .sort((a, b) => (a.sr || 0) - (b.sr || 0))
-                  .map((r, idx) => {
-                    const isSuspended = r.suspended || roundData?.status === 'SUSPENDED' || timer <= 0;
-                    return (
-                      <div 
-                        key={idx}
-                        className="bg-slate-800/80 border border-slate-700/80 rounded-lg p-2.5 flex items-center justify-between hover:border-slate-600 transition"
-                      >
-                        <div className="flex-1 min-w-0 pr-2">
-                          <div className="text-xs font-bold text-white truncate">{r.name}</div>
-                          <div className="text-[10px] text-slate-400">
-                            {r.subtype ? `${r.subtype} • ` : ''}
-                            Limit: {r.min} - {r.max}
-                          </div>
-                        </div>
-
-                        {isSuspended ? (
-                          /* Locked / Suspended Box matching Diamond Online */
-                          <div className="flex items-center gap-1.5">
+                          {r.lay > 0 && (
                             <div className="w-16 sm:w-20 bg-[#2b3543] border border-slate-700 text-slate-400 flex items-center justify-center py-2.5 rounded select-none shadow-inner">
                               <Lock size={14} className="text-slate-300" />
                             </div>
-                            {r.lay > 0 && (
-                              <div className="w-16 sm:w-20 bg-[#2b3543] border border-slate-700 text-slate-400 flex items-center justify-center py-2.5 rounded select-none shadow-inner">
-                                <Lock size={14} className="text-slate-300" />
-                              </div>
-                            )}
+                          )}
+                        </div>
+                      ) : (
+                        /* Active Betting Back / Lay Boxes */
+                        <div className="flex items-center gap-1.5">
+                          {/* Back Box */}
+                          <div className="w-16 sm:w-20 bg-[#72bbef] hover:bg-[#5aaae6] text-slate-950 font-black text-center py-1 rounded cursor-pointer transition shadow-sm">
+                            <div className="text-xs font-black leading-tight">
+                              {r.back > 0 ? r.back : '-'}
+                            </div>
+                            <div className="text-[9px] font-bold text-slate-800 leading-none">
+                              {r.backSize > 0 ? Number(r.backSize).toLocaleString() : '100,000'}
+                            </div>
                           </div>
-                        ) : (
-                          /* Active Betting Back / Lay Boxes */
-                          <div className="flex items-center gap-1.5">
-                            {/* Back Box */}
-                            <div className="w-16 sm:w-20 bg-[#72bbef] hover:bg-[#5aaae6] text-slate-950 font-black text-center py-1 rounded cursor-pointer transition shadow-sm">
+
+                          {/* Lay Box */}
+                          {r.lay > 0 ? (
+                            <div className="w-16 sm:w-20 bg-[#faa9ba] hover:bg-[#f294a8] text-slate-950 font-black text-center py-1 rounded cursor-pointer transition shadow-sm">
                               <div className="text-xs font-black leading-tight">
-                                {r.back > 0 ? r.back : '-'}
+                                {r.lay}
                               </div>
                               <div className="text-[9px] font-bold text-slate-800 leading-none">
-                                {r.backSize > 0 ? Number(r.backSize).toLocaleString() : '10k'}
+                                {r.laySize > 0 ? Number(r.laySize).toLocaleString() : '100,000'}
                               </div>
                             </div>
-
-                            {/* Lay Box */}
-                            {r.lay > 0 ? (
-                              <div className="w-16 sm:w-20 bg-[#faa9ba] hover:bg-[#f294a8] text-slate-950 font-black text-center py-1 rounded cursor-pointer transition shadow-sm">
-                                <div className="text-xs font-black leading-tight">
-                                  {r.lay}
-                                </div>
-                                <div className="text-[9px] font-bold text-slate-800 leading-none">
-                                  {r.laySize > 0 ? Number(r.laySize).toLocaleString() : '10k'}
-                                </div>
-                              </div>
-                            ) : null}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-              </div>
-            ) : (
-              <div className="py-6 text-center text-xs text-slate-400">
-                No active runners for this table currently.
-              </div>
-            )}
-          </div>
+                          ) : null}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+            </div>
+          ) : (
+            <div className="py-6 text-center text-xs text-slate-400">
+              No active runners for this table currently.
+            </div>
+          )}
         </div>
 
         {/* 6. Footer */}
-        <div className="bg-slate-950 px-4 py-2 border-t border-slate-800 flex justify-between items-center text-[11px] text-slate-400">
+        <div className="bg-[#07101a] px-4 py-2 border-t border-slate-800 flex justify-between items-center text-[11px] text-slate-400">
           <div className="flex items-center gap-1">
             <ShieldCheck size={14} className="text-emerald-400" />
-            <span>Zero-Latency Upstream Sync Engine Active</span>
+            <span>D247 Official Zero-Latency Exchange Feed</span>
           </div>
           <button 
             onClick={onClose} 

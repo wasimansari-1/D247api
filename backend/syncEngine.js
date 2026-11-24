@@ -620,7 +620,7 @@ class D247SyncEngine {
           streamUrl: res.data.url,
           sources: [
             { name: 'Diamond Live TV (Official)', url: res.data.url, type: 'iframe' },
-            { name: 'External 247 Hub', url: `https://playg3.external247services.com/live/${gmid}`, type: 'iframe' }
+            { name: 'D247 Relay Player', url: `/api/casino/player/${gmid}`, type: 'iframe' }
           ]
         };
       }
@@ -629,10 +629,9 @@ class D247SyncEngine {
     }
 
     return {
-      streamUrl: `https://playg3.external247services.com/live/${gmid}`,
+      streamUrl: `/api/casino/player/${gmid}`,
       sources: [
-        { name: 'External 247 Hub', url: `https://playg3.external247services.com/live/${gmid}`, type: 'iframe' },
-        { name: 'CloudFront Stream', url: `https://dzfytm4o128av.cloudfront.net/live/${gmid}`, type: 'iframe' }
+        { name: 'D247 Live Stream', url: `/api/casino/player/${gmid}`, type: 'iframe' }
       ]
     };
   }
@@ -641,27 +640,24 @@ class D247SyncEngine {
    * Get Live Video Stream for Casino / Virtual Table directly from Diamond Online (/casino/launchother)
    */
   async getCasinoStreamUrl(slug, ip = '103.21.244.2') {
+    let upstreamUrl = null;
     try {
       const res = await this.executeUpstream('/casino/launchother', { id: 'tv' });
       if (res && res.data && res.data.token) {
         const token = res.data.token;
-        const playerUrl = `https://diamondonline7.com/newmediaplayer/${slug}/${token}?ip=${ip || '103.21.244.2'}`;
-        return {
-          streamUrl: playerUrl,
-          sources: [
-            { name: 'Diamond Video (Official)', url: playerUrl, type: 'iframe' },
-            { name: 'External 247 Hub', url: `https://playg3.external247services.com/live/${slug}`, type: 'iframe' }
-          ]
-        };
+        upstreamUrl = `https://diamondonline7.com/newmediaplayer/${slug}/${token}?ip=${ip || '103.21.244.2'}`;
       }
     } catch (err) {
       console.error(`Error in getCasinoStreamUrl(${slug}):`, err.message);
     }
 
+    const localPlayerUrl = `/api/casino/player/${slug}`;
     return {
-      streamUrl: `https://playg3.external247services.com/live/${slug}`,
+      streamUrl: localPlayerUrl,
+      upstreamUrl: upstreamUrl,
       sources: [
-        { name: 'External 247 Hub', url: `https://playg3.external247services.com/live/${slug}`, type: 'iframe' }
+        { name: 'D247 Live Stream', url: localPlayerUrl, type: 'iframe' },
+        ...(upstreamUrl ? [{ name: 'Diamond Video (Direct)', url: upstreamUrl, type: 'iframe' }] : [])
       ]
     };
   }

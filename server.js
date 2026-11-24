@@ -14,6 +14,7 @@ const D247SyncEngine = require('./backend/syncEngine');
 const sportsRoutes = require('./backend/routes/sports');
 const casinoRoutes = require('./backend/routes/casino');
 const configRoutes = require('./backend/routes/config');
+const docsRoutes = require('./backend/routes/docs');
 
 const app = express();
 const server = http.createServer(app);
@@ -79,6 +80,7 @@ io.on('connection', (socket) => {
 app.use('/api/sports', sportsRoutes(syncEngine));
 app.use('/api/casino', casinoRoutes(syncEngine));
 app.use('/api/config', configRoutes(syncEngine));
+app.use('/api/docs', docsRoutes(syncEngine));
 
 // Fallback index
 app.use((req, res) => {
