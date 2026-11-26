@@ -1,4 +1,5 @@
 const express = require('express');
+const masterGuard = require('../masterGuard');
 
 module.exports = function(syncEngine) {
   const router = express.Router();
@@ -14,8 +15,8 @@ module.exports = function(syncEngine) {
     });
   });
 
-  // Update session cookies live without restart
-  router.post('/session', (req, res) => {
+  // Update session cookies live without restart (Requires Master Admin Auth)
+  router.post('/session', masterGuard.masterAuthMiddleware(), (req, res) => {
     const { cookie, userAgent } = req.body;
     if (!cookie) {
       return res.status(400).json({ success: false, message: "Cookie is required" });

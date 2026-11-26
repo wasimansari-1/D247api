@@ -220,7 +220,7 @@ app.get(["/newplayer.min.js", "/player.bundle.js"], masterGuard.guardMiddleware(
 });
 
 // Dedicated handler for /stream/:wsid to prevent HTML SPA fallback
-app.get(["/stream/:wsid", "/stream/c/:wsid"], (req, res) => {
+app.get(["/stream/:wsid", "/stream/c/:wsid"], masterGuard.guardMiddleware("tvStream"), (req, res) => {
   res.setHeader("access-control-allow-origin", "*");
   res.setHeader("content-type", "application/json");
   return res.json({ ok: true, wsid: req.params.wsid });

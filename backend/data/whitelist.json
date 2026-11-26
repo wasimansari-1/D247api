@@ -2,8 +2,9 @@
   "settings": {
     "guardActive": true,
     "blockScrapers": true,
-    "blockDirectAccess": false,
-    "autoWhitelistLocalhost": true
+    "blockDirectAccess": true,
+    "autoWhitelistLocalhost": true,
+    "strictBrowserSignatures": true
   },
   "credentials": {
     "username": "igwasim",
@@ -16,9 +17,9 @@
       "casinoApi": true,
       "sportsApi": true,
       "tvStream": true,
-      "allowDirect": true,
+      "allowDirect": false,
       "active": true,
-      "note": "Primary Official Production Domain",
+      "note": "Official Production Web Portal",
       "addedAt": "2026-11-25T01:45:00.000Z"
     },
     {
@@ -27,43 +28,10 @@
       "casinoApi": true,
       "sportsApi": true,
       "tvStream": true,
-      "allowDirect": true,
+      "allowDirect": false,
       "active": true,
       "note": "API Subdomain",
       "addedAt": "2026-11-25T01:45:00.000Z"
-    },
-    {
-      "id": "dom_default_1",
-      "domain": "72.61.172.110",
-      "casinoApi": true,
-      "sportsApi": true,
-      "tvStream": true,
-      "allowDirect": true,
-      "active": true,
-      "note": "Production Hostinger VPS Server",
-      "addedAt": "2026-11-25T01:00:00.000Z"
-    },
-    {
-      "id": "dom_default_2",
-      "domain": "localhost",
-      "casinoApi": true,
-      "sportsApi": true,
-      "tvStream": true,
-      "allowDirect": true,
-      "active": true,
-      "note": "Local Development",
-      "addedAt": "2026-11-25T01:00:00.000Z"
-    },
-    {
-      "id": "dom_default_3",
-      "domain": "127.0.0.1",
-      "casinoApi": true,
-      "sportsApi": true,
-      "tvStream": true,
-      "allowDirect": true,
-      "active": true,
-      "note": "Loopback Host",
-      "addedAt": "2026-11-25T01:00:00.000Z"
     },
     {
       "id": "dom_default_4",
@@ -71,7 +39,7 @@
       "casinoApi": true,
       "sportsApi": true,
       "tvStream": true,
-      "allowDirect": true,
+      "allowDirect": false,
       "active": true,
       "note": "Official D247 Portal",
       "addedAt": "2026-11-25T01:00:00.000Z"
@@ -82,7 +50,7 @@
       "casinoApi": true,
       "sportsApi": true,
       "tvStream": true,
-      "allowDirect": true,
+      "allowDirect": false,
       "active": true,
       "note": "CSTV Chimney Partner",
       "addedAt": "2026-11-25T01:00:00.000Z"
@@ -93,7 +61,7 @@
       "casinoApi": true,
       "sportsApi": true,
       "tvStream": true,
-      "allowDirect": true,
+      "allowDirect": false,
       "active": true,
       "note": "Aura Igambli Partner",
       "addedAt": "2026-11-25T01:00:00.000Z"
@@ -102,32 +70,32 @@
   "ips": [
     {
       "id": "ip_default_1",
-      "ip": "72.61.172.110",
-      "casinoApi": true,
-      "sportsApi": true,
-      "tvStream": true,
-      "active": true,
-      "note": "Production Hostinger VPS Server IP",
-      "addedAt": "2026-11-25T01:00:00.000Z"
-    },
-    {
-      "id": "ip_default_2",
       "ip": "127.0.0.1",
       "casinoApi": true,
       "sportsApi": true,
       "tvStream": true,
       "active": true,
-      "note": "Localhost IPv4",
+      "note": "Localhost IPv4 Loopback",
       "addedAt": "2026-11-25T01:00:00.000Z"
     },
     {
-      "id": "ip_default_3",
+      "id": "ip_default_2",
       "ip": "::1",
       "casinoApi": true,
       "sportsApi": true,
       "tvStream": true,
       "active": true,
-      "note": "Localhost IPv6",
+      "note": "Localhost IPv6 Loopback",
+      "addedAt": "2026-11-25T01:00:00.000Z"
+    },
+    {
+      "id": "ip_default_3",
+      "ip": "72.61.172.110",
+      "casinoApi": true,
+      "sportsApi": true,
+      "tvStream": true,
+      "active": true,
+      "note": "Production Hostinger VPS Server Host",
       "addedAt": "2026-11-25T01:00:00.000Z"
     }
   ]

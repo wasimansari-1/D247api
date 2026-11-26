@@ -1,15 +1,17 @@
 /**
  * D247 Master Guard Anti-Theft Security Engine & Whitelist Controller
  * 
- * Features:
+ * Ironclad Protection Features:
  * - Granular Anti-Theft Protection for Casino API, Sports API, and TV Streaming
- * - IP Whitelisting & Domain/Origin Whitelisting
+ * - IP Whitelisting (Layer 3/4 unforgeable TCP identity)
+ * - Domain / Origin Whitelisting (Strict CORS & Iframe ancestors)
  * - Automated Scraper & Postman Blocker
- * - Block Direct URL Hits in New Tabs (Strict Iframe Guard)
+ * - Block Direct URL Hits in Browser Address Bar / New Tabs (Sec-Fetch + Referer verification)
+ * - Dynamic CSP frame-ancestors injection for live TV streams
  * - Persistent JSON Database (backend/data/whitelist.json)
  * - Real-Time Request Inspector & Traffic Logs Buffer
- * - High-Contrast 403 Anti-Theft Screen with Emergency Admin Contact Routing
- * - Production-Safe Localhost / Server Loopback Safe Exemption
+ * - High-Contrast 403 Anti-Theft Screen with Emergency Admin Contact Routing (+63 945 146 9623, +63 915 922 4695)
+ * - Production-Safe Localhost & VPS Loopback Safe Exemption (127.0.0.1, ::1, 72.61.172.110)
  */
 
 const fs = require("fs");
@@ -21,7 +23,7 @@ class MasterGuardEngine {
     this.dataPath = path.join(__dirname, "data", "whitelist.json");
     this.sessions = new Map(); // token -> { username, expiresAt }
     this.trafficLogs = [];
-    this.maxLogs = 300;
+    this.maxLogs = 400;
     this.secretKey = crypto.randomBytes(32).toString("hex");
 
     this.data = this.loadData();
@@ -37,8 +39,9 @@ class MasterGuardEngine {
           settings: {
             guardActive: true,
             blockScrapers: true,
-            blockDirectAccess: false,
+            blockDirectAccess: true,
             autoWhitelistLocalhost: true,
+            strictBrowserSignatures: true,
             ...(parsed.settings || {}),
           },
           credentials: {
@@ -58,8 +61,9 @@ class MasterGuardEngine {
       settings: {
         guardActive: true,
         blockScrapers: true,
-        blockDirectAccess: false,
+        blockDirectAccess: true,
         autoWhitelistLocalhost: true,
+        strictBrowserSignatures: true,
       },
       credentials: {
         username: "igwasim",
@@ -106,7 +110,7 @@ class MasterGuardEngine {
     let d = String(dom).toLowerCase().trim();
     d = d.replace(/^https?:\/\//i, "");
     d = d.split("/")[0];
-    d = d.split(":")[0]; // remove port
+    d = d.split(":")[0]; // strip port
     return d;
   }
 
@@ -130,20 +134,76 @@ class MasterGuardEngine {
     return this.cleanIp(req.ip || "127.0.0.1");
   }
 
+  /**
+   * Extract the caller's origin domain.
+   * CRITICAL: Host header is the DESTINATION server, NEVER the caller!
+   * Caller domain comes ONLY from Origin or Referer.
+   */
   extractDomain(req) {
-    // 1. Origin header (e.g. from fetch / cors)
     if (req.headers.origin) {
       return this.cleanDomain(req.headers.origin);
     }
-    // 2. Referer header (e.g. from iframe embed / browser)
     if (req.headers.referer) {
       return this.cleanDomain(req.headers.referer);
     }
-    // 3. Host header
-    if (req.headers.host) {
-      return this.cleanDomain(req.headers.host);
-    }
     return "";
+  }
+
+  /**
+   * Detect direct URL hits (address bar navigation, new tab, curl, Postman, python)
+   */
+  isDirectHit(req) {
+    // 1. Missing both Origin and Referer
+    if (!req.headers.origin && !req.headers.referer) {
+      return true;
+    }
+    // 2. W3C Sec-Fetch metadata: direct address bar hit or new tab navigation
+    const secDest = req.headers["sec-fetch-dest"];
+    const secMode = req.headers["sec-fetch-mode"];
+    const secSite = req.headers["sec-fetch-site"];
+
+    if (secDest === "document" && secMode === "navigate") {
+      return true;
+    }
+    if (secSite === "none") {
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Detect automated tools, bots, and scrapers
+   */
+  isScraper(userAgent) {
+    if (!userAgent) return true; // empty user-agent is blocked
+    const ua = userAgent.toLowerCase();
+    const scraperPatterns = [
+      "postmanruntime",
+      "postman",
+      "insomnia",
+      "curl/",
+      "python-requests",
+      "python",
+      "aiohttp",
+      "go-http-client",
+      "libwww-perl",
+      "wget/",
+      "scrapy",
+      "httpclient",
+      "okhttp",
+      "axios",
+      "node-fetch",
+      "undici",
+      "got",
+      "superagent",
+      "rest-client",
+      "urllib",
+      "httpie",
+      "java/",
+      "apache-httpclient",
+      "reqwest",
+    ];
+    return scraperPatterns.some((p) => ua.includes(p));
   }
 
   logRequest(req, status, reason, permissionType) {
@@ -152,7 +212,6 @@ class MasterGuardEngine {
     const userAgent = req.headers["user-agent"] || "Unknown";
     const path = req.originalUrl || req.url;
 
-    // Filter excessive log noise: only keep unique logs or blocked requests
     const entry = {
       id: "log_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
       time: new Date().toISOString(),
@@ -164,7 +223,7 @@ class MasterGuardEngine {
       target: permissionType,
       status, // 'ALLOWED' | 'BLOCKED'
       reason,
-      userAgent: userAgent.slice(0, 120),
+      userAgent: userAgent.slice(0, 140),
     };
 
     this.trafficLogs.unshift(entry);
@@ -174,7 +233,7 @@ class MasterGuardEngine {
   }
 
   /**
-   * Verify whether a request is allowed for the given permission
+   * Comprehensive Whitelist Verification
    * @param {Object} req - Express request
    * @param {string} permission - 'casinoApi' | 'sportsApi' | 'tvStream' | 'any'
    * @returns {Object} { allowed: boolean, reason: string, ip: string, domain: string }
@@ -182,84 +241,93 @@ class MasterGuardEngine {
   isWhitelisted(req, permission = "any") {
     const ip = this.extractClientIp(req);
     const domain = this.extractDomain(req);
-    const userAgent = (req.headers["user-agent"] || "").toLowerCase();
+    const userAgent = req.headers["user-agent"] || "";
+    const isDirect = this.isDirectHit(req);
+    const secDest = req.headers["sec-fetch-dest"] || "";
+    const secMode = req.headers["sec-fetch-mode"] || "";
 
     // 0. Master Guard globally disabled?
     if (!this.data.settings.guardActive) {
       return { allowed: true, reason: "Master Guard Inactive", ip, domain };
     }
 
-    // 1. Scraper / Bot / Postman Detection
-    if (this.data.settings.blockScrapers) {
-      const scraperPatterns = [
-        "postmanruntime",
-        "postman",
-        "insomnia",
-        "curl/",
-        "python-requests",
-        "aiohttp",
-        "go-http-client",
-        "libwww-perl",
-        "wget/",
-        "scrapy",
-        "httpclient",
-      ];
-      if (scraperPatterns.some((pattern) => userAgent.includes(pattern))) {
-        return {
-          allowed: false,
-          reason: "Automated Scraping Tool / Postman Blocked",
-          ip,
-          domain,
-        };
-      }
-    }
-
-    // 2. Localhost / Loopback Safe Exemption (Ensures local client never breaks)
+    // 1. Production Localhost & Server Loopback Safe Exemption
+    // Internal background syncEngine and server processes must never break
     if (this.data.settings.autoWhitelistLocalhost) {
       if (
         ip === "127.0.0.1" ||
         ip === "::1" ||
         ip === "localhost" ||
-        domain === "localhost" ||
-        domain === "127.0.0.1"
+        ip === "72.61.172.110"
       ) {
-        return { allowed: true, reason: "Localhost Safe-Exempt", ip, domain };
+        return { allowed: true, reason: "Local Server Safe Exemption", ip, domain };
       }
     }
 
-    // 3. IP Whitelist Match
+    // 2. IP Whitelist Match (The Unforgeable Layer 3/4 Gate)
+    // Server-to-server API clients & whitelisted customer IPs
     const ipEntry = this.ipMap.get(ip);
     if (ipEntry && ipEntry.active !== false) {
       if (permission === "any" || ipEntry[permission] === true) {
         return {
           allowed: true,
-          reason: `Whitelisted IP (${ipEntry.note || ip})`,
+          reason: `Whitelisted Client IP (${ipEntry.note || ip})`,
+          ip,
+          domain,
+        };
+      } else {
+        return {
+          allowed: false,
+          reason: `Client IP ${ip} not authorized for ${permission}`,
           ip,
           domain,
         };
       }
     }
 
-    // 4. Direct URL hit in New Tab without Referer/Origin
-    const hasParentReferer = !!(req.headers.referer || req.headers.origin);
-    if (!hasParentReferer) {
-      if (this.data.settings.blockDirectAccess) {
-        // If domain is not explicitly whitelisted with allowDirect: true, block
-        const domEntry = this.domainMap.get(domain);
-        if (!domEntry || !domEntry.allowDirect) {
-          return {
-            allowed: false,
-            reason: "Direct URL hit in new tab blocked (Iframe embedding only)",
-            ip,
-            domain,
-          };
-        }
-      }
+    // 3. Automated Scraper / Bot / Postman Detection
+    if (this.data.settings.blockScrapers && this.isScraper(userAgent)) {
+      return {
+        allowed: false,
+        reason: "Automated Scraping Tool / Postman Blocked (IP not whitelisted)",
+        ip,
+        domain,
+      };
     }
 
-    // 5. Domain / Origin Whitelist Match
+    // 4. Direct Address Bar / New Tab Navigation Block
+    // Typing the URL directly into Chrome/Safari/Edge or opening outside an authorized container
+    if (isDirect) {
+      if (permission === "tvStream") {
+        return {
+          allowed: false,
+          reason: "Direct TV Stream URL hit blocked (Authorized iframe embedding required)",
+          ip,
+          domain: "(direct)",
+        };
+      }
+      return {
+        allowed: false,
+        reason: "Direct API URL hit in browser address bar blocked (Whitelisted IP or authorized origin required)",
+        ip,
+        domain: "(direct)",
+      };
+    }
+
+    // 5. Direct Browser Document Navigation on Data APIs Blocked
+    // If an API endpoint is hit as a top-level page document navigation, block it!
+    if ((permission === "sportsApi" || permission === "casinoApi") && (secDest === "document" || secMode === "navigate")) {
+      return {
+        allowed: false,
+        reason: "Direct API browser document navigation blocked",
+        ip,
+        domain,
+      };
+    }
+
+    // 6. Domain / Origin Whitelist Match
     if (domain) {
-      // 5a. Exact match
+      // 6a. Exact Match
       const exactDom = this.domainMap.get(domain);
       if (exactDom && exactDom.active !== false) {
         if (permission === "any" || exactDom[permission] === true) {
@@ -269,10 +337,17 @@ class MasterGuardEngine {
             ip,
             domain,
           };
+        } else {
+          return {
+            allowed: false,
+            reason: `Domain ${domain} not authorized for ${permission}`,
+            ip,
+            domain,
+          };
         }
       }
 
-      // 5b. Wildcard / Root domain match (e.g. aura.igambli.com matches igambli.com)
+      // 6b. Wildcard Match (e.g. aura.igambli.com matches igambli.com)
       for (const [whitelistedDom, entry] of this.domainMap.entries()) {
         if (entry.active !== false) {
           if (
@@ -282,7 +357,14 @@ class MasterGuardEngine {
             if (permission === "any" || entry[permission] === true) {
               return {
                 allowed: true,
-                reason: `Whitelisted Domain Rule (*.${whitelistedDom})`,
+                reason: `Whitelisted Wildcard Domain (*.${whitelistedDom})`,
+                ip,
+                domain,
+              };
+            } else {
+              return {
+                allowed: false,
+                reason: `Domain *.${whitelistedDom} not authorized for ${permission}`,
                 ip,
                 domain,
               };
@@ -292,6 +374,7 @@ class MasterGuardEngine {
       }
     }
 
+    // 7. Unauthorized Fallback
     return {
       allowed: false,
       reason: `Unauthorized Origin (${domain || "no-origin"}) / IP (${ip}) for ${permission}`,
@@ -302,35 +385,57 @@ class MasterGuardEngine {
 
   /**
    * Express Middleware to protect specific route classes
+   * @param {string} permissionType - 'casinoApi' | 'sportsApi' | 'tvStream' | 'any'
    */
   guardMiddleware(permissionType = "any") {
     return (req, res, next) => {
       const check = this.isWhitelisted(req, permissionType);
 
       if (check.allowed) {
-        // Only log 10% of allowed requests to avoid buffer overflow from live rate polling
-        if (Math.random() < 0.1 || permissionType === "tvStream") {
+        // Log sample of allowed requests (avoid buffer flooding during high rate polling)
+        if (Math.random() < 0.05 || permissionType === "tvStream") {
           this.logRequest(req, "ALLOWED", check.reason, permissionType);
         }
+
+        // Inject Content-Security-Policy frame-ancestors for TV streams to lock embedding
+        if (permissionType === "tvStream") {
+          const allowedAncestors = ["'self'"];
+          for (const [dom, entry] of this.domainMap.entries()) {
+            if (entry.active !== false && entry.tvStream) {
+              allowedAncestors.push(`https://${dom}`, `http://${dom}`);
+              allowedAncestors.push(`https://*.${dom}`, `http://*.${dom}`);
+            }
+          }
+          res.setHeader("Content-Security-Policy", `frame-ancestors ${allowedAncestors.join(" ")};`);
+        }
+
+        // Dynamic CORS headers for authorized origins
+        if (req.headers.origin) {
+          res.setHeader("Access-Control-Allow-Origin", req.headers.origin);
+          res.setHeader("Access-Control-Allow-Credentials", "true");
+          res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+          res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
+        }
+
         return next();
       }
 
-      // Blocked request: Log and return 403 Forbidden
+      // Blocked request: Log incident
       this.logRequest(req, "BLOCKED", check.reason, permissionType);
 
-      // Check if client expects HTML or is viewing stream player
-      const isHtmlExpected =
-        req.headers.accept && req.headers.accept.includes("text/html");
+      // Check if client expects HTML or is a stream player view
+      const isHtmlExpected = req.headers.accept && req.headers.accept.includes("text/html");
       const isStreamRoute =
         req.originalUrl?.includes("/player/") ||
         req.originalUrl?.includes("/stream") ||
-        req.originalUrl?.includes("/mediaplayer");
+        req.originalUrl?.includes("/mediaplayer") ||
+        req.originalUrl?.includes("/livetv");
 
       if (isHtmlExpected || isStreamRoute) {
         return res
           .status(403)
           .setHeader("Content-Type", "text/html; charset=utf-8")
-          .send(this.render403Screen(check.domain, check.ip, check.reason));
+          .send(this.render403Screen(check.domain, check.ip, check.reason, permissionType));
       }
 
       return res.status(403).json({
@@ -338,6 +443,7 @@ class MasterGuardEngine {
         error: "ACCESS_DENIED",
         code: 403,
         message: "Protected by D247 Master Guard. Access restricted.",
+        target: permissionType,
         reason: check.reason,
         clientIp: check.ip,
         domain: check.domain || "unspecified",
@@ -350,13 +456,22 @@ class MasterGuardEngine {
     };
   }
 
-  render403Screen(domain, ip, reason) {
+  render403Screen(domain, ip, reason, permissionType = "Resource") {
+    const formattedType =
+      permissionType === "tvStream"
+        ? "Casino & Sports Live TV Stream"
+        : permissionType === "sportsApi"
+        ? "Sports Betting Exchange API"
+        : permissionType === "casinoApi"
+        ? "Live Casino Engine API"
+        : "Live Exchange Feed";
+
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>403 - Stream & API Access Restricted | D247 Master Guard</title>
+  <title>403 - Access Restricted | D247 Master Guard</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -377,19 +492,25 @@ class MasterGuardEngine {
       max-width: 520px;
       width: 100%;
       padding: 32px 28px;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
       text-align: center;
     }
     .shield-icon {
-      width: 64px;
-      height: 64px;
+      width: 68px;
+      height: 68px;
       margin: 0 auto 16px;
       background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
       color: #ef4444;
+      animation: pulse 2s infinite ease-in-out;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.05); opacity: 0.85; }
     }
     h1 {
       font-size: 20px;
@@ -418,7 +539,7 @@ class MasterGuardEngine {
     .meta-row {
       display: flex;
       justify-content: space-between;
-      padding: 4px 0;
+      padding: 5px 0;
       border-bottom: 1px solid #131d2e;
     }
     .meta-row:last-child { border-bottom: none; }
@@ -442,8 +563,8 @@ class MasterGuardEngine {
       align-items: center;
       justify-content: center;
       gap: 8px;
-      padding: 10px 14px;
-      border-radius: 6px;
+      padding: 11px 14px;
+      border-radius: 7px;
       font-size: 12px;
       font-weight: 700;
       text-decoration: none;
@@ -460,7 +581,7 @@ class MasterGuardEngine {
     }
     .btn-call:hover { background: #1d4ed8; }
     .footer-note {
-      margin-top: 20px;
+      margin-top: 22px;
       font-size: 11px;
       color: #475569;
     }
@@ -476,16 +597,20 @@ class MasterGuardEngine {
       </svg>
     </div>
     <h1>Anti-Theft Guard Active</h1>
-    <p class="desc">This stream or API endpoint is protected by D247 Master Guard. Direct playback or unwhitelisted embedding has been blocked.</p>
+    <p class="desc">This ${formattedType} is protected by D247 Master Guard. Direct browser URL access, postman scraping, and unauthorized embedding are permanently restricted.</p>
 
     <div class="meta-box">
       <div class="meta-row">
-        <span class="meta-label">Domain:</span>
+        <span class="meta-label">Client IP:</span>
+        <span class="meta-val">${ip || "Unknown"}</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Origin / Domain:</span>
         <span class="meta-val">${domain || "Direct / No Referer"}</span>
       </div>
       <div class="meta-row">
-        <span class="meta-label">Client IP:</span>
-        <span class="meta-val">${ip || "Unknown"}</span>
+        <span class="meta-label">Target Service:</span>
+        <span class="meta-val" style="color: #a855f7;">${permissionType}</span>
       </div>
       <div class="meta-row">
         <span class="meta-label">Status:</span>
@@ -497,31 +622,31 @@ class MasterGuardEngine {
       </div>
     </div>
 
-    <div class="contact-title">Contact Administrator for Whitelisting</div>
+    <div class="contact-title">Contact Administrator for Whitelisting Approval</div>
     <div class="btn-group">
-      <a class="btn btn-wa" href="https://wa.me/639451469623?text=Whitelist%20Request%20for%20${encodeURIComponent(domain || ip)}" target="_blank" rel="noopener">
+      <a class="btn btn-wa" href="https://wa.me/639451469623?text=Whitelist%20Approval%20Request%20for%20IP%20${encodeURIComponent(ip)}%20Origin%20${encodeURIComponent(domain || 'Direct')}" target="_blank" rel="noopener">
         <span>💬 WhatsApp Admin</span>
       </a>
       <a class="btn btn-call" href="tel:+639451469623">
-        <span>📞 Call +63 945 146 9623</span>
+        <span>📞 +63 945 146 9623</span>
       </a>
     </div>
     <div class="btn-group" style="margin-top: 8px;">
-      <a class="btn btn-wa" href="https://wa.me/639159224695?text=Whitelist%20Request%20for%20${encodeURIComponent(domain || ip)}" target="_blank" rel="noopener">
+      <a class="btn btn-wa" href="https://wa.me/639159224695?text=Whitelist%20Approval%20Request%20for%20IP%20${encodeURIComponent(ip)}%20Origin%20${encodeURIComponent(domain || 'Direct')}" target="_blank" rel="noopener">
         <span>💬 WhatsApp 2</span>
       </a>
       <a class="btn btn-call" href="tel:+639159224695">
-        <span>📞 Call +63 915 922 4695</span>
+        <span>📞 +63 915 922 4695</span>
       </a>
     </div>
 
-    <div class="footer-note">D247 Official Zero-Latency Exchange Engine | Host Security System</div>
+    <div class="footer-note">D247 Official Zero-Latency Exchange Engine | Master Guard Anti-Theft v2.0</div>
   </div>
 </body>
 </html>`;
   }
 
-  // --- Auth & Session Handling for /master ---
+  // --- Master Auth & Session Management (/master) ---
 
   login(username, password) {
     if (
@@ -570,7 +695,6 @@ class MasterGuardEngine {
     const clean = this.cleanDomain(domain);
     if (!clean) throw new Error("Invalid domain provided");
 
-    // Check if exists
     const existing = this.data.domains.find((d) => this.cleanDomain(d.domain) === clean);
     if (existing) {
       existing.casinoApi = !!casinoApi;

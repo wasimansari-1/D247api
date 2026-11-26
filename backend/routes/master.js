@@ -604,9 +604,15 @@ function renderMasterDashboardHtml() {
                 \${l.status}
               </span>
             </td>
-            <td class="py-2 px-3 text-slate-300">\${l.ip}</td>
-            <td class="py-2 px-3 text-sky-400 font-bold">\${l.domain}</td>
-            <td class="py-2 px-3 text-slate-400">\${l.path}</td>
+            <td class="py-2 px-3 text-slate-300 font-mono">\${l.ip}</td>
+            <td class="py-2 px-3">
+              <div class="text-sky-400 font-bold">\${l.domain}</div>
+              \${l.referer ? \`<div class="text-[10px] text-slate-500 truncate max-w-[200px]" title="\${l.referer}">Ref: \${l.referer}</div>\` : ''}
+            </td>
+            <td class="py-2 px-3">
+              <span class="px-1.5 py-0.5 rounded text-[10px] font-bold \${l.target === 'tvStream' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : l.target === 'sportsApi' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-sky-500/20 text-sky-400 border border-sky-500/30'}">\${l.target}</span>
+              <div class="text-[10px] text-slate-400 mt-0.5 font-mono truncate max-w-[180px]">\${l.path}</div>
+            </td>
             <td class="py-2 px-3 text-slate-400 text-[10px]">\${l.reason}</td>
             <td class="py-2 px-3 text-right">
               \${l.domain && l.domain !== '(direct)' ? \`<button onclick="quickWhitelistDomain('\${l.domain}')" class="px-2 py-0.5 rounded bg-amber-500/15 hover:bg-amber-500/30 text-amber-300 text-[10px] font-bold transition mr-1">+ Domain</button>\` : ''}
@@ -628,7 +634,7 @@ function renderMasterDashboardHtml() {
       await fetch("/api/master/domain", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": "Bearer " + masterToken },
-        body: JSON.stringify({ domain: dom, note, casinoApi, sportsApi, tvStream, allowDirect: true })
+        body: JSON.stringify({ domain: dom, note, casinoApi, sportsApi, tvStream, allowDirect: false })
       });
       document.getElementById("newDomName").value = "";
       document.getElementById("newDomNote").value = "";
@@ -675,7 +681,7 @@ function renderMasterDashboardHtml() {
       await fetch("/api/master/domain", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": "Bearer " + masterToken },
-        body: JSON.stringify({ domain, casinoApi: true, sportsApi: true, tvStream: true, allowDirect: true, note: "Quick Whitelist from Log" })
+        body: JSON.stringify({ domain, casinoApi: true, sportsApi: true, tvStream: true, allowDirect: false, note: "Quick Whitelist from Log" })
       });
       refreshData();
     }
